@@ -160,12 +160,18 @@ func teardownBuildContainer(ctx sous.BuildContext, buildContainerID string) erro
 }
 
 func templateDockerfile(ctx sous.BuildContext, buildDir string, runnableBuilders []*runnableBuilder) error {
-	for _, builder := range runnableBuilders {
+	for _, rb := range runnableBuilders {
 		dockerfile, err := os.Create(filepath.Join(buildDir, "Dockerfile"))
 		if err != nil {
 			return err
 		}
 		defer dockerfile.Close()
+
+		builder := builder{
+			RunSpec:        rb.RunSpec,
+			VersionConfig:  versionConfigLocal(ctx),
+			RevisionConfig: revisionConfigLocal(ctx),
+		}
 
 		err = templateDockerfileBytes(dockerfile, builder)
 		if err != nil {
@@ -175,7 +181,13 @@ func templateDockerfile(ctx sous.BuildContext, buildDir string, runnableBuilders
 	return nil
 }
 
-func templateDockerfileBytes(dockerfile io.Writer, builder *runnableBuilder) error {
+type builder struct {
+	RunSpec        SplitImageRunSpec
+	VersionConfig  string
+	RevisionConfig string
+}
+
+func templateDockerfileBytes(dockerfile io.Writer, builder builder) error {
 	messages.ReportLogFieldsMessage("Templating Dockerfile from", logging.DebugLevel, logging.Log, builder, builder.RunSpec)
 
 	tmpl, err := template.New("Dockerfile").Parse(`
@@ -183,7 +195,7 @@ func templateDockerfileBytes(dockerfile io.Writer, builder *runnableBuilder) err
 	{{range .RunSpec.Files }}
 	COPY {{.Destination.Dir}} {{.Destination.Dir}}
 	{{end}}
-	ENV {{.VersionConfig}} {{.RevisionConfig}}
+        ENV {{.VersionConfig}} {{.RevisionConfig}}
 	CMD [
 	{{- range $n, $part := .RunSpec.Exec -}}
 	  {{if $n}}, {{- end -}}"{{.}}"
@@ -195,6 +207,83 @@ func templateDockerfileBytes(dockerfile io.Writer, builder *runnableBuilder) err
 	}
 	fmt.Printf("builder : %v", builder)
 	return tmpl.Execute(dockerfile, builder)
+}
+
+func buildRunnables(ctx sous.BuildContext, buildDir string, runnableBuilders []*runnableBuilder) ([]string, error) {
+	deployIDs := make([]string, len(runnableBuilders))
+	for i, builder := range runnableBuilders {
+		deployID, err := buildRunnable(ctx, buildDir, builder)
+		if err != nil {
+			return nil, err
+		}
+		deployIDs[i] = deployID
+	}
+	fmt.Println("deployIDs : ", deployIDs)
+	return deployIDs, nil
+}
+func versionNameLocal(ctx sous.BuildContext) string {
+	v := ctx.Version().Version
+	v.Meta = ""
+	return v.String()
+}
+
+func revisionNameLocal(ctx sous.BuildContext) string {
+	return ctx.Version().RevID()
+}
+
+func versionConfigLocal(ctx sous.BuildContext) string {
+	return fmt.Sprintf("%s=%s", AppVersionBuildArg, versionNameLocal(ctx))
+}
+
+func revisionConfigLocal(ctx sous.BuildContext) string {
+	return fmt.Sprintf("%s=%s", AppRevisionBuildArg, revisionNameLocal(ctx))
+}
+
+func buildRunnable(ctx sous.BuildContext, buildDir string, builder *runnableBuilder) (string, error) {
+	sh := ctx.Sh.Clone()
+	sh.LongRunning(true)
+	sh.CD(buildDir)
+
+	out, err := sh.Stdout("docker", "build", ".")
+	if err != nil {
+		return "", err
+	}
+
+	match := successfulBuildRE.FindStringSubmatch(string(out))
+	if match == nil {
+		return "", fmt.Errorf("Couldn't find container id in:\n%s", out)
+	}
+	deployImageID := match[1]
+
+	return deployImageID, nil
+}
+
+func products(ctx sous.BuildContext, runnableBuilders []*runnableBuilder) []*sous.BuildProduct {
+	ps := make([]*sous.BuildProduct, len(runnableBuilders))
+	for i, builder := range runnableBuilders {
+		ps[i] = product(ctx, builder)
+	}
+	return ps
+}
+
+func product(ctx sous.BuildContext, builder *runnableBuilder) *sous.BuildProduct {
+	advisories := ctx.Advisories
+	if builder.RunSpec.Kind != "" {
+		advisories = append(advisories, string(sous.NotService))
+	}
+	sid := ctx.Version()
+	sid.Location.Dir = builder.RunSpec.Offset
+
+	bp := &sous.BuildProduct{
+		Source:     sid,
+		Kind:       builder.RunSpec.Kind,
+		ID:         builder.deployImageID, // was ImageID
+		Advisories: advisories,
+		// VersionName:  builder.versionName(),
+		// RevisionName: builder.revisionName(),
+	}
+
+	return bp
 }
 
 func getOffsetDir(ctx sous.BuildContext) string {

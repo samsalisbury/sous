@@ -2,6 +2,7 @@ package docker
 
 import (
 	"fmt"
+	"time"
 
 	sous "github.com/opentable/sous/lib"
 )
@@ -21,7 +22,7 @@ func NewRunmountBuildpack() *RunmountBuildpack {
 func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, error) {
 	fmt.Println("Runmount Detector.. always return true")
 	result := sous.DetectResult{
-		Compatible: true,
+		Compatible: true, //ctx.Source.DevBuild, // TODO LH only for testing porpoises
 	}
 	rmbp.detected = &result
 	return &result, nil
@@ -29,6 +30,7 @@ func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResul
 
 func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult, error) {
 	fmt.Println("Runmount Build.. ")
+	start := time.Now()
 	buildResult := &sous.BuildResult{}
 
 	buildID, err := build(*ctx)
@@ -57,6 +59,19 @@ func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult,
 
 	err = teardownBuildContainer(*ctx, buildContainerID)
 	fmt.Println("err : ", err)
+
+	err = templateDockerfile(*ctx, tempDir, subBuilders)
+	fmt.Println("templateDockerfile err : ", err)
+
+	runnables, err := buildRunnables(*ctx, tempDir, subBuilders)
+	fmt.Println("err : ", err)
+	fmt.Println("runnables : ", runnables)
+
+	products := products(*ctx, subBuilders)
+	fmt.Println("products : ", products)
+
+	buildResult.Elapsed = time.Since(start)
+	buildResult.Products = products
 
 	return buildResult, nil
 }
