@@ -1,4 +1,4 @@
-HELL := /usr/bin/env bash
+SHELL := /usr/bin/env bash
 
 POSTGRES_DATA_VOLUME_NAME ?= sous_dev_postgres_data
 ifeq ($(shell docker volume ls -q --filter name=^$(POSTGRES_DATA_VOLUME_NAME)$$),)
