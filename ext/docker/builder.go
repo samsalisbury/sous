@@ -136,6 +136,7 @@ func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
 // recordName inserts metadata about the newly built image into our local name cache
 func (b *Builder) recordName(bp *sous.BuildProduct) error {
 	sv := bp.Source
+	sv.Version.Meta = bp.RevisionName
 	in := bp.VersionName
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
 	var qs []sous.Quality
