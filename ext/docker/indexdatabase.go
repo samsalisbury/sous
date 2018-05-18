@@ -31,7 +31,7 @@ func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 }
 
 func versionString(v semv.Version) string {
-	return v.Format(semv.MMPPre)
+	return v.Format("M.m.p-?+?")
 }
 
 func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Quality) error {
