@@ -55,7 +55,6 @@ URL := https://github.com/opentable/sous
 ifneq ($(GO_TEST_RUN),)
 EXTRA_GO_TEST_FLAGS := $(EXTRA_GO_TEST_FLAGS) -run $(GO_TEST_RUN)
 endif
-GO_TEST_IMPORT_PATH ?= ./...
 
 TAG_TEST := git describe --exact-match --abbrev=0 2>/dev/null
 ifeq ($(shell $(TAG_TEST) ; echo $$?), 128)
