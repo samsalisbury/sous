@@ -28,6 +28,18 @@ func fixtureGraph() *SousGraph {
 	return graph
 }
 
+func TestActionPlumbingNormilizeGDM(t *testing.T) {
+	fg := fixtureGraph()
+	action, err := fg.GetPlumbingNormalizeGDM("statelocation")
+	require.NoError(t, err)
+	plumb, rightType := action.(*actions.PlumbNormalizeGDM)
+	require.True(t, rightType)
+
+	require.NotNil(t, plumb)
+	assert.Equal(t, "statelocation", plumb.StateLocation)
+
+}
+
 func TestActionUpdate(t *testing.T) {
 	fg := fixtureGraph()
 	flags := fixtureDeployFilterFlags()
