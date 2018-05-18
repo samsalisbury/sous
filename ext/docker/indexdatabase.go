@@ -210,7 +210,7 @@ func (nc *NameCache) dbQueryOnSL(sl sous.SourceLocation) (rs []string, err error
 func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 	rows, err := nc.DB.Query("select docker_search_location.repo, " +
 		"docker_search_location.offset, " +
-		"docker_search_metadata.version " +
+		"docker_search_metadata.version, " +
 		"docker_search_metadata.revision " +
 		"from " +
 		"docker_search_location natural join docker_search_metadata")
@@ -226,7 +226,7 @@ func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 			Location: sous.SourceLocation{
 				Repo: repo, Dir: offset,
 			},
-			Version: semv.MustParse(version),
+			Version: semv.MustParse(version + "+" + revision),
 		})
 	}
 	err = rows.Err()
