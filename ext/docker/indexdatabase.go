@@ -31,7 +31,12 @@ func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 }
 
 func versionString(v semv.Version) string {
-	return v.Format("M.m.p-?+?")
+	return v.Format(semv.MMPPre)
+}
+
+func revisionString(v semv.Version) string {
+	// Lop off the + symbol, not needed when storing revision as a separate field.
+	return v.Format("+")[1:]
 }
 
 func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Quality) error {
@@ -73,6 +78,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 	if err := ins.Exec("docker_search_metadata", sqlgen.Upsert, sqlgen.SingleRow(func(r sqlgen.RowDef) {
 		r.CF("?", "canonicalname", in)
 		r.KV("version", versionString(sid.Version))
+		r.KV("revision", revisionString(sid.Version))
 		r.KV("etag", etag)
 		locID(r, sid)
 	})); err != nil {
@@ -152,18 +158,19 @@ func mdID(r sqlgen.RowDef, in string) {
 
 // XXX
 
-func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, cname string, err error) {
+func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, revision, cname string, err error) {
 	row := nc.DB.QueryRow("select "+
 		"docker_search_metadata.etag, "+
 		"docker_search_location.repo, "+
 		"docker_search_location.offset, "+
 		"docker_search_metadata.version, "+
+		"docker_search_metadata.revision, "+
 		"docker_search_metadata.canonicalname "+
 		"from "+
 		"docker_search_name natural join docker_search_metadata "+
 		"natural join docker_search_location "+
 		"where docker_search_name.name = $1", in)
-	err = row.Scan(&etag, &repo, &offset, &version, &cname)
+	err = row.Scan(&etag, &repo, &offset, &version, &revision, &cname)
 	if err == sql.ErrNoRows {
 		err = NoSourceIDFound{imageName(in)}
 	}
@@ -204,6 +211,7 @@ func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 	rows, err := nc.DB.Query("select docker_search_location.repo, " +
 		"docker_search_location.offset, " +
 		"docker_search_metadata.version " +
+		"docker_search_metadata.revision " +
 		"from " +
 		"docker_search_location natural join docker_search_metadata")
 	if err != nil {
@@ -212,13 +220,13 @@ func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r, o, v string
-		rows.Scan(&r, &o, &v)
+		var repo, offset, version, revision string
+		rows.Scan(&repo, &offset, &version, &revision)
 		ids = append(ids, sous.SourceID{
 			Location: sous.SourceLocation{
-				Repo: r, Dir: o,
+				Repo: repo, Dir: offset,
 			},
-			Version: semv.MustParse(v),
+			Version: semv.MustParse(version),
 		})
 	}
 	err = rows.Err()

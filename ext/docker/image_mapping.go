@@ -164,7 +164,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 
 	messages.ReportLogFieldsMessage("Getting source ID for", logging.ExtraDebug1Level, nc.log, in)
 
-	etag, repo, offset, version, _, err := nc.dbQueryOnName(in)
+	etag, repo, offset, version, revision, _, err := nc.dbQueryOnName(in)
 	if nif, ok := err.(NoSourceIDFound); ok {
 		nc.logger("Error: no source ID found", logging.ExtraDebug1Level, nif, a)
 	} else if err != nil {
@@ -174,6 +174,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		nc.logger("Found", logging.ExtraDebug1Level, repo, offset, version, etag)
 
 		sid, err = sous.NewSourceID(repo, offset, version)
+		sid.Version.Meta = revision
 		if err != nil {
 			return sid, err
 		}
@@ -294,7 +295,7 @@ func qualitiesFromLabels(lm map[string]string) []sous.Quality {
 
 // GetCanonicalName returns the canonical name for an image given any known name
 func (nc *NameCache) GetCanonicalName(in string) (string, error) {
-	_, _, _, _, cn, err := nc.dbQueryOnName(in)
+	_, _, _, _, _, cn, err := nc.dbQueryOnName(in)
 	messages.ReportLogFieldsMessage("Canonicalizing - got", logging.DebugLevel, nc.log, in, cn, err)
 	return cn, err
 }
