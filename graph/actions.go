@@ -71,7 +71,7 @@ func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Up
 	}, nil
 }
 
-// GetPlumbingNormalizeGDM
+// GetPlumbingNormalizeGDM returns an update Action.
 func (di *SousGraph) GetPlumbingNormalizeGDM(stateLocation string) (actions.Action, error) {
 	scoop := struct {
 		LS   LogSink
