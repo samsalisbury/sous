@@ -139,7 +139,7 @@ func (nc *NameCache) ImageLabels(in string) (map[string]string, error) {
 		return map[string]string{}, errors.Wrapf(err, "Image name: %s", in)
 	}
 
-	return Labels(sv), nil
+	return Labels(sv, ""), nil // 991
 }
 
 // GetArtifact implements sous.Registry.GetArtifact.

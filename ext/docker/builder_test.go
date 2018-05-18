@@ -26,11 +26,12 @@ func TestMetadataDockerfile(t *testing.T) {
 
 	assert.NoError(err)
 	assert.Equal(
+		// 991
 		`FROM identifier
 LABEL \
   com.opentable.sous.repo_offset="sub" \
   com.opentable.sous.repo_url="github.com/opentable/test" \
-  com.opentable.sous.revision="abcd" \
+  com.opentable.sous.revision="" \
   com.opentable.sous.version="2.3.7" \
   com.opentable.sous.advisories="something is horribly wrong"`, string(mddf))
 }
@@ -49,10 +50,10 @@ func TestTagStrings(t *testing.T) {
 
 	assert.Equal("sous/docker:1.2.3", versionName(sid, ""))
 	assert.Equal("sous/docker-builder:1.2.3", versionName(sid, "builder"))
-	assert.Equal("sous/docker:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "", theTime))
-	assert.Equal("sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "builder", theTime))
+	assert.Equal("sous/docker:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "deadbeef", "", theTime))
+	assert.Equal("sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "deadbeef", "builder", theTime))
 	assert.Equal("docker.example.com/sous/docker:1.2.3", versionTag("docker.example.com", sid, "", ls))
-	assert.Equal("docker.example.com/sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionTag("docker.example.com", sid, "builder", theTime, ls))
+	assert.Equal("docker.example.com/sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionTag("docker.example.com", sid, "deadbeef", "builder", theTime, ls))
 }
 
 func TestBuilderApplyMetadata(t *testing.T) {
