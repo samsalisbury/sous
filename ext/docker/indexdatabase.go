@@ -18,7 +18,7 @@ import (
 func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 	res, err := db.Query("select name from docker_repo_name;")
 	if err != nil {
-		nc.log("captureRepos", logging.WarningLevel, err)
+		nc.logger("captureRepos", logging.WarningLevel, err)
 		return
 	}
 	defer res.Close()
@@ -30,10 +30,19 @@ func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 	return
 }
 
+func versionString(v semv.Version) string {
+	return v.Format(semv.MMPPre)
+}
+
+func revisionString(v semv.Version) string {
+	// Lop off the + symbol, not needed when storing revision as a separate field.
+	return v.Format("+")[1:]
+}
+
 func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Quality) error {
 	ref, err := reference.ParseNamed(in)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "name: %q", in)
 	}
 
 	ctx := context.TODO()
@@ -44,7 +53,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 
 	defer tx.Rollback() // we commit before returning...
 
-	ins := sqlgen.NewInserter(ctx, nc.Log, tx)
+	ins := sqlgen.NewInserter(ctx, nc.log, tx)
 
 	if err := ins.Exec("docker_repo_name", sqlgen.DoNothing, sqlgen.SingleRow(func(r sqlgen.RowDef) {
 		r.KV("name", ref.Name())
@@ -69,10 +78,12 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 	if err := ins.Exec("docker_search_metadata", sqlgen.Upsert, sqlgen.SingleRow(func(r sqlgen.RowDef) {
 		r.CF("?", "canonicalname", in)
 		r.KV("version", versionString(sid.Version))
+		r.KV("revision", revisionString(sid.Version))
 		r.KV("etag", etag)
 		locID(r, sid)
 	})); err != nil {
-		return err
+		// other errors should also get wrapped
+		return errors.Wrapf(err, "canonicalname:%q version:%q etag:%q repo:%q dir:%q", in, sid.Version, etag, sid.Location.Repo, sid.Location.Dir)
 	}
 
 	if err := ins.Exec("docker_image_qualities", sqlgen.DoNothing, func(fs sqlgen.FieldSet) {
@@ -107,7 +118,7 @@ func (nc *NameCache) dbAddNames(in string, names []string) error {
 
 	defer tx.Rollback() // we commit before returning...
 
-	ins := sqlgen.NewInserter(ctx, nc.Log, tx)
+	ins := sqlgen.NewInserter(ctx, nc.log, tx)
 
 	if err := addSearchNames(ins, in, names); err != nil {
 		return err
@@ -147,18 +158,19 @@ func mdID(r sqlgen.RowDef, in string) {
 
 // XXX
 
-func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, cname string, err error) {
+func (nc *NameCache) dbQueryOnName(in string) (etag, repo, offset, version, revision, cname string, err error) {
 	row := nc.DB.QueryRow("select "+
 		"docker_search_metadata.etag, "+
 		"docker_search_location.repo, "+
 		"docker_search_location.offset, "+
 		"docker_search_metadata.version, "+
+		"docker_search_metadata.revision, "+
 		"docker_search_metadata.canonicalname "+
 		"from "+
 		"docker_search_name natural join docker_search_metadata "+
 		"natural join docker_search_location "+
 		"where docker_search_name.name = $1", in)
-	err = row.Scan(&etag, &repo, &offset, &version, &cname)
+	err = row.Scan(&etag, &repo, &offset, &version, &revision, &cname)
 	if err == sql.ErrNoRows {
 		err = NoSourceIDFound{imageName(in)}
 	}
@@ -198,7 +210,8 @@ func (nc *NameCache) dbQueryOnSL(sl sous.SourceLocation) (rs []string, err error
 func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 	rows, err := nc.DB.Query("select docker_search_location.repo, " +
 		"docker_search_location.offset, " +
-		"docker_search_metadata.version " +
+		"docker_search_metadata.version, " +
+		"docker_search_metadata.revision " +
 		"from " +
 		"docker_search_location natural join docker_search_metadata")
 	if err != nil {
@@ -207,13 +220,13 @@ func (nc *NameCache) dbQueryAllSourceIds() (ids []sous.SourceID, err error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		var r, o, v string
-		rows.Scan(&r, &o, &v)
+		var repo, offset, version, revision string
+		rows.Scan(&repo, &offset, &version, &revision)
 		ids = append(ids, sous.SourceID{
 			Location: sous.SourceLocation{
-				Repo: r, Dir: o,
+				Repo: repo, Dir: offset,
 			},
-			Version: semv.MustParse(v),
+			Version: semv.MustParse(version + "+" + revision),
 		})
 	}
 	err = rows.Err()
@@ -246,7 +259,7 @@ func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins 
 	rows, err := nc.DB.Query(query, sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
 
 	if err != nil {
-		sqlgen.ReportSelect(nc.Log, start, "docker_search_metadata", query, 0, err,
+		sqlgen.ReportSelect(nc.log, start, "docker_search_metadata", query, 0, err,
 			sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
 		if err == sql.ErrNoRows {
 			err = errors.Wrap(NoImageNameFound{sid}, "")
@@ -263,7 +276,7 @@ func (nc *NameCache) dbQueryCNameforSourceID(sid sous.SourceID) (cn string, ins 
 		ins = append(ins, in)
 	}
 	err = rows.Err()
-	sqlgen.ReportSelect(nc.Log, start, "docker_search_metadata", query, rowcount, err,
+	sqlgen.ReportSelect(nc.log, start, "docker_search_metadata", query, rowcount, err,
 		sid.Location.Repo, sid.Location.Dir, versionString(sid.Version))
 	if len(ins) == 0 {
 		err = errors.Wrap(NoImageNameFound{sid}, "")

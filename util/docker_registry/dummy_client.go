@@ -1,6 +1,7 @@
 package docker_registry
 
 import (
+	"fmt"
 	"regexp"
 
 	"github.com/nyarly/spies"
@@ -59,6 +60,9 @@ func (drc *DummyRegistryClient) BecomeFoolishlyTrusting() {}
 // GetImageMetadata fulfills part of Client
 func (drc *DummyRegistryClient) GetImageMetadata(in, et string) (md Metadata, err error) {
 	res := drc.Called(in, et)
+	if res.Get(0) == nil {
+		return Metadata{}, fmt.Errorf("Dummy client: no image for name: %q", in)
+	}
 	return res.Get(0).(Metadata), res.Error(1)
 }
 

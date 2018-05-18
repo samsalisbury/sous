@@ -4,8 +4,6 @@ import (
 	"fmt"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -194,19 +192,15 @@ func (e Env) Equal(o Env) bool {
 
 // Equal compares Metadatas
 func (e Metadata) Equal(o Metadata) bool {
-	messages.ReportLogFieldsMessage("Metadatas: ?=", logging.ExtraDebug1Level, logging.Log, e, o)
 	if len(e) != len(o) {
-		messages.ReportLogFieldsMessage("Metadatas: !=", logging.ExtraDebug1Level, logging.Log, e, o, len(e), len(o))
 		return false
 	}
 
 	for name, value := range e {
 		if ov, ok := o[name]; !ok || ov != value {
-			messages.ReportLogFieldsMessage("Metadatas: != !=", logging.ExtraDebug1Level, logging.Log, e, o, name, value, ov)
 			return false
 		}
 	}
-	messages.ReportLogFieldsMessage("Metadatas: == !", logging.ExtraDebug1Level, logging.Log, e, o)
 	return true
 }
 

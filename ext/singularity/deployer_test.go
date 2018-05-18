@@ -155,8 +155,9 @@ func TestMakeRequestID_Collisions(t *testing.T) {
 func TestRectifyRecover(t *testing.T) {
 	var err error
 	expectedPrefix := "Panicked: What's that coming over the hill?!; stack trace:\n"
+	ls, _ := logging.NewLogSinkSpy()
 	func() {
-		defer rectifyRecover("something", "TestRectifyRecover", &err)
+		defer rectifyRecover("something", "TestRectifyRecover", &err, ls)
 		panic("What's that coming over the hill?!")
 	}()
 	if err == nil {
@@ -273,14 +274,16 @@ func matchedPair(t *testing.T, startDep *sous.Deployment) *sous.DeployablePair {
 		},
 	}
 
-	_, aReq, err := singRequestFromDeployment(startDep, reqID)
+	ls, _ := logging.NewLogSinkSpy()
+
+	_, aReq, err := singRequestFromDeployment(startDep, reqID, ls)
 	assert.NoError(t, err)
 	assert.NotNil(t, aReq)
 
 	req := &dtos.SingularityRequest{}
 	jsonRoundtrip(t, aReq, req)
 
-	aDepReq, err := buildDeployRequest(deployable, reqID, depID, map[string]string{})
+	aDepReq, err := buildDeployRequest(deployable, reqID, depID, map[string]string{}, ls)
 	assert.NoError(t, err)
 	assert.NotNil(t, aDepReq)
 

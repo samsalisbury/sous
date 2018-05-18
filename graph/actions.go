@@ -138,16 +138,22 @@ func (di *SousGraph) GetRectify(dryrun string, dff config.DeployFilterFlags) (ac
 	scoop := struct {
 		LogSink  LogSink
 		Resolver *sous.Resolver
-		State    *sous.State
+		SM       *ServerStateManager
 	}{}
 
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
+
+	state, err := scoop.SM.ReadState()
+	if err != nil {
+		return nil, err
+	}
+
 	return &actions.Rectify{
 		Log:      scoop.LogSink.LogSink,
 		Resolver: scoop.Resolver,
-		State:    scoop.State,
+		State:    state,
 	}, nil
 }
 
@@ -204,7 +210,7 @@ func (di *SousGraph) GetServer(
 	}
 
 	return &actions.Server{
-		DeployFilterFlags: dff,
+		DeployFilterFlags: dff, // XXX Should be resolve filter
 		GDMRepo:           gdmRepo,
 		ListenAddr:        laddr,
 		Version:           scoop.Version,

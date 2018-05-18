@@ -148,7 +148,7 @@ func RetrieveMetaData(f func()) (name string, uid string) {
 // Notice that the global LotSet doesn't have metrics available - when you
 // want metrics in a component, you need to add an injected LogSet. c.f.
 // ext/docker/image_mapping.go
-var Log = func() LogSet { return *(SilentLogSet().Child("GLOBAL").(*LogSet)) }()
+//var Log = func() LogSet { return *(SilentLogSet().Child("GLOBAL").(*LogSet)) }()
 
 // SilentLogSet returns a logset that discards everything by default
 func SilentLogSet() *LogSet {
@@ -164,9 +164,9 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer, co
 	// its children.
 	lgrs := logrus.New()
 	lgrs.Out = err
-	if useTerse := os.Getenv("SOUS_TERSE_LOGGING"); useTerse != "" { //XXX config this
+	if useTerse := os.Getenv("SOUS_TERSE_LOGGING"); useTerse == "YES" { //XXX config this
 		f := newTerseFormatter(
-			[]FieldName{SousSqlRows, SousSqlQuery, Status, Url},
+			[]FieldName{SousSqlRows, SousSqlQuery, Status, Method, Url},
 			[]FieldName{CallStackTrace, CallStackCode, CallStackFile,
 				CallStackLineNumber, CallStackMessage, ComponentId,
 				FieldName("call-stack-function"), SousIds, SousIdValues,
@@ -175,6 +175,12 @@ func NewLogSet(version semv.Version, name string, role string, err io.Writer, co
 				ServiceType, SingularityTaskId, JsonValue, SousErrorBacktrace},
 		)
 		f.StackTraceField = string(CallStackTrace)
+		lgrs.Formatter = f
+	} else if useTerse == "MSGONLY" {
+		f := newTerseFormatter(
+			[]FieldName{},
+			[]FieldName{"*"},
+		)
 		lgrs.Formatter = f
 	}
 

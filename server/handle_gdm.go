@@ -99,7 +99,7 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 		return msg, http.StatusInternalServerError
 	}
 
-	state.Manifests, err = deps.PutbackManifests(state.Defs, state.Manifests)
+	state.Manifests, err = deps.PutbackManifests(state.Defs, state.Manifests, h.LogSink)
 	if err != nil {
 		msg := "Error getting state"
 		reportHandleGDMMessage(msg, nil, err, h.LogSink)

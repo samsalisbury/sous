@@ -10,6 +10,7 @@ with respect to its command line interface and HTTP interface
 ### Changed
 * Server: Postgres is now required for the server to operate.
 * Both: SQLite is removed as a dependency of Sous.
+* Both: Remove global logging.Log and refactor for the removal
 
 ## [0.5.92](//github.com/opentable/sous/compare/0.5.91...0.5.92)
 ### Added

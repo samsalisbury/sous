@@ -39,6 +39,7 @@ type (
 		singClients map[string]*singularity.Client
 		sync.RWMutex
 		labeller sous.ImageLabeller
+		log      logging.LogSink
 	}
 
 	singularityTaskData struct {
@@ -47,10 +48,11 @@ type (
 )
 
 // NewRectiAgent returns a set-up RectiAgent
-func NewRectiAgent(l sous.ImageLabeller) *RectiAgent {
+func NewRectiAgent(l sous.ImageLabeller, ls logging.LogSink) *RectiAgent {
 	return &RectiAgent{
 		singClients: make(map[string]*singularity.Client),
 		labeller:    l,
+		log:         ls,
 	}
 }
 
@@ -75,21 +77,21 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 	if err != nil {
 		return err
 	}
-	messages.ReportLogFieldsMessage("Build deploying instance", logging.DebugLevel, Log, d, reqID)
-	depReq, err := buildDeployRequest(d, reqID, depID, labels)
+	messages.ReportLogFieldsMessage("Build deploying instance", logging.DebugLevel, ra.log, d, reqID)
+	depReq, err := buildDeployRequest(d, reqID, depID, labels, ra.log)
 	if err != nil {
 		return err
 	}
 
-	messages.ReportLogFieldsMessage("Sending Deploy req to singularity Client", logging.DebugLevel, Log, depReq)
+	messages.ReportLogFieldsMessage("Sending Deploy req to singularity Client", logging.DebugLevel, ra.log, depReq)
 	_, err = ra.singularityClient(clusterURI).Deploy(depReq)
 	if err != nil {
-		messages.ReportLogFieldsMessage("Singularity client returned following error", logging.WarningLevel, Log, depReq, reqID, err)
+		messages.ReportLogFieldsMessage("Singularity client returned following error", logging.WarningLevel, ra.log, depReq, reqID, err)
 	}
 	return err
 }
 
-func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[string]string) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[string]string, log logging.LogSink) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
 	dockerImage := d.BuildArtifact.Name
 	r := d.Deployment.DeployConfig.Resources
@@ -115,7 +117,7 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 	vs := dtos.SingularityVolumeList{}
 	for _, v := range vols {
 		if v == nil {
-			messages.ReportLogFieldsMessage("nil volume", logging.WarningLevel, logging.Log)
+			messages.ReportLogFieldsMessage("nil volume", logging.WarningLevel, log)
 			continue
 		}
 		sv, err := swaggering.LoadMap(&dtos.SingularityVolume{}, dtoMap{
@@ -155,7 +157,7 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 	if err != nil {
 		return nil, err
 	}
-	messages.ReportLogFieldsMessage("Deploy", logging.DebugLevel, Log, dep, ci, dockerInfo)
+	messages.ReportLogFieldsMessage("Deploy", logging.DebugLevel, log, dep, ci, dockerInfo)
 
 	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
 	if err != nil {
@@ -196,12 +198,12 @@ func MapStartupIntoHealthcheckOptions(depMap *map[string]interface{}, startup so
 	return err
 }
 
-func singRequestFromDeployment(dep *sous.Deployment, reqID string) (string, *dtos.SingularityRequest, error) {
+func singRequestFromDeployment(dep *sous.Deployment, reqID string, log logging.LogSink) (string, *dtos.SingularityRequest, error) {
 	cluster := dep.Cluster.BaseURL
 	instanceCount := dep.DeployConfig.NumInstances
 	kind := dep.Kind
 	owners := dep.Owners
-	messages.ReportLogFieldsMessage("Creating application", logging.DebugLevel, Log, cluster, reqID, instanceCount)
+	messages.ReportLogFieldsMessage("Creating application", logging.DebugLevel, log, cluster, reqID, instanceCount)
 	reqType, err := determineRequestType(kind)
 	if err != nil {
 		return "", nil, err
@@ -232,12 +234,12 @@ func singRequestFromDeployment(dep *sous.Deployment, reqID string) (string, *dto
 
 // PostRequest sends requests to Singularity to create a new Request
 func (ra *RectiAgent) PostRequest(d sous.Deployable, reqID string) error {
-	cluster, req, err := singRequestFromDeployment(d.Deployment, reqID)
+	cluster, req, err := singRequestFromDeployment(d.Deployment, reqID, ra.log)
 	if err != nil {
 		return err
 	}
 
-	messages.ReportLogFieldsMessage("Create Request", logging.DebugLevel, Log, req)
+	messages.ReportLogFieldsMessage("Create Request", logging.DebugLevel, ra.log, req)
 	_, err = ra.singularityClient(cluster).PostRequest(req)
 	return err
 }
@@ -261,7 +263,7 @@ func determineRequestType(kind sous.ManifestKind) (dtos.SingularityRequestReques
 
 // DeleteRequest sends a request to Singularity to delete a request
 func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
-	messages.ReportLogFieldsMessage("Deleting application", logging.DebugLevel, Log, cluster, reqID, message)
+	messages.ReportLogFieldsMessage("Deleting application", logging.DebugLevel, ra.log, cluster, reqID, message)
 	req, err := swaggering.LoadMap(&dtos.SingularityDeleteRequestRequest{}, dtoMap{
 		"Message": "Sous: " + message,
 	})
@@ -269,7 +271,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 		return err
 	}
 
-	messages.ReportLogFieldsMessage("Delete req", logging.DebugLevel, Log, req)
+	messages.ReportLogFieldsMessage("Delete req", logging.DebugLevel, ra.log, req)
 	_, err = ra.singularityClient(cluster).DeleteRequest(reqID,
 		req.(*dtos.SingularityDeleteRequestRequest))
 	return err
@@ -278,7 +280,7 @@ func (ra *RectiAgent) DeleteRequest(cluster, reqID, message string) error {
 // Scale sends requests to Singularity to change the number of instances
 // running for a given Request
 func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message string) error {
-	messages.ReportLogFieldsMessage("Scaling", logging.DebugLevel, Log, cluster, reqID, instanceCount, message)
+	messages.ReportLogFieldsMessage("Scaling", logging.DebugLevel, ra.log, cluster, reqID, instanceCount, message)
 	sr, err := swaggering.LoadMap(&dtos.SingularityScaleRequest{}, dtoMap{
 		"ActionId": "SOUS_RECTIFY_" + StripDeployID(uuid.NewV4().String()), // not positive this is appropriate
 		// omitting DurationMillis - bears discussion
@@ -291,7 +293,7 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 		return err
 	}
 
-	messages.ReportLogFieldsMessage("Scale req", logging.DebugLevel, Log, sr)
+	messages.ReportLogFieldsMessage("Scale req", logging.DebugLevel, ra.log, sr)
 	_, err = ra.singularityClient(cluster).Scale(reqID, sr.(*dtos.SingularityScaleRequest))
 	return err
 }

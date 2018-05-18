@@ -16,6 +16,7 @@ type (
 		StackTraceField string
 		priorityFields  []string
 		omittedFields   map[string]struct{}
+		omitAll         bool
 	}
 )
 
@@ -30,13 +31,19 @@ func newTerseFormatter(prio, omit []FieldName) *terseFormatter {
 		om[string(p)] = struct{}{}
 	}
 
+	var omitAll bool
 	for _, o := range omit {
+		if o == "*" {
+			omitAll = true
+			break
+		}
 		om[string(o)] = struct{}{}
 	}
 
 	return &terseFormatter{
 		priorityFields: pr,
 		omittedFields:  om,
+		omitAll:        omitAll,
 	}
 }
 
@@ -69,9 +76,11 @@ func (f *terseFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 			f.appendKeyValue(b, prio, val)
 		}
 	}
-	for _, key := range keys {
-		if _, omit := f.omittedFields[key]; !omit {
-			f.appendKeyValue(b, key, entry.Data[key])
+	if !f.omitAll {
+		for _, key := range keys {
+			if _, omit := f.omittedFields[key]; !omit {
+				f.appendKeyValue(b, key, entry.Data[key])
+			}
 		}
 	}
 

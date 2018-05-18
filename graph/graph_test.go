@@ -8,14 +8,12 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/psyringe"
 	"github.com/samsalisbury/semv"
-	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -57,6 +55,7 @@ func TestBuildGraph(t *testing.T) {
 	g.Add(&config.DeployFilterFlags{})
 	g.Add(&config.PolicyFlags{}) //provided by SousBuild
 	g.Add(&config.OTPLFlags{})   //provided by SousInit and SousDeploy
+	g.Add()
 
 	if err := g.Test(); err != nil {
 		t.Fatalf("invalid graph: %s", err)
@@ -118,11 +117,19 @@ func TestComponentLocatorInjection(t *testing.T) {
 	sous.SetupDB(t)
 	defer sous.ReleaseDB(t)
 
-	rawConfig.Database.Host = "localhost"
+	host := "localhost"
+	if h, got := os.LookupEnv("PGHOST"); got {
+		host = h
+	}
+
+	rawConfig.Database.Host = host
 	rawConfig.Database.Port = port
 	rawConfig.Database.DBName = "sous_test_" + name
 
 	tg.Replace(rawConfig)
+	tg.Replace(func() sous.Inserter {
+		return sous.NewInserterSpy()
+	})
 
 	scoop := struct{ server.ComponentLocator }{}
 
@@ -139,58 +146,8 @@ func TestComponentLocatorInjection(t *testing.T) {
 	assert.Equal(t, locator.Version.Format("M.m.p"), "2.3.7")
 }
 
-func injectedStateManager(t *testing.T, cfg *config.Config) *StateManager {
-	rff := &RefinedResolveFilter{Cluster: sous.NewResolveFieldMatcher("test")}
-	g := newSousGraph()
-	g.Add(semv.MustParse("9.9.9"))
-	g.Add(sous.TraceID(uuid.NewV4().String()))
-	g.Add(newUser)
-	g.Add(LogSink{logging.SilentLogSet()})
-	g.Add(MetricsHandler{})
-	g.Add(ServerListData{})
-	g.Add(newStateManager)
-	g.Add(LocalSousConfig{Config: cfg})
-	g.Add(newServerComponentLocator)
-	g.Add(newSourceHostChooser)
-	g.Add(DryrunBoth)
-	g.Add(newDeployer)
-	g.Add(newLazyNameCache)
-	g.Add(newNameCache)
-	g.Add(newRegistry)
-	g.Add(newInserter)
-	g.Add(newDockerClient)
-	g.Add(newServerStateManager)
-	g.Add(&config.DeployFilterFlags{})
-	g.Add(newResolver)
-	g.Add(newAutoResolver)
-	g.Add(newServerHandler)
-	g.Add(newHTTPClient)
-	g.Add(newHTTPClientBundle)
-	g.Add(NewR11nQueueSet)
-	g.Add(rff)
-	g.Add((*sous.ResolveFilter)(rff))
-	g.Add(g)
-	g.Add(MaybeDatabase{})
-
-	smRcvr := struct {
-		Sm *StateManager
-	}{}
-
-	if err := g.Test(); err != nil {
-		t.Fatalf("invalid graph: %s", err)
-	}
-
-	err := g.Inject(&smRcvr)
-	if err != nil {
-		t.Fatalf("Injection err: %+v", err)
-	}
-
-	if smRcvr.Sm == nil {
-		t.Fatal("StateManager not injected")
-	}
-	return smRcvr.Sm
-}
-
+/*
+Nixing these tests: server/client state managers should be selected based on `sous server` or not.
 func TestStateManagerSelectsServer(t *testing.T) {
 	smgr := injectedStateManager(t, &config.Config{Server: "http://example.com", StateLocation: "/tmp/sous"})
 
@@ -207,6 +164,7 @@ func TestStateManagerSelectsDuplex(t *testing.T) {
 		t.Errorf("Injected %#v which isn't a DuplexStateManager", smgr.StateManager)
 	}
 }
+*/
 
 var silentLogSink = DefaultLogSink{LogSink: nonDefaultSilentLogSink}
 

@@ -95,4 +95,12 @@
     </createTable>
     <addUniqueConstraint columnNames="metadata_id, quality, kind" tableName="docker_image_qualities"/>
   </changeSet>
+
+  <changeSet author="sam" id="7">
+    <addColumn tableName="docker_search_metadata">
+      <column name="revision" type="varchar(32)">
+        <constraints  nullable="false" />
+      </column>
+    </addColumn>
+  </changeSet>
 </databaseChangeLog>

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +18,9 @@ func TestGuardImageMissing(t *testing.T) {
 	missing := Deployment{ClusterName: `x`, SourceID: svOne, DeployConfig: config, Cluster: clusterX}
 
 	dr.FeedArtifact(nil, fmt.Errorf("dummy error"))
-	_, err := guardImage(dr, &missing)
+
+	ls, _ := logging.NewLogSinkSpy()
+	_, err := guardImage(dr, &missing, ls)
 	assert.Error(err)
 }
 
@@ -32,7 +35,8 @@ func TestGuardImageRejected(t *testing.T) {
 
 	dr.FeedArtifact(&BuildArtifact{"ot-docker/one", "docker", []Quality{{"ephemeral_tag", "advisory"}}}, nil)
 
-	_, err := guardImage(dr, &rejected)
+	ls, _ := logging.NewLogSinkSpy()
+	_, err := guardImage(dr, &rejected, ls)
 	assert.Error(err)
 
 }
@@ -47,7 +51,8 @@ func TestAllowUndeployedUglies(t *testing.T) {
 
 	dr.FeedArtifact(nil, fmt.Errorf("dummy error"))
 
-	_, err := guardImage(dr, &borken)
+	ls, _ := logging.NewLogSinkSpy()
+	_, err := guardImage(dr, &borken, ls)
 	assert.NoError(err)
 }
 
@@ -61,7 +66,8 @@ func TestAllowsWhitelistedAdvisories(t *testing.T) {
 
 	dr.FeedArtifact(&BuildArtifact{"ot-docker/one", "docker", []Quality{{"ephemeral_tag", "advisory"}}}, nil)
 
-	art, err := guardImage(dr, &intoCI)
+	ls, _ := logging.NewLogSinkSpy()
+	art, err := guardImage(dr, &intoCI, ls)
 	assert.NoError(err)
 	assert.NotNil(art)
 }

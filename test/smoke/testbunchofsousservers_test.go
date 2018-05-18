@@ -12,6 +12,7 @@ import (
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/storage"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -59,7 +60,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 		return err
 	}
 
-	dsm := storage.NewDiskStateManager(gdmDir)
+	dsm := storage.NewDiskStateManager(gdmDir, logging.SilentLogSet())
 	if err := dsm.WriteState(state, sous.User{}); err != nil {
 		return err
 	}
@@ -97,6 +98,11 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) e
 		dbport = np
 	}
 
+	host := "localhost"
+	if h, set := os.LookupEnv("PGHOST"); set {
+		host = h
+	}
+
 	for n, i := range c.Instances {
 		sous.SetupDB(t, n)
 		dbname := sous.DBNameForTest(t, n)
@@ -107,7 +113,7 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) e
 				User:   "postgres",
 				DBName: dbname,
 				User:   "postgres",
-				Host:   "localhost",
+				Host:   host,
 				Port:   dbport,
 			},
 			Docker: docker.Config{

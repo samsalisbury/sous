@@ -14,6 +14,7 @@ type (
 	// RegistryDumper dumps the contents of artifact registries
 	RegistryDumper struct {
 		Registry
+		log logging.LogSink
 	}
 
 	// DumperEntry is a single entry from the dump
@@ -24,8 +25,8 @@ type (
 )
 
 // NewRegistryDumper constructs a RegistryDumper
-func NewRegistryDumper(r Registry) *RegistryDumper {
-	return &RegistryDumper{Registry: r}
+func NewRegistryDumper(r Registry, ls logging.LogSink) *RegistryDumper {
+	return &RegistryDumper{Registry: r, log: ls}
 }
 
 // AsTable writes a tabular dump of the registry to a Writer
@@ -53,7 +54,7 @@ func (rd *RegistryDumper) TabbedHeaders() string {
 // Entries emits the list of entries for the Resgistry
 func (rd *RegistryDumper) Entries() (de []DumperEntry, err error) {
 	ss, err := rd.Registry.ListSourceIDs()
-	messages.ReportLogFieldsMessage("List Source IDS", logging.ExtraDebug1Level, logging.Log, ss)
+	messages.ReportLogFieldsMessage("List Source IDS", logging.ExtraDebug1Level, rd.log, ss)
 	if err != nil {
 		return
 	}
@@ -63,7 +64,7 @@ func (rd *RegistryDumper) Entries() (de []DumperEntry, err error) {
 		if err != nil {
 			return nil, err
 		}
-		messages.ReportLogFieldsMessage("Source Id and Artifact", logging.ExtraDebug1Level, logging.Log, s, a)
+		messages.ReportLogFieldsMessage("Source Id and Artifact", logging.ExtraDebug1Level, rd.log, s, a)
 		de = append(de, DumperEntry{SourceID: s, BuildArtifact: a})
 	}
 

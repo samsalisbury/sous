@@ -28,6 +28,7 @@ type (
 		sync.Mutex
 		*DiskStateManager //can't just be a StateReader/Writer: needs dir
 		remote            string
+		log               logging.LogSink
 	}
 
 	gsmError string
@@ -45,8 +46,8 @@ func IsGSMError(err error) bool {
 
 // NewGitStateManager creates a new GitStateManager wrapping the provided
 // DiskStateManager.
-func NewGitStateManager(dsm *DiskStateManager) *GitStateManager {
-	return &GitStateManager{DiskStateManager: dsm}
+func NewGitStateManager(dsm *DiskStateManager, ls logging.LogSink) *GitStateManager {
+	return &GitStateManager{DiskStateManager: dsm, log: ls}
 }
 
 func (gsm *GitStateManager) git(cmd ...string) error {
@@ -75,11 +76,11 @@ func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 	out, err := git.CombinedOutput()
 	argsString := fmt.Sprint(cmd)
 	if err == nil {
-		messages.ReportLogFieldsMessage("git command successful: "+argsString, logging.DebugLevel, logging.Log, git.Args)
+		messages.ReportLogFieldsMessage("git command success"+argsString, logging.DebugLevel, gsm.log, git.Args)
 	} else {
-		messages.ReportLogFieldsMessage("git command failed: "+argsString, logging.DebugLevel, logging.Log, err)
+		messages.ReportLogFieldsMessage("git command failed"+argsString, logging.DebugLevel, gsm.log, err)
 	}
-	messages.ReportLogFieldsMessage("git command output: "+argsString, logging.ExtraDebug1Level, logging.Log, string(out))
+	messages.ReportLogFieldsMessage("git command output"+argsString, logging.ExtraDebug1Level, gsm.log, string(out))
 	return string(out), errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 
@@ -221,19 +222,19 @@ func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
 			// Success.
 			return nil
 		}
-		messages.ReportLogFieldsMessage("git push failed; trying again with # attempts left", logging.DebugLevel, logging.Log, remainingAttempts, err)
+		messages.ReportLogFieldsMessage("git push failed; trying again with # attempts left", logging.DebugLevel, gsm.log, remainingAttempts, err)
 		gsm.reset(tn)
 		if err := gsm.git("pull"); err != nil {
 			return err
 		}
 		if err := gsm.git("cherry-pick", newTag); err != nil {
 			// If cherry-pick fails, then there's a real conflict.
-			messages.ReportLogFieldsMessage("attempt to rectify conflicts with git cherry-pick failed", logging.WarningLevel, logging.Log, err)
+			messages.ReportLogFieldsMessage("attempt to rectify conflicts with git cherry-pick failed", logging.WarningLevel, gsm.log, err)
 			if err := gsm.git("cherry-pick", "--abort"); err != nil {
-				messages.ReportLogFieldsMessage("cherry-pick --abort failed", logging.WarningLevel, logging.Log, err)
+				messages.ReportLogFieldsMessage("cherry-pick --abort failed", logging.WarningLevel, gsm.log, err)
 				return err
 			}
-			messages.ReportLogFieldsMessage("Successfully cherry-picked new changes, re-attempting push.", logging.DebugLevel, logging.Log)
+			messages.ReportLogFieldsMessage("Successfully cherry-picked new changes, re-attempting push.", logging.DebugLevel, gsm.log)
 		}
 	}
 	return fmt.Errorf("unable to merge changes")

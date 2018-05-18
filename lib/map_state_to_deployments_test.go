@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
@@ -305,9 +306,10 @@ func TestState_IndependentDeploySpecs(t *testing.T) {
 		t.Fatalf("deployment %v not found", did)
 	}
 	originalJSON := jsonDump(originalDeployment)
+	ls, _ := logging.NewLogSinkSpy()
 	// We don't care about this result, but write it to global state to avoid
 	// any compiler optimisation from eliding the call.
-	TestStateIndependentDeploySpecsState, err = originalDeployments.PutbackManifests(defs, originalManifests)
+	TestStateIndependentDeploySpecsState, err = originalDeployments.PutbackManifests(defs, originalManifests, ls)
 	if err != nil {
 		t.Errorf("Expected no error while updating manifests, got: %v", err)
 	}
@@ -332,7 +334,8 @@ func TestState_Deployments(t *testing.T) {
 
 func TestState_DeploymentsBounce(t *testing.T) {
 	defs := makeTestDefs()
-	bounceManifests, err := expectedDeployments.Clone().PutbackManifests(defs, makeTestManifests())
+	ls, _ := logging.NewLogSinkSpy()
+	bounceManifests, err := expectedDeployments.Clone().PutbackManifests(defs, makeTestManifests(), ls)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -346,7 +349,8 @@ func TestState_DeploymentsBounce(t *testing.T) {
 func TestDeployments_Manifests(t *testing.T) {
 	defs := makeTestDefs()
 
-	actualManifests, err := expectedDeployments.Clone().PutbackManifests(defs, makeTestManifests())
+	ls, _ := logging.NewLogSinkSpy()
+	actualManifests, err := expectedDeployments.Clone().PutbackManifests(defs, makeTestManifests(), ls)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -365,7 +369,8 @@ func TestDeployments_ManifestsBounce(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	actualManifests, err := bounceDeployments.PutbackManifests(defs, bounced)
+	ls, _ := logging.NewLogSinkSpy()
+	actualManifests, err := bounceDeployments.PutbackManifests(defs, bounced, ls)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -391,8 +396,9 @@ func TestDeployments_PutbackManifestMissingManifestElides(t *testing.T) {
 		},
 	)
 
+	ls, _ := logging.NewLogSinkSpy()
 	zeroMs := NewManifests()
-	ms, err := deps.PutbackManifests(defs, zeroMs)
+	ms, err := deps.PutbackManifests(defs, zeroMs, ls)
 	assert.NoError(t, err)
 	m, yes := ms.Any(func(*Manifest) bool { return true })
 	assert.True(t, yes)
@@ -433,7 +439,8 @@ func TestDeployments_PutbackManifestOriginalLacksClusterElides(t *testing.T) {
 			},
 		},
 	)
-	ms, err := deps.PutbackManifests(defs, skewMs)
+	ls, _ := logging.NewLogSinkSpy()
+	ms, err := deps.PutbackManifests(defs, skewMs, ls)
 	assert.NoError(t, err)
 	m, yes := ms.Any(func(*Manifest) bool { return true })
 	assert.True(t, yes)
@@ -474,7 +481,9 @@ func TestDeployments_PutbackManifestOriginalLacksEnvElides(t *testing.T) {
 			},
 		},
 	)
-	ms, err := deps.PutbackManifests(defs, skewMs)
+
+	ls, _ := logging.NewLogSinkSpy()
+	ms, err := deps.PutbackManifests(defs, skewMs, ls)
 	assert.NoError(t, err)
 	m, yes := ms.Any(func(*Manifest) bool { return true })
 	assert.True(t, yes)
@@ -515,7 +524,9 @@ func TestDeployments_PutbackManifestHasEnvRetains(t *testing.T) {
 			},
 		},
 	)
-	ms, err := deps.PutbackManifests(defs, skewMs)
+
+	ls, _ := logging.NewLogSinkSpy()
+	ms, err := deps.PutbackManifests(defs, skewMs, ls)
 	assert.NoError(t, err)
 	m, yes := ms.Any(func(*Manifest) bool { return true })
 	assert.True(t, yes)

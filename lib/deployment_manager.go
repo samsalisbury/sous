@@ -2,6 +2,7 @@ package sous
 
 import (
 	"github.com/nyarly/spies"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -19,6 +20,7 @@ type (
 	deploymentManagerDecorator struct {
 		// anonymous so that the deploymentManagerDecorator can also be used as a StateManager
 		StateManager
+		log logging.LogSink
 	}
 )
 
@@ -44,8 +46,8 @@ func (spy deploymentManagerSpy) WriteDeployment(dep *Deployment, user User) erro
 }
 
 // MakeDeploymentManager wraps a StateManager such that it fulfills the DeploymentManager interface
-func MakeDeploymentManager(sm StateManager) DeploymentManager {
-	return &deploymentManagerDecorator{StateManager: sm}
+func MakeDeploymentManager(sm StateManager, ls logging.LogSink) DeploymentManager {
+	return &deploymentManagerDecorator{StateManager: sm, log: ls}
 }
 
 // ReadDeployment implements DeploymentManager on deploymentManagerDecorator

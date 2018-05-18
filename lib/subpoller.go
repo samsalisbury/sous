@@ -112,50 +112,50 @@ func (sub *subPoller) pollOnce() pollResult {
 }
 
 func (sub *subPoller) stateFeatures(kind string, rezState *ResolveStatus) (*Deployment, *DiffResolution) {
-	current := diffResolutionFor(rezState, sub.locationFilter)
-	srvIntent := serverIntent(rezState, sub.locationFilter)
+	current := diffResolutionFor(rezState, sub.locationFilter, sub.logs)
+	srvIntent := serverIntent(rezState, sub.locationFilter, sub.logs)
 	reportDebugSubPollerMessage(fmt.Sprintf("%s reports %s intent to resolve [%v]", sub.URL, kind, srvIntent), sub.logs)
 	reportDebugSubPollerMessage(fmt.Sprintf("%s reports %s rez: %v", sub.URL, kind, current), sub.logs)
 
 	return srvIntent, current
 }
 
-func diffResolutionFor(rstat *ResolveStatus, rf *ResolveFilter) *DiffResolution {
+func diffResolutionFor(rstat *ResolveStatus, rf *ResolveFilter, log logging.LogSink) *DiffResolution {
 	if rstat == nil {
-		reportDebugSubPollerMessage(fmt.Sprintf("Status was nil - no match for %s", rf), logging.Log)
+		reportDebugSubPollerMessage(fmt.Sprintf("Status was nil - no match for %s", rf), log)
 		return nil
 	}
 	rezs := rstat.Log
 	for _, rez := range rezs {
-		reportDebugSubPollerMessage(fmt.Sprintf("Checking resolution for: %#v(%[1]T)", rez.ManifestID), logging.Log)
+		reportDebugSubPollerMessage(fmt.Sprintf("Checking resolution for: %#v(%[1]T)", rez.ManifestID), log)
 		if rf.FilterManifestID(rez.ManifestID) {
-			reportDebugSubPollerMessage(fmt.Sprintf("Matching intent for %s: %#v", rf, rez), logging.Log)
+			reportDebugSubPollerMessage(fmt.Sprintf("Matching intent for %s: %#v", rf, rez), log)
 			return &rez
 		}
 	}
-	reportDebugSubPollerMessage(fmt.Sprintf("No match for %s in %d entries", rf, len(rezs)), logging.Log)
+	reportDebugSubPollerMessage(fmt.Sprintf("No match for %s in %d entries", rf, len(rezs)), log)
 	return nil
 }
 
-func serverIntent(rstat *ResolveStatus, rf *ResolveFilter) *Deployment {
-	reportDebugSubPollerMessage(fmt.Sprintf("Filtering with %q", rf), logging.Log)
+func serverIntent(rstat *ResolveStatus, rf *ResolveFilter, log logging.LogSink) *Deployment {
+	reportDebugSubPollerMessage(fmt.Sprintf("Filtering with %q", rf), log)
 	if rstat == nil {
-		reportDebugSubPollerMessage("Nil resolve status!", logging.Log)
+		reportDebugSubPollerMessage("Nil resolve status!", log)
 		return nil
 	}
-	reportDebugSubPollerMessage(fmt.Sprintf("Filtering %s", rstat.Intended), logging.Log)
+	reportDebugSubPollerMessage(fmt.Sprintf("Filtering %s", rstat.Intended), log)
 
 	var dep *Deployment
 	for _, d := range rstat.Intended {
 		if rf.FilterDeployment(d) {
 			if dep != nil {
-				reportDebugSubPollerMessage(fmt.Sprintf("With %s we didn't match exactly one deployment.", rf), logging.Log)
+				reportDebugSubPollerMessage(fmt.Sprintf("With %s we didn't match exactly one deployment.", rf), log)
 				return nil
 			}
 			dep = d
 		}
 	}
-	reportDebugSubPollerMessage(fmt.Sprintf("Filtering found %s", dep), logging.Log)
+	reportDebugSubPollerMessage(fmt.Sprintf("Filtering found %s", dep), log)
 	return dep
 }
 

@@ -23,6 +23,8 @@ define DELETE_POSTGRES_DATA
 @if [ $(POSTGRES_DATA_VOLUME_EXISTS) = YES ]; then docker volume rm $(POSTGRES_DATA_VOLUME_NAME) && echo Postgres data volume deleted: $(POSTGRES_DATA_VOLUME_NAME); else echo Postgres data volume does not exist.; fi
 endef
 
+SOUS_TERSE_LOGGING ?= YES
+
 XDG_DATA_HOME ?= $(HOME)/.local/share
 DEV_POSTGRES_DIR ?= $(XDG_DATA_HOME)/sous/postgres_docker
 DEV_POSTGRES_DATA_DIR ?= $(DEV_POSTGRES_DIR)/data
@@ -35,12 +37,15 @@ DOCKER_HOST_IP_PARSED ?= $(shell echo "$(DOCKER_HOST)" | grep -E -o '(25[0-5]|2[
 DOCKER_HOST_LOCALHOST := localhost
 DOCKER_HOST_IP := $(if $(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_IP_PARSED),$(DOCKER_HOST_LOCALHOST))
 
+PGHOST := $(DOCKER_HOST_IP)
+
 
 DB_NAME = sous
 TEST_DB_NAME = sous_test_template
 LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
 
 LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
+LIQUIBASE_DEV_FLAGS := $(LIQUIBASE_SERVER)/sous?user=postgres
 LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
 
 GO_VERSION := 1.10
@@ -119,7 +124,7 @@ COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
-SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+GO_TEST_PATHS ?= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
 DOCKER_BUILD_CMDS_LINUX := docker run --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -e GOOS=linux -e GOARCH=amd64 -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go build -ldflags $(FLAGS) -o
 DOCKER_BUILD_CMDS_DARWIN := docker run --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -e GOOS=darwin -e GOARCH=amd64 -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go build -ldflags $(FLAGS) -o
@@ -203,6 +208,10 @@ stop-qa-env: ## Stops and removes all docker-compose containers.
 	@echo Stopping QA environment... # Redirect output to /dev/null because it gives confusing output when nothing to do.
 	@cd integration/test-registry && docker-compose rm -sf >/dev/null 2>&1 || { echo Failed to stop containers; exit 1; }
 	@if [ -f "$(QA_DESC)" ]; then rm -f $(QA_DESC); fi
+
+.PHONY: start-qa-env
+start-qa-env: setup-containers
+
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD
@@ -312,9 +321,11 @@ test-gofmt:
 	bin/check-gofmt
 
 test-unit-base: $(COVER_DIR) $(GO_FILES)
-	go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
+	PGHOST=$(PGHOST) \
+	PGPORT=$(PGPORT) \
+	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
-		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
+		-timeout 12m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
 
 test-unit:
 	$(MAKE) postgres-clean-restart
@@ -323,7 +334,7 @@ test-unit:
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 	go test \
 		-covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt \
-		$(SOUS_PACKAGES_WITH_TESTS)
+		$(GO_TEST_PATHS)
 
 test-integration: setup-containers
 	@echo
@@ -334,7 +345,9 @@ test-integration: setup-containers
 	@echo Set INTEGRATION_TEST_TIMEOUT to override.
 	@echo
 	@echo
-	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration $(TEST_TEAMCITY)
+	PGHOST=$(PGHOST) \
+	PGPORT=$(PGPORT) \
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration --tags=integration $(TEST_TEAMCITY)
 	@date
 
 $(SMOKE_TEST_BINARY):
@@ -354,10 +367,15 @@ test-smoke-compiles: ## Checks that the smoke tests compile.
 test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
 	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
 	ulimit -n 2048 && \
+	PGHOST=$(PGHOST) \
+	PGPORT=$(PGPORT) \
+	SOUS_PG_HOST=$(PGHOST) \
+	SOUS_PG_PORT=$(PGPORT) \
 	SMOKE_TEST_DATA_DIR=$(SMOKE_TEST_DATA_DIR)/data \
 	SMOKE_TEST_BINARY=$(SMOKE_TEST_BINARY) \
 	SOUS_QA_DESC=$(QA_DESC) \
 	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
+	SOUS_TERSE_LOGGING=$(SOUS_TERSE_LOGGING) \
 	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
 .PHONY: test-smoke-nofail
@@ -412,14 +430,15 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
 postgres-start:
-	docker ps
 	if ! (docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT)); then \
 		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3;\
 		echo Waiting until Postgres completes booting...;\
 		until docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT); do sleep 1; done;\
 		echo Postgres container started;\
-	fi;\
-	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME);\
+	fi;
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w sous
+	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_DEV_FLAGS)" jcastillo/liquibase:0.0.7
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
 	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 
 .PHONY: postgres-restart
@@ -436,7 +455,7 @@ postgres-stop:
 	$(STOP_POSTGRES)
 
 postgres-connect:
-	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) $(DB_NAME)
+	psql -h $(PGHOST) -p $(PGPORT) --username=postgres $(DB_NAME)
 
 postgres-validate-schema:
 	liquibase $(LIQUIBASE_FLAGS) validate
@@ -454,5 +473,3 @@ postgres-clean: postgres-stop
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
 	postgres-clean postgres-create-testdb build-debug homebrew install-gotags \
 	install-debug-linux install-debug-darwin
-
-#liquibase --url jdbc:postgresql://127.0.0.1:6543/sous --changeLogFile=database/changelog.xml update

@@ -136,7 +136,7 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 		})
 
 		recorder.performPhase("resolving deployment artifacts", func() error {
-			namer := diffs.ResolveNames(ctx, r.Registry)
+			namer := diffs.ResolveNames(ctx, r.Registry, r.ls)
 			logger = namer.Log(ctx, r.ls)
 			logger.Add(1)
 			go func() {

@@ -84,10 +84,14 @@ type (
 	DefaultLogSink struct{ logging.LogSink }
 	// ClusterManager simply wraps the sous.ClusterManager interface
 	ClusterManager struct{ sous.ClusterManager }
-	// StateManager simply wraps the sous.StateManager interface
-	StateManager struct{ sous.StateManager }
-	// ServerStateManager simply wraps the sous.StateManager interface
+	// ClientStateManager wraps the sous.StateManager interface and is used by non-server sous commands
+	ClientStateManager struct{ sous.StateManager }
+	// ServerStateManager wraps the sous.StateManager interface and is used by `sous server`
 	ServerStateManager struct{ sous.StateManager }
+
+	gitStateManager  struct{ sous.StateManager }
+	diskStateManager struct{ sous.StateManager }
+
 	// StateReader wraps a storage.StateReader.
 	StateReader struct{ sous.StateReader }
 	// StateWriter wraps a storage.StateWriter, and should be configured to
@@ -145,7 +149,6 @@ func BuildGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
 	graph := BuildBaseGraph(v, in, out, err)
 	AddFilesystem(graph)
 	AddNetwork(graph)
-	AddState(graph)
 	graph.Add(newUser)
 	return graph
 }
@@ -216,7 +219,9 @@ func AddShells(graph adder) {
 func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
-		newMaybeDatabase, // we need to be able to progress in the absence of a DB.
+		newMaybeDatabase,           // we need to be able to progress in the absence of a DB.
+		newGitStateManagerFactory,  // provides a seam for testing
+		newDiskStateManagerFactory, // provides a seam for testing
 		newServerStateManager,
 	)
 }
@@ -240,6 +245,7 @@ func AddNetwork(graph adder) {
 		newDockerClient,
 		newServerHandler,
 		newHTTPStateManager,
+		newClientStateManager,
 	)
 }
 
@@ -260,15 +266,6 @@ func AddSingularity(graph adder) {
 	)
 }
 
-// AddState adds state reader and writers to the graph.
-func AddState(graph adder) {
-	graph.Add(
-		newStateManager,
-		newLocalStateReader,
-		newLocalStateWriter,
-	)
-}
-
 // AddInternals adds the dependency contructors that are internal to Sous.
 func AddInternals(graph adder) {
 	// internal to Sous
@@ -283,8 +280,6 @@ func AddInternals(graph adder) {
 		newSourceContext,
 		newSourceContextDiscovery,
 		newSourceHostChooser,
-		NewCurrentState,
-		NewCurrentGDM,
 		newTargetManifest,
 		newDetectedOTPLConfig,
 		newUserSelectedOTPLDeploySpecs,
@@ -325,8 +320,8 @@ func newSourceHostChooser() sous.SourceHostChooser {
 	}
 }
 
-func newRegistryDumper(r sous.Registry) *sous.RegistryDumper {
-	return sous.NewRegistryDumper(r)
+func newRegistryDumper(r sous.Registry, ls LogSink) *sous.RegistryDumper {
+	return sous.NewRegistryDumper(r, ls)
 }
 
 // newLogSet relies only on PossiblyInvalidConfig because we need to initialise
@@ -344,9 +339,6 @@ func newLogSet(v semv.Version, config PossiblyInvalidConfig, tid sous.TraceID) (
 	}
 
 	if err := ls.Configure(config.Logging); err != nil {
-		return ls, initErr(err, "validating logging configuration")
-	}
-	if err := logging.Log.Configure(config.Logging); err != nil {
 		return ls, initErr(err, "validating logging configuration")
 	}
 	return ls, nil
@@ -510,11 +502,11 @@ func newSelector(regClient LocalDockerClient, log LogSink) sous.Selector {
 	return docker.NewBuildStrategySelector(log.Child("docker-build-strategy"), regClient)
 }
 
-func newDockerBuilder(cfg LocalSousConfig, nc sous.Inserter, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell) (*docker.Builder, error) {
+func newDockerBuilder(cfg LocalSousConfig, nc sous.Inserter, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, log LogSink) (*docker.Builder, error) {
 	drh := cfg.Docker.RegistryHost
 	source.Sh = source.Sh.Clone().(*shell.Sh)
 	source.Sh.LongRunning(true)
-	return docker.NewBuilder(nc, drh, source.Sh, scratch.Sh)
+	return docker.NewBuilder(nc, drh, source.Sh, scratch.Sh, log.Child("docker-builder"))
 }
 
 func newLabeller(db *docker.Builder) sous.Labeller {
@@ -550,7 +542,7 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 		return nil, err
 	}
 	return singularity.NewDeployer(
-		singularity.NewRectiAgent(labeller),
+		singularity.NewRectiAgent(labeller, ls),
 		ls,
 		singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
 	), nil
@@ -609,39 +601,53 @@ func newClusterSpecificHTTPClient(clients ClientBundle, rf *sous.ResolveFilter, 
 // Otherwise it returns nil, and emits some warnings.
 func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, tid sous.TraceID, log LogSink) (HTTPClient, error) {
 	if c.Server == "" {
-		messages.ReportLogFieldsMessageToConsole("No server set, Sous is running in server or workstation mode.", logging.WarningLevel, log)
+		messages.ReportLogFieldsMessageToConsole("No server set, but Sous needs to communicate with a server for this command.", logging.WarningLevel, log)
 		messages.ReportLogFieldsMessageToConsole("Configure a server like this: sous config server http://some.sous.server", logging.WarningLevel, log)
-		cl, err := restful.NewInMemoryClient(srvr.Handler, log.Child("local-http"))
-		return HTTPClient{HTTPClient: cl}, err
+		return HTTPClient{}, errors.New("no server configured")
 	}
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using server %s", c.Server), logging.ExtraDebug1Level, log)
 	cl, err := restful.NewClient(c.Server, log.Child("http-client"), map[string]string{"OT-RequestId": string(tid)})
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, rf *sous.ResolveFilter, log LogSink) (*ServerStateManager, error) {
-	var secondary sous.StateManager
-	var err error
-	if mdb.Err == nil {
-		secondary, err = newDistributedStorage(mdb.Db, c, rf, log)
-		if err != nil {
-			return nil, err
-		}
+func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
+	cl, err := restful.NewInMemoryClient(srvr.Handler, log.Child("local-http"))
+	return HTTPClient{HTTPClient: cl}, err
+}
 
-	} else {
-		err = mdb.Err
-		// Either DB not configured, or problems setting up dispatcher...
+func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink, gmf gitStateManagerFactory) (*ServerStateManager, error) {
+	var secondary sous.StateManager
+	err := mdb.Err
+	if err == nil {
+		secondary, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
+	}
+
+	if err != nil { // because DB Err wasn't nil, or distributed didn't set up well
 		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
 		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
 
-	dm := storage.NewDiskStateManager(c.StateLocation)
-	gm := storage.NewGitStateManager(dm)
-	duplex := storage.NewDuplexStateManager(gm, secondary, log.Child("duplex-state"))
+	duplex := storage.NewDuplexStateManager(gmf(), secondary, log.Child("duplex-state"))
 	return &ServerStateManager{StateManager: duplex}, nil
 }
 
-func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
+type gitStateManagerFactory func() gitStateManager
+
+func newGitStateManagerFactory(dmf diskStateManagerFactory, log LogSink) gitStateManagerFactory {
+	return func() gitStateManager {
+		return gitStateManager{storage.NewGitStateManager(dmf(), log.Child("git-state-manager"))}
+	}
+}
+
+type diskStateManagerFactory func() *storage.DiskStateManager
+
+func newDiskStateManagerFactory(c LocalSousConfig, log LogSink) diskStateManagerFactory {
+	return func() *storage.DiskStateManager {
+		return storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
+	}
+}
+
+func newDistributedStorage(db *sql.DB, c LocalSousConfig, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
 	localName, err := rf.Cluster.Value()
 	if err != nil {
 		return nil, fmt.Errorf("Setting up distributed storage: cluster: %s", err) // errors.Wrapf && cli don't play nice
@@ -659,28 +665,24 @@ func newDistributedStorage(db *sql.DB, c LocalSousConfig, rf *sous.ResolveFilter
 		list[n] = cl
 		clusterNames = append(clusterNames, n)
 	}
-	hsm := sous.NewHTTPStateManager(list[localName], list)
-	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm), nil
+	// XXX the first arg is used to get e.g. defs. Should be at least an in memory client for these purposes.
+	hsm := sous.NewHTTPStateManager(list[localName], tid, log.Child("http-state-manager"))
+	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm, log.Child("state-manager")), nil
 }
 
 // newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
 // Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
 // If it returns a sous.GitStateManager, it emits a warning log.
-func newStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, bundle ClientBundle, rf *sous.ResolveFilter, log LogSink) *StateManager {
+func newClientStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (*ClientStateManager, error) {
 	if c.Server == "" {
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Using local state stored at %s", c.StateLocation), logging.WarningLevel, log, c.StateLocation)
-		ssm, err := newServerStateManager(c, mdb, rf, log)
-		if err != nil {
-			panic(err)
-		}
-		return &StateManager{StateManager: ssm.StateManager}
+		return nil, errors.New("no server configured for state management")
 	}
-	hsm := sous.NewHTTPStateManager(cl, bundle)
-	return &StateManager{StateManager: hsm}
+	hsm := sous.NewHTTPStateManager(cl, tid, log.Child("http-state-manager"))
+	return &ClientStateManager{StateManager: hsm}, nil
 }
 
-func newHTTPStateManager(cl HTTPClient, bundle ClientBundle) *sous.HTTPStateManager {
-	return sous.NewHTTPStateManager(cl, bundle)
+func newHTTPStateManager(cl HTTPClient, tid sous.TraceID, log LogSink) *sous.HTTPStateManager {
+	return sous.NewHTTPStateManager(cl, tid, log.Child("http-state-manager"))
 }
 
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {
@@ -692,6 +694,8 @@ func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, lo
 	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user, logs.Child("status-poller"))
 }
 
+/*
+XXX these are complicating injection
 func newLocalStateReader(sm *StateManager) StateReader {
 	return StateReader{sm}
 }
@@ -718,6 +722,7 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 	}
 	return CurrentGDM{deployments}, initErr(err, "expanding state")
 }
+*/
 
 // The funcs named makeXXX below are used to create specific implementations of
 // sous native types.
