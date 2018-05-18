@@ -455,7 +455,7 @@ postgres-stop:
 	$(STOP_POSTGRES)
 
 postgres-connect:
-	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) --username=postgres $(DB_NAME)
+	psql -h $(PGHOST) -p $(PGPORT) --username=postgres $(DB_NAME)
 
 postgres-validate-schema:
 	liquibase $(LIQUIBASE_FLAGS) validate
