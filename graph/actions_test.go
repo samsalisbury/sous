@@ -7,6 +7,7 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
 	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/psyringe"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,7 +31,11 @@ func fixtureGraph() *SousGraph {
 
 func TestActionPlumbingNormilizeGDM(t *testing.T) {
 	fg := fixtureGraph()
-	action, err := fg.GetPlumbingNormalizeGDM("statelocation")
+	tg := psyringe.TestPsyringe{Psyringe: fg.Psyringe}
+	c := &config.Config{Server: "", StateLocation: "statelocation"}
+	tg.Replace(LocalSousConfig{Config: c})
+
+	action, err := fg.GetPlumbingNormalizeGDM()
 	require.NoError(t, err)
 	plumb, rightType := action.(*actions.PlumbNormalizeGDM)
 	require.True(t, rightType)
@@ -43,6 +48,7 @@ func TestActionPlumbingNormilizeGDM(t *testing.T) {
 func TestActionUpdate(t *testing.T) {
 	fg := fixtureGraph()
 	flags := fixtureDeployFilterFlags()
+
 	action, err := fg.GetUpdate(flags, config.OTPLFlags{})
 	require.NoError(t, err)
 	update, rightType := action.(*actions.Update)

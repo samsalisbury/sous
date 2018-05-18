@@ -3,7 +3,6 @@ package cli
 import (
 	"testing"
 
-	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/stretchr/testify/require"
@@ -23,10 +22,11 @@ func TestExecute(t *testing.T) {
 
 	gr := graph.DefaultTestGraph()
 
-	c := &config.Config{Server: "", StateLocation: "/tmp/sous"}
+	//c := &config.Config{Server: "", StateLocation: "/tmp/sous"}
+	// , LocalSousConfig: graph.LocalSousConfig{Config: c}
 
 	require := require.New(t)
-	p := &SousPlumbingNormalizeGDM{SousGraph: gr, LocalSousConfig: graph.LocalSousConfig{Config: c}}
+	p := &SousPlumbingNormalizeGDM{SousGraph: gr}
 
 	args := []string{"", ""}
 
