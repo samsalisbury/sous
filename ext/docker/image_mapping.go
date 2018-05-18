@@ -218,8 +218,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 	}
 
 	nc.logger("Recording with etag as canonical for", logging.ExtraDebug1Level, fullCanon, md.Etag, newSID)
-	err = nc.dbInsert(newSID, fullCanon, md.Etag, qualities)
-	if err != nil {
+	if err := nc.dbInsert(newSID, fullCanon, md.Etag, qualities); err != nil {
 		nc.logger("Err recording", logging.DebugLevel, fullCanon, err)
 		return sid, err
 	}
