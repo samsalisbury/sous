@@ -1,4 +1,4 @@
-HELL := /usr/bin/env bash
+SHELL := /usr/bin/env bash
 
 POSTGRES_DATA_VOLUME_NAME ?= sous_dev_postgres_data
 ifeq ($(shell docker volume ls -q --filter name=^$(POSTGRES_DATA_VOLUME_NAME)$$),)
@@ -345,6 +345,8 @@ test-integration: setup-containers
 	@echo Set INTEGRATION_TEST_TIMEOUT to override.
 	@echo
 	@echo
+	PGHOST=$(PGHOST) \
+	PGPORT=$(PGPORT) \
 	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration $(TEST_TEAMCITY)
 	@date
 
