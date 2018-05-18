@@ -320,7 +320,7 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit-base: $(COVER_DIR) $(GO_FILES)
+test-unit-base: $(COVER_DIR) $(GO_FILES) postgres-start
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
 	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
@@ -328,7 +328,7 @@ test-unit-base: $(COVER_DIR) $(GO_FILES)
 		-timeout 12m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
 
 test-unit:
-	$(MAKE) postgres-clean-restart
+	$(MAKE) postgres-clean
 	$(MAKE) test-unit-base
 
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
@@ -336,7 +336,7 @@ $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 		-covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt \
 		$(GO_TEST_PATHS)
 
-test-integration: setup-containers
+test-integration: setup-containers postgres-start
 	@echo
 	@echo
 	@echo Integration tests timeout in $(INTEGRATION_TEST_TIMEOUT)
