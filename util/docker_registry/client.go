@@ -303,7 +303,7 @@ type stubImage struct {
 //	"demo-server-0.7.3-SNAPSHOT-20160329_202654_teamcity-unconfigured"
 // )
 // ( which returns an empty map, since the demo-server doesn't have labels... )
-func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag string) (md Metadata, err error) {
+func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag string) (Metadata, error) {
 	// slightly weird but: a non-empty etag implies that we've seen this
 	// digest-named container before - and a digest reference should be
 	// immutable.
@@ -313,15 +313,15 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 
 	rep, err := c.registryForHostname(regHost)
 	if err != nil {
-		return
+		return Metadata{}, fmt.Errorf("getting registry for hostname %q: %s", regHost, err)
 	}
 
 	mani, dg, headers, err := rep.getManifestWithEtag(c.ctx, ref, etag)
 	if err != nil {
-		return
+		return Metadata{}, fmt.Errorf("getting maniest %q with etag %q: %s", ref, etag, err)
 	}
 
-	md = Metadata{
+	md := Metadata{
 		Registry: regHost,
 		AllNames: make([]string, 2),
 		Labels:   make(map[string]string),
@@ -361,19 +361,17 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 		}
 		md.OnBuild = make([]string, len(historyEntry.CC.OnBuild))
 		copy(md.OnBuild, historyEntry.CC.OnBuild)
+		return md, nil
 
 	case *schema2.DeserializedManifest:
-		var cj []byte
-		cj, err = rep.getBlob(c.ctx, ref, mani.Config.Digest)
+		cj, err := rep.getBlob(c.ctx, ref, mani.Config.Digest)
 		if err != nil {
-			return
+			return Metadata{}, err
 		}
 
 		var c stubConfig
-		err = json.Unmarshal(cj, &c)
-
-		if err != nil {
-			return
+		if err := json.Unmarshal(cj, &c); err != nil {
+			return Metadata{}, err
 		}
 
 		md.Labels = c.Config.Labels
@@ -387,6 +385,7 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 
 		md.OnBuild = make([]string, len(c.Config.OnBuild))
 		copy(md.OnBuild, c.Config.OnBuild)
+		return md, nil
 
 	default:
 		// We shouldn't receive this, because we shouldn't include the Accept
@@ -394,10 +393,8 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 		// by adding schema2 as an import - it's a sibling of schema1. Schema2
 		// includes a 'config' key, which has a digest for a blob - see
 		// distribution/pull_v2 pullSchema2ImageConfig() (~ ln 677)
-		err = fmt.Errorf("Cripes! Don't know that format of manifest")
+		return Metadata{}, fmt.Errorf("Cripes! Don't know that format of manifest")
 	}
-
-	return
 }
 
 /*
