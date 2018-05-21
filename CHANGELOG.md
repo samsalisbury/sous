@@ -11,6 +11,7 @@ with respect to its command line interface and HTTP interface
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.92...HEAD)
 ### Changed
 * Both: Remove global logging.Log and refactor for the removal
+* Client: Refactor plumbing normalize gdm to action
 
 ## [0.5.92](//github.com/opentable/sous/compare/0.5.91...0.5.92)
 ### Added
