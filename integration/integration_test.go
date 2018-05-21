@@ -161,7 +161,7 @@ func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceR
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
 		deps := ds.Snapshot()
 		deployState = deps[which]
-		suite.Require().NotNil(deployState)
+		suite.Require().NotNil(deployState, "deployState for %q (%q %q)", which, clusters, sourceRepo)
 		if deployState.Status == sous.DeployStatusActive || deployState.Status == sous.DeployStatusFailed {
 			suite.T().Logf("Stabilized with %s", deployState.Status)
 			return deployState

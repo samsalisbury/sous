@@ -9,7 +9,7 @@ import (
 func newServerComponentLocator(
 	ls LogSink,
 	cfg LocalSousConfig,
-	ins sous.Inserter,
+	ins serverInserter,
 	sm *ServerStateManager,
 	rf *sous.ResolveFilter,
 	ar *sous.AutoResolver,
@@ -22,7 +22,7 @@ func newServerComponentLocator(
 
 		LogSink:           ls.LogSink,
 		Config:            cfg.Config,
-		Inserter:          ins,
+		Inserter:          ins.Inserter,
 		StateManager:      sm.StateManager,
 		ClusterManager:    cm,
 		DeploymentManager: dm,
