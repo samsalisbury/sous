@@ -54,13 +54,13 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	deploy, err := sd.SousGraph.GetDeploy(sd.DeployFilterFlags, sd.dryrunOption, sd.force, sd.waitStable)
 
 	if err != nil {
-		sd.SlackMessage(deploy, err)
+		sd.slackMessage(deploy, err)
 		return cmdr.EnsureErrorResult(err)
 	}
 
 	err = deploy.Do()
 
-	sd.SlackMessage(deploy, err)
+	sd.slackMessage(deploy, err)
 
 	if err != nil {
 		return EnsureErrorResult(err)
@@ -69,7 +69,7 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 	return cmdr.Success("Done.")
 }
 
-func (sd *SousDeploy) SlackMessage(action actions.Action, err error) {
+func (sd *SousDeploy) slackMessage(action actions.Action, err error) {
 
 	var slackURL, slackChannel string
 	d, ok := action.(*actions.Deploy)
