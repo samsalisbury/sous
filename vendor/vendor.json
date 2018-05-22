@@ -296,6 +296,12 @@
 			"revisionTime": "2017-12-07T17:05:25Z"
 		},
 		{
+			"checksumSHA1": "eMb+00rKbq8U/bt40OvX1bXMNVQ=",
+			"path": "github.com/parnurzeal/gorequest",
+			"revision": "8e3aed27fe49f7fdc765dad067845f600fc984e8",
+			"revisionTime": "2017-10-15T11:04:55Z"
+		},
+		{
 			"checksumSHA1": "xN14ZoFcgefABp24aowYtQVMDsc=",
 			"path": "github.com/pborman/uuid",
 			"revision": "c55201b036063326c5b1b89ccfe45a184973d073",
