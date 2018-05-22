@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 
 	slack "github.com/ashwanthkumar/slack-go-webhook"
 	"github.com/opentable/sous/cli/actions"
@@ -87,16 +86,24 @@ func (sd *SousDeploy) slackMessage(action actions.Action, err error) {
 
 	messages.ReportLogFieldsMessage("SlackMessage", logging.DebugLevel, d.LogSink, d.TargetDeploymentID.ManifestID, version)
 
-	msg := fmt.Sprintf("Finished deploy of %s @ %s in %s", sd.DeployFilterFlags.Repo, version, sd.DeployFilterFlags.Cluster)
+	color := "good"
+	attachment := slack.Attachment{Color: &color}
+	attachment.AddField(slack.Field{Title: "Build Author", Value: d.Config.User.Name})
+	attachment.AddField(slack.Field{Title: "Manifest ID", Value: d.TargetDeploymentID.String()})
+	attachment.AddField(slack.Field{Title: "Version", Value: version.String()})
+
 	if err != nil {
-		msg = fmt.Sprintf("%s with error: %s", msg, err.Error())
+		attachment.AddField(slack.Field{Title: "Status", Value: "FAILED"}).AddField(slack.Field{Title: "Error", Value: err.Error()})
+		color = "danger"
+	} else {
+		attachment.AddField(slack.Field{Title: "Status", Value: "SUCCESS"})
 	}
 
 	payload := slack.Payload{
-		Text:      msg,
-		Username:  "Sous Bot",
-		Channel:   slackChannel,
-		IconEmoji: ":chefhat:",
+		Username:    "Sous Bot",
+		Channel:     slackChannel,
+		IconEmoji:   ":chefhat:",
+		Attachments: []slack.Attachment{attachment},
 	}
 
 	errs := slack.Send(slackURL, "", payload)
