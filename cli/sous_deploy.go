@@ -87,12 +87,16 @@ func (sd *SousDeploy) slackMessage(action actions.Action, err error) {
 
 	messages.ReportLogFieldsMessage("SlackMessage", logging.DebugLevel, d.LogSink, d.TargetDeploymentID.ManifestID, version)
 
+	msg := fmt.Sprintf("Finished deploy of %s @ %s in %s", sd.DeployFilterFlags.Repo, version, sd.DeployFilterFlags.Cluster)
+	if err != nil {
+		msg = fmt.Sprintf("%s with error: %s", msg, err.Error())
+	}
+
 	payload := slack.Payload{
-		Text:      fmt.Sprintf("Finished deploy of %s:%s", d.TargetDeploymentID.ManifestID, version),
+		Text:      msg,
 		Username:  "Sous Bot",
 		Channel:   slackChannel,
-		IconEmoji: ":ghost:",
-		//Attachments: []slack.Attachment{attachment1},
+		IconEmoji: ":chefhat:",
 	}
 
 	errs := slack.Send(slackURL, "", payload)
