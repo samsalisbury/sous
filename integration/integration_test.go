@@ -98,7 +98,7 @@ func (suite *integrationSuite) findRepo(deps sous.DeployStates, repo string) sou
 
 func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDir, sourceURL, version string) *sous.Manifest {
 	in := BuildImageName(drepo, version)
-	if err := BuildAndPushContainer(containerDir, in); err != nil {
+	if err := BuildAndPushContainer(suite.T(), containerDir, in); err != nil {
 		suite.FailNow("setup failed to build and push container for %q: %s", in, err)
 	}
 
@@ -193,13 +193,13 @@ func (suite *integrationSuite) deployDefaultContainers() {
 		CheckReadyProtocol: "HTTP",
 	}
 
-	registerAndDeploy(ip, "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
-	registerAndDeploy(ip, "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{}, nilStartup)
-	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
-	registerAndDeploy(ip, "other-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	registerAndDeploy(suite.T(), "test-cluster", "hello-labels", "github.com/docker-library/hello-world", "hello-labels", "latest", []int32{}, nilStartup)
+	registerAndDeploy(suite.T(), "test-cluster", "hello-server-labels", "github.com/docker/dockercloud-hello-world", "hello-server-labels", "latest", []int32{}, nilStartup)
+	registerAndDeploy(suite.T(), "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	registerAndDeploy(suite.T(), "other-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 
 	// This deployment fails immediately, and never results in a successful deployment at that singularity request.
-	registerAndDeploy(ip, "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
+	registerAndDeploy(suite.T(), "test-cluster", "supposed-to-fail", "github.com/opentable/homer-says-doh", "fails-labels", "1-fails", []int32{}, nilStartup)
 	suite.T().Log("Deploying default containers; waiting for singularity.")
 	WaitForSingularity()
 }
@@ -216,19 +216,25 @@ func (suite *integrationSuite) tearDown() {
 	// can look at the state of Singularity after a failed test.
 }
 
+// XXX I would like to move this to a separate file and tease out from it it's
+// actual setup requirements (i.e. just the registry, not the whole external
+// env.
 func TestGetLabels(t *testing.T) {
 	suite := setupTest(t)
 	defer suite.tearDown()
 
+	registerImage(t, "webapp", "webapp", "latest")
+	suite.T().Logf("Getting labels for %s", imageName)
 	labels, err := suite.registry.LabelsForImageName(imageName)
 
-	suite.Nil(err)
+	suite.NoError(err)
 	suite.Contains(labels, docker.DockerRepoLabel)
 }
 
 func TestNameCache(t *testing.T) {
 	suite := setupTest(t)
 	defer suite.tearDown()
+
 	repoOne := "https://github.com/opentable/one.git"
 	suite.manifest(suite.nameCache, "opentable/one", "test-one", repoOne, "1.1.1")
 
@@ -344,7 +350,7 @@ func TestFailedTimedOutService(t *testing.T) {
 		CheckReadyURIPath:    uriPath,
 		CheckReadyURITimeout: timeout,
 	}
-	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	registerAndDeploy(t, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 
 	clusters := []string{"test-cluster"}
 	fails := suite.waitUntilSettledStatus(clusters, "github.com/example/webapp")
@@ -362,7 +368,7 @@ func TestFailedNotHealthyService(t *testing.T) {
 		CheckReadyURIPath:    uriPath,
 		CheckReadyURITimeout: timeout,
 	}
-	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	registerAndDeploy(t, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 
 	clusters := []string{"test-cluster"}
 	fails := suite.waitUntilSettledStatus(clusters, "github.com/example/webapp")
@@ -380,7 +386,7 @@ func TestSuccessfulService(t *testing.T) {
 		CheckReadyURIPath:    uriPath,
 		CheckReadyURITimeout: timeout,
 	}
-	registerAndDeploy(ip, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
+	registerAndDeploy(t, "test-cluster", "webapp", "github.com/example/webapp", "webapp", "latest", []int32{}, startup)
 
 	clusters := []string{"test-cluster"}
 
@@ -408,7 +414,7 @@ func TestFailedDeployFollowingSuccessfulDeploy(t *testing.T) {
 	var ports []int32
 	const repoName = "succeedthenfail"
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{
+	registerAndDeploy(t, clusterName, repoName, sourceRepo, "succeedthenfail-succeed", "1.0.0-succeed", ports, sous.Startup{
 		SkipCheck: true,
 	})
 
@@ -421,7 +427,7 @@ func TestFailedDeployFollowingSuccessfulDeploy(t *testing.T) {
 
 	// Create an assert on a failed deployment.
 
-	registerAndDeploy(ip, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{SkipCheck: true})
+	registerAndDeploy(t, clusterName, repoName, sourceRepo, "succeedthenfail-fail", "2.0.0-fail", ports, sous.Startup{SkipCheck: true})
 
 	deployState = suite.waitUntilSettledStatus(clusters, sourceRepo)
 	suite.statusIs(deployState, sous.DeployStatusFailed)
