@@ -21,6 +21,12 @@
 			"revisionTime": "2017-08-25T18:38:27Z"
 		},
 		{
+			"checksumSHA1": "3kX711WTuMgIjYdPqZ/fexoC4w0=",
+			"path": "github.com/ashwanthkumar/slack-go-webhook",
+			"revision": "eb0e8e892f3ae0359ab8bd2777e7fb727ba28113",
+			"revisionTime": "2018-03-19T06:36:40Z"
+		},
+		{
 			"checksumSHA1": "/6H1rhQmbq8mEP29pnmLmdwBKUE=",
 			"path": "github.com/cyberdelia/go-metrics-graphite",
 			"revision": "39f87cc3b432bbb898d7c643c0e93cac2bc865ad",
