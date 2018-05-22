@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -111,13 +112,23 @@ func (sc *SourceContext) TagVersion() string {
 
 var versionStrip = regexp.MustCompile(`^\D*`)
 
-func parseSemverTagWithOptionalPrefix(tagName string) (semv.Version, error) {
-	return semv.Parse(versionStrip.ReplaceAllString(tagName, ""))
+func parseSemverTagWithOptionalPrefix(tagName string) (prefix string, v semv.Version, err error) {
+	prefix = versionStrip.FindString(tagName)
+	versionString := strings.TrimPrefix(tagName, prefix)
+	v, err = semv.Parse(versionString)
+	if err != nil {
+		var addendum string
+		if prefix != "" {
+			addendum = fmt.Sprintf(" (ignoring the prefix %q)", prefix)
+		}
+		return prefix, semv.Version{}, fmt.Errorf("parsing semver version tag %q%s: %s", versionString, addendum, err)
+	}
+	return prefix, v, err
 }
 
 func nearestVersion(tags []Tag) semv.Version {
 	for _, t := range tags {
-		v, err := parseSemverTagWithOptionalPrefix(t.Name)
+		_, v, err := parseSemverTagWithOptionalPrefix(t.Name)
 		if err == nil {
 			return v
 		}
