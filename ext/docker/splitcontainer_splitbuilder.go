@@ -34,7 +34,7 @@ func (sb *splitBuilder) versionName() string {
 }
 
 func (sb *splitBuilder) revisionName() string {
-	return sb.context.Version().RevID()
+	return sb.context.RevID()
 }
 
 func (sb *splitBuilder) versionConfig() string {

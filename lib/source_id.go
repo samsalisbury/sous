@@ -88,10 +88,12 @@ func (sid SourceID) Tag() string {
 	return sid.Version.Format(semv.MajorMinorPatch)
 }
 
+/*
 // RevID returns the revision id for this SourceID.
 func (sid SourceID) RevID() string {
 	return sid.Version.Meta
 }
+*/
 
 // Equal tests the equality between this SourceID and another.
 func (sid SourceID) Equal(o SourceID) bool {

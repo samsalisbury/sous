@@ -94,7 +94,7 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, er
 		cmd = append(cmd, "--build-arg", fmt.Sprintf("%s=%s", AppVersionBuildArg, v))
 	}
 	if r.HasAppRevisionArg {
-		cmd = append(cmd, "--build-arg", fmt.Sprintf("%s=%s", AppRevisionBuildArg, c.Version().RevID()))
+		cmd = append(cmd, "--build-arg", fmt.Sprintf("%s=%s", AppRevisionBuildArg, c.RevID()))
 	}
 
 	cmd = append(cmd, offset)

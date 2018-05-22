@@ -100,7 +100,7 @@ func TestCacheLookup(t *testing.T) {
 	cn := base + "@" + digest
 	dc.FeedMetadata(docker_registry.Metadata{
 		Registry:      host,
-		Labels:        Labels(newSV),
+		Labels:        Labels(newSV, ""),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
@@ -141,7 +141,7 @@ func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
 	cn := base + "@" + digest
 	dc.AddMetadata(dockerPrimary+`.*`, docker_registry.Metadata{
 		Registry:      dockerPrimary,
-		Labels:        Labels(newSV),
+		Labels:        Labels(newSV, ""),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
@@ -149,7 +149,7 @@ func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
 
 	dc.AddMetadata(dockerCache+`.*`, docker_registry.Metadata{
 		Registry:      dockerPrimary,
-		Labels:        Labels(newSV),
+		Labels:        Labels(newSV, ""),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
@@ -200,7 +200,7 @@ func TestLeavesRegistryUnchangedWhenUnknown(t *testing.T) {
 	cn := base + "@" + digest
 	dc.AddMetadata(dockerPrimary+`.*`, docker_registry.Metadata{
 		Registry:      dockerPrimary,
-		Labels:        Labels(newSV),
+		Labels:        Labels(newSV, ""),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
@@ -252,7 +252,7 @@ func TestHarvestAlso(t *testing.T) {
 
 		dc.FeedMetadata(docker_registry.Metadata{
 			Registry:      host,
-			Labels:        Labels(sv),
+			Labels:        Labels(sv, ""),
 			Etag:          digest,
 			CanonicalName: cn,
 			AllNames:      []string{cn, in},
@@ -303,7 +303,7 @@ func TestSecondCanonicalName(t *testing.T) {
 
 		dc.FeedMetadata(docker_registry.Metadata{
 			Registry:      host,
-			Labels:        Labels(sv),
+			Labels:        Labels(sv, ""),
 			Etag:          digest,
 			CanonicalName: cn,
 			AllNames:      []string{cn, in},
@@ -349,7 +349,7 @@ func TestHarvesting(t *testing.T) {
 
 	dc.AddMetadata(`.*`+in+`.*`, docker_registry.Metadata{
 		Registry:      host,
-		Labels:        Labels(sv),
+		Labels:        Labels(sv, ""),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},
@@ -367,7 +367,7 @@ func TestHarvesting(t *testing.T) {
 
 	dc.AddMetadata(`.*`+in+`.*`, docker_registry.Metadata{
 		Registry:      host,
-		Labels:        Labels(sisterSV),
+		Labels:        Labels(sisterSV, ""),
 		Etag:          digest,
 		CanonicalName: cn,
 		AllNames:      []string{cn, in},

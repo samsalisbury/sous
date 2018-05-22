@@ -47,9 +47,26 @@ func fixtureGraph(t *testing.T) *SousGraph {
 	return graph
 }
 
+func TestActionPlumbingNormilizeGDM(t *testing.T) {
+	fg := fixtureGraph(t)
+	tg := psyringe.TestPsyringe{Psyringe: fg.Psyringe}
+	c := &config.Config{Server: "", StateLocation: "statelocation"}
+	tg.Replace(LocalSousConfig{Config: c})
+
+	action, err := fg.GetPlumbingNormalizeGDM()
+	require.NoError(t, err)
+	plumb, rightType := action.(*actions.PlumbNormalizeGDM)
+	require.True(t, rightType)
+
+	require.NotNil(t, plumb)
+	assert.Equal(t, "statelocation", plumb.StateLocation)
+
+}
+
 func TestActionUpdate(t *testing.T) {
 	fg := fixtureGraph(t)
 	flags := fixtureDeployFilterFlags()
+
 	action, err := fg.GetUpdate(flags, config.OTPLFlags{})
 	require.NoError(t, err)
 	update, rightType := action.(*actions.Update)

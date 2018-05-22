@@ -103,12 +103,13 @@ func TestBuildDeployments(t *testing.T) {
 	}
 }
 
-func pushLabelledContainers() {
-	//BuildAndPushContainer(BuildImageName("hello-labels", "latest"), "hello-labels")
-	BuildAndPushContainer(BuildImageName("hello-server-labels", "latest"), "hello-server-labels")
-	//BuildAndPushContainer(BuildImageName("grafana-repo", "latest"), "grafana-labels")
-}
-
+//func pushLabelledContainers(t *testing.T) {
+//	t.Helper()
+//	//BuildAndPushContainer(BuildImageName("hello-labels", "latest"), "hello-labels")
+//	BuildAndPushContainer(t, BuildImageName("hello-server-labels", "latest"), "hello-server-labels")
+//	//BuildAndPushContainer(BuildImageName("grafana-repo", "latest"), "grafana-labels")
+//}
+//
 func singReqDep(url, ryaml, dyaml string) (*dtos.SingularityRequestParent, error) {
 	h := &http.Client{}
 	ru := url + `/api/requests`

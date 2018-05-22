@@ -92,6 +92,11 @@ type (
 	gitStateManager  struct{ sous.StateManager }
 	diskStateManager struct{ sous.StateManager }
 
+	// Wrappers for the Inserter interface, to make explicit the difference
+	// between client and server handling.
+	serverInserter struct{ sous.Inserter }
+	clientInserter struct{ sous.Inserter }
+
 	// StateReader wraps a storage.StateReader.
 	StateReader struct{ sous.StateReader }
 	// StateWriter wraps a storage.StateWriter, and should be configured to
@@ -289,7 +294,8 @@ func AddInternals(graph adder) {
 		newResolveFilter,
 		newResolver,
 		newAutoResolver,
-		newInserter,
+		newClientInserter,
+		newServerInserter,
 		newStatusPoller,
 		newServerComponentLocator,
 		newHTTPClient,
@@ -502,11 +508,11 @@ func newSelector(regClient LocalDockerClient, log LogSink) sous.Selector {
 	return docker.NewBuildStrategySelector(log.Child("docker-build-strategy"), regClient)
 }
 
-func newDockerBuilder(cfg LocalSousConfig, nc sous.Inserter, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, log LogSink) (*docker.Builder, error) {
+func newDockerBuilder(cfg LocalSousConfig, nc clientInserter, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, log LogSink) (*docker.Builder, error) {
 	drh := cfg.Docker.RegistryHost
 	source.Sh = source.Sh.Clone().(*shell.Sh)
 	source.Sh.LongRunning(true)
-	return docker.NewBuilder(nc, drh, source.Sh, scratch.Sh, log.Child("docker-builder"))
+	return docker.NewBuilder(nc.Inserter, drh, source.Sh, scratch.Sh, log.Child("docker-builder"))
 }
 
 func newLabeller(db *docker.Builder) sous.Labeller {
@@ -599,7 +605,7 @@ func newClusterSpecificHTTPClient(clients ClientBundle, rf *sous.ResolveFilter, 
 
 // newHTTPClient returns an HTTP client if c.Server is not empty.
 // Otherwise it returns nil, and emits some warnings.
-func newHTTPClient(c LocalSousConfig, user sous.User, srvr ServerHandler, tid sous.TraceID, log LogSink) (HTTPClient, error) {
+func newHTTPClient(c LocalSousConfig, user sous.User, tid sous.TraceID, log LogSink) (HTTPClient, error) {
 	if c.Server == "" {
 		messages.ReportLogFieldsMessageToConsole("No server set, but Sous needs to communicate with a server for this command.", logging.WarningLevel, log)
 		messages.ReportLogFieldsMessageToConsole("Configure a server like this: sous config server http://some.sous.server", logging.WarningLevel, log)
@@ -727,12 +733,17 @@ func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
 // The funcs named makeXXX below are used to create specific implementations of
 // sous native types.
 
-func newInserter(cfg LocalSousConfig, nc lazyNameCache, tid sous.TraceID, log LogSink) (sous.Inserter, error) {
-	if cfg.Server == "" {
-		return nc()
+func newServerInserter(nc lazyNameCache) (serverInserter, error) {
+	i, err := nc()
+	if err != nil {
+		return serverInserter{}, err
 	}
+	return serverInserter{i}, nil
+}
+
+func newClientInserter(cfg LocalSousConfig, tid sous.TraceID, log LogSink) (clientInserter, error) {
 	cl, err := restful.NewClient(cfg.Server, log.Child("http-client"), map[string]string{"OT-RequestId": string(tid)})
-	return sous.NewHTTPNameInserter(cl, tid, log.LogSink), err
+	return clientInserter{sous.NewHTTPNameInserter(cl, tid, log.LogSink)}, err
 }
 
 // initErr returns nil if error is nil, otherwise an initialisation error.

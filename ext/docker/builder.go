@@ -93,7 +93,7 @@ func (b *Builder) info(msg string) {
 
 func (b *Builder) applyMetadata(bp *sous.BuildProduct) error {
 	bp.VersionName = b.VersionTag(bp.Source, bp.Kind)
-	bp.RevisionName = b.RevisionTag(bp.Source, bp.Kind, time.Now())
+	bp.RevisionName = b.RevisionTag(bp.Source, bp.RevisionName, bp.Kind, time.Now())
 
 	c := b.SourceShell.Cmd("docker", "build", "-t", bp.VersionName, "-t", bp.RevisionName, "-")
 	bf := b.metadataDockerfile(bp)
@@ -116,7 +116,7 @@ func (b *Builder) metadataDockerfile(bp *sous.BuildProduct) io.Reader {
 		Advisories []string
 	}{
 		bp.ID,
-		Labels(sv),
+		Labels(sv, bp.RevisionName),
 		bp.Advisories,
 	})
 	return &bf
@@ -136,7 +136,6 @@ func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
 // recordName inserts metadata about the newly built image into our local name cache
 func (b *Builder) recordName(bp *sous.BuildProduct) error {
 	sv := bp.Source
-	sv.Version.Meta = bp.RevisionName
 	in := bp.VersionName
 	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
 	var qs []sous.Quality
@@ -152,6 +151,6 @@ func (b *Builder) VersionTag(v sous.SourceID, kind string) string {
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
-func (b *Builder) RevisionTag(v sous.SourceID, kind string, time time.Time) string {
-	return revisionTag(b.DockerRegistryHost, v, kind, time, b.log)
+func (b *Builder) RevisionTag(v sous.SourceID, rev string, kind string, time time.Time) string {
+	return revisionTag(b.DockerRegistryHost, v, rev, kind, time, b.log)
 }

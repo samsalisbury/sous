@@ -41,3 +41,7 @@ type (
 func (bc *BuildContext) Version() SourceID {
 	return bc.Source.Version()
 }
+
+func (bc *BuildContext) RevID() string {
+	return bc.Source.Revision
+}
