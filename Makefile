@@ -320,16 +320,16 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit-base: $(COVER_DIR) $(GO_FILES) postgres-start
+.PHONY: test-unit-base
+test-unit-base: $(COVER_DIR) $(GO_FILES) postgres-start | postgres-clean # | is "order only"
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
 	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
 		-timeout 12m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
 
-test-unit:
-	$(MAKE) postgres-clean
-	$(MAKE) test-unit-base
+.PHONY: test-unit
+test-unit: postgres-clean test-unit-base
 
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 	go test \
@@ -429,7 +429,8 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) --description $(DESCRIPTION) --url $(URL) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
-postgres-start:
+.PHONY: postgres-start
+postgres-start: | postgres-stop postgres-clean # "order only" prereqs
 	if ! (docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT)); then \
 		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3;\
 		echo Waiting until Postgres completes booting...;\
@@ -442,14 +443,10 @@ postgres-start:
 	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 
 .PHONY: postgres-restart
-postgres-restart:
-	$(MAKE) postgres-stop
-	$(MAKE) postgres-start
+postgres-restart: postgres-stop postgres-start
 
 .PHONY: postgres-clean-restart
-postgres-clean-restart:
-	$(MAKE) postgres-clean
-	$(MAKE) postgres-start
+postgres-clean-restart: postgres-start postgres-clean
 
 postgres-stop:
 	$(STOP_POSTGRES)
