@@ -318,7 +318,7 @@ func (c *liveClient) metadataForImage(regHost string, ref reference.Named, etag 
 
 	mani, dg, headers, err := rep.getManifestWithEtag(c.ctx, ref, etag)
 	if err != nil {
-		return Metadata{}, fmt.Errorf("getting maniest %q with etag %q: %s", ref, etag, err)
+		return Metadata{}, err //err, distribution.ErrManifestNotModified, fmt.Errorf("getting manifest %q with etag %q: %s", ref, etag, err)
 	}
 
 	md := Metadata{

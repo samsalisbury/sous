@@ -34,6 +34,7 @@ type integrationSuite struct {
 	nameCache *docker.NameCache
 	client    *singularity.RectiAgent
 	deployer  sous.Deployer
+	ls        *logging.LogSet
 }
 
 func setupTest(t *testing.T) *integrationSuite {
@@ -46,18 +47,18 @@ func setupTest(t *testing.T) *integrationSuite {
 	ResetSingularity()
 
 	suite.logbuf = &bytes.Buffer{}
-	logset := logging.NewLogSet(semv.MustParse("0.0.0-integration"), "integration", "integration", suite.logbuf)
-	logset.BeChatty()
+	suite.ls = logging.NewLogSet(semv.MustParse("0.0.0-integration"), "integration", "integration", suite.logbuf)
+	suite.ls.BeChatty()
 
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "webapp", "latest")
 
-	suite.registry = docker_registry.NewClient(logset)
+	suite.registry = docker_registry.NewClient(suite.ls)
 	suite.registry.BecomeFoolishlyTrusting()
 
 	suite.T().Logf("New name cache for %q", t.Name())
-	suite.nameCache = suite.newNameCache()
-	suite.client = singularity.NewRectiAgent(suite.nameCache, logset)
-	suite.deployer = singularity.NewDeployer(suite.client, logset)
+	suite.nameCache = suite.newNameCache(suite.ls)
+	suite.client = singularity.NewRectiAgent(suite.nameCache, suite.ls)
+	suite.deployer = singularity.NewDeployer(suite.client, suite.ls)
 	return suite
 }
 
@@ -139,10 +140,10 @@ func (suite *integrationSuite) manifest(nc *docker.NameCache, drepo, containerDi
 	}
 }
 
-func (suite *integrationSuite) newNameCache() *docker.NameCache {
+func (suite *integrationSuite) newNameCache(ls logging.LogSink) *docker.NameCache {
 	db := sous.SetupDB(suite.T())
 
-	cache, err := docker.NewNameCache(registryName, suite.registry, logging.SilentLogSet(), db)
+	cache, err := docker.NewNameCache(registryName, suite.registry, ls, db)
 	suite.Require().NoError(err)
 
 	ids, err := cache.ListSourceIDs()
@@ -161,7 +162,7 @@ func (suite *integrationSuite) waitUntilSettledStatus(clusters []string, sourceR
 		ds, which := suite.deploymentWithRepo(clusters, sourceRepo)
 		deps := ds.Snapshot()
 		deployState = deps[which]
-		suite.Require().NotNil(deployState, "deployState for %q (%q %q)", which, clusters, sourceRepo)
+		suite.Require().NotNil(deployState, "deployState for %v (%q %q)", which, clusters, sourceRepo)
 		if deployState.Status == sous.DeployStatusActive || deployState.Status == sous.DeployStatusFailed {
 			suite.T().Logf("Stabilized with %s", deployState.Status)
 			return deployState
@@ -453,7 +454,7 @@ func TestMissingImage(t *testing.T) {
 	sr := sous.NewDummyStateManager()
 	sr.State = &stateOne
 	qs := graph.NewR11nQueueSet(suite.deployer, suite.nameCache, rf, &graph.ServerStateManager{sr})
-	r := sous.NewResolver(suite.deployer, suite.nameCache, rf, logging.SilentLogSet(), qs)
+	r := sous.NewResolver(suite.deployer, suite.nameCache, rf, suite.ls, qs)
 
 	deploymentsOne, err := stateOne.Deployments()
 	suite.Require().NoError(err)
