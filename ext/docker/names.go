@@ -50,10 +50,10 @@ func SourceIDFromLabels(labels map[string]string) (sous.SourceID, error) {
 
 // Labels computes a map of labels that should be applied to a container
 // image that is built based on this SourceID.
-func Labels(sid sous.SourceID) map[string]string {
+func Labels(sid sous.SourceID, rev string) map[string]string {
 	labels := make(map[string]string)
 	labels[DockerVersionLabel] = sid.Version.Format(`M.m.p-?`)
-	labels[DockerRevisionLabel] = sid.RevID()
+	labels[DockerRevisionLabel] = rev
 	labels[DockerPathLabel] = sid.Location.Dir
 	labels[DockerRepoLabel] = sid.Location.Repo
 	return labels
@@ -84,7 +84,7 @@ func versionName(sid sous.SourceID, kind string) string {
 	return strings.Join([]string{imageRepoName(sid.Location, kind), tagName(sid.Version)}, ":")
 }
 
-func revisionName(sid sous.SourceID, kind string, time time.Time) string {
+func revisionName(sid sous.SourceID, rev string, kind string, time time.Time) string {
 	//A tag name must be valid ASCII and may contain lowercase and uppercase
 	//letters, digits, underscores, periods and dashes. A tag name may not start
 	//with a period or a dash and may contain a maximum of 128 characters.
@@ -95,24 +95,24 @@ func revisionName(sid sous.SourceID, kind string, time time.Time) string {
 
 	// z prefix sorts "pinning" labels to the bottom
 	// Format is the RFC3339 format, with . instead of : so that it's a legal docker tag
-	labelStr := fmt.Sprintf("z%v-%v", sid.RevID(), time.UTC().Format("2006-01-02T15.04.05"))
+	labelStr := fmt.Sprintf("z%v-%v", rev, time.UTC().Format("2006-01-02T15.04.05"))
 	return strings.Join([]string{imageRepoName(sid.Location, kind), labelStr}, ":")
 }
 
 func fullRepoName(registryHost string, sl sous.SourceLocation, kind string, ls logging.LogSink) string {
 	frn := filepath.Join(registryHost, imageRepoName(sl, kind))
-	messages.ReportLogFieldsMessage("Repo name", logging.DebugLevel, ls, sl, frn)
+	messages.ReportLogFieldsMessage("Repo name", logging.DebugLevel, ls, sl, logging.KV("full-rep-name", frn))
 	return frn
 }
 
 func versionTag(registryHost string, v sous.SourceID, kind string, ls logging.LogSink) string {
 	verTag := filepath.Join(registryHost, versionName(v, kind))
-	messages.ReportLogFieldsMessage("Version Tag", logging.DebugLevel, ls, verTag)
+	messages.ReportLogFieldsMessage("Docker Version Tag", logging.DebugLevel, ls, kind, logging.KV("version-tag", v))
 	return verTag
 }
 
-func revisionTag(registryHost string, v sous.SourceID, kind string, time time.Time, ls logging.LogSink) string {
-	revTag := filepath.Join(registryHost, revisionName(v, kind, time))
-	messages.ReportLogFieldsMessage("RevisionTag", logging.DebugLevel, ls, revTag)
+func revisionTag(registryHost string, v sous.SourceID, rev string, kind string, time time.Time, ls logging.LogSink) string {
+	revTag := filepath.Join(registryHost, revisionName(v, rev, kind, time))
+	messages.ReportLogFieldsMessage("Docker RevisionTag", logging.DebugLevel, ls, kind, time, logging.KV("revision-tag", revTag), v)
 	return revTag
 }

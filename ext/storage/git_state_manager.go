@@ -74,12 +74,13 @@ func (gsm *GitStateManager) gitOut(cmd ...string) (string, error) {
 		git.Env = append(git.Env, "GIT_SSH="+gitssh)
 	}
 	out, err := git.CombinedOutput()
+	argsString := fmt.Sprint(cmd)
 	if err == nil {
-		messages.ReportLogFieldsMessage("success", logging.DebugLevel, gsm.log, git.Args)
+		messages.ReportLogFieldsMessage("git command success"+argsString, logging.DebugLevel, gsm.log, git.Args)
 	} else {
-		messages.ReportLogFieldsMessage("error", logging.DebugLevel, gsm.log, err)
+		messages.ReportLogFieldsMessage("git command failed"+argsString, logging.DebugLevel, gsm.log, err)
 	}
-	messages.ReportLogFieldsMessage("git", logging.ExtraDebug1Level, gsm.log, string(out))
+	messages.ReportLogFieldsMessage("git command output"+argsString, logging.ExtraDebug1Level, gsm.log, string(out))
 	return string(out), errors.Wrapf(err, strings.Join(git.Args, " ")+": "+string(out))
 }
 

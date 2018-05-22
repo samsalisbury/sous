@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/ext/docker"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultStateLocation(t *testing.T) {
@@ -85,9 +84,7 @@ func TestConfig_Equals(t *testing.T) {
 		SiblingURLs:   map[string]string{"x": "sibling", "y": "urls"},
 		BuildStateDir: "buildstatedir",
 		Docker: docker.Config{
-			RegistryHost:       "registryhost",
-			DatabaseDriver:     "databasedriver",
-			DatabaseConnection: "databaseconnection",
+			RegistryHost: "registryhost",
 		},
 	}
 	var actual *Config
@@ -125,7 +122,7 @@ func TestConfig_Equals(t *testing.T) {
 	}
 
 	// Confirming that the two Docker structs are separate memory
-	actual.Docker.DatabaseConnection = ""
+	actual.Docker.RegistryHost = ""
 	checkNotEqual()
 }
 
@@ -165,11 +162,4 @@ func TestEnsureDirExists(t *testing.T) {
 	if actualErr != expectedErr {
 		t.Errorf("got error %q; want %q", actualErr, expectedErr)
 	}
-}
-
-func TestDefaultConfig(t *testing.T) {
-	u := LocalUser{&user.User{}}
-	cfg := u.DefaultConfig()
-	assert.Regexp(t, ".*data.db", cfg.Docker.DatabaseConnection)
-
 }

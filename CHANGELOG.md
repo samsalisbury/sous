@@ -11,6 +11,7 @@ with respect to its command line interface and HTTP interface
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.92...HEAD)
 ### Changed
 * Both: Remove global logging.Log and refactor for the removal
+* Server: Removed dependency on SQLite. PostgreSQL connection is now required by the server.
 * Client: Refactor plumbing normalize gdm to action
 
 ## [0.5.92](//github.com/opentable/sous/compare/0.5.91...0.5.92)
@@ -18,6 +19,10 @@ with respect to its command line interface and HTTP interface
 * Client: Deploy with zero instances will give a specific error message that you have zero instances
 * Client: add -dev flag, at the moment just affects checking for local images
 * Client: return a better message if manifestid wasn't found
+
+### Changed
+* Server: Postgres is now required for the server to operate.
+* Both: SQLite is removed as a dependency of Sous.
 
 ## [0.5.91](//github.com/opentable/sous/compare/0.5.88...0.5.91)
 ### Added

@@ -49,17 +49,21 @@ func (pah *PUTArtifactHandler) Exchange() (interface{}, int) {
 		return err, http.StatusNotAcceptable
 	}
 
-	sid, err := sourceIDFromValues(pah.QueryValues)
+	_, err = sourceIDFromValues(pah.QueryValues)
 	if err != nil {
 		return err, http.StatusNotAcceptable
 	}
 
-	err = pah.Inserter.Insert(sid, ba.Name, "", ba.Qualities)
-	if err != nil {
-		return err, http.StatusNotAcceptable
-	}
+	/*
+		XXX: This can't actually work, because ba.Name here is a "tag" name, not a digest name.
+		We'll need to figure out how to handle that properly.
+		err = pah.Inserter.Insert(sid, ba.Name, "", ba.Qualities)
+		if err != nil {
+			return err, http.StatusNotAcceptable
+		}
+	*/
 
-	return "", http.StatusOK
+	return "{}", http.StatusOK
 }
 
 func sourceIDFromValues(qv restful.QueryValues) (sous.SourceID, error) {

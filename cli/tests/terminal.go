@@ -46,7 +46,7 @@ func NewTerminal(t *testing.T, vstr string) *Terminal {
 	err := io.MultiWriter(baseerr.Buffer, combined.Buffer)
 
 	s := &cli.Sous{Version: v}
-	di := graph.BuildTestGraph(v, in, out, err)
+	di := graph.BuildTestGraph(t, v, in, out, err)
 	ls, _ := logging.NewLogSinkSpy()
 	c, er := cli.NewSousCLI(di, s, ls, out, err)
 	if er != nil {

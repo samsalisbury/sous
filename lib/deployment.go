@@ -5,6 +5,8 @@ package sous
 import (
 	"fmt"
 	"strings"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -54,6 +56,12 @@ func (vs Volumes) Clone() Volumes {
 	vols := make(Volumes, len(vs))
 	copy(vols, vs)
 	return vols
+}
+
+//EachField implements EachFielder
+func (d Deployment) EachField(f logging.FieldReportFn) {
+	sm := NewDeploymentSubmessage("", &d)
+	sm.EachField(f)
 }
 
 func (d *Deployment) String() string {
