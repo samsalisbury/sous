@@ -112,7 +112,6 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) e
 			Database: storage.PostgresConfig{
 				User:   "postgres",
 				DBName: dbname,
-				User:   "postgres",
 				Host:   host,
 				Port:   dbport,
 			},
