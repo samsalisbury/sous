@@ -68,7 +68,7 @@ func (mr malformedResponse) Error() string {
 	return mr.message
 }
 
-func isMalformed(log logging.LogSink, err error) bool {
+func isMalformed(err error) bool {
 	err = errors.Cause(err)
 	_, isMal := err.(malformedResponse)
 	_, isUMT := err.(*json.UnmarshalTypeError)
@@ -93,7 +93,7 @@ func (db *deploymentBuilder) canRetry(err error) error {
 }
 
 func (db *deploymentBuilder) isRetryable(err error) bool {
-	return !isMalformed(db.log, err) &&
+	return !isMalformed(err) &&
 		!ignorableDeploy(db.log, err) &&
 		db.req.SourceURL != "" &&
 
