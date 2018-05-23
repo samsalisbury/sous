@@ -213,6 +213,7 @@ func (suite *integrationSuite) withDeployment(clusters []string, repo string, co
 			fn(suite.T(), deps[which])
 			return
 		}
+		time.Sleep(400 * time.Millisecond) // *5 is up to 2 seconds of sleep
 	}
 	suite.FailNow("Expected there to be %d deployments, but there are %d: \nDeployState map:\n%+#v", count, len(deps), deps)
 }
