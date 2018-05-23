@@ -7,7 +7,6 @@ import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -122,7 +121,9 @@ func TestUpdateRetryLoop(t *testing.T) {
 	require.NoError(t, err)
 
 	ls := logging.SilentLogSet()
-	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl}, ls)
+	tid := sous.TraceID("test-trace")
+
+	hsm := sous.NewHTTPStateManager(cl, tid, ls)
 
 	control.State.Manifests.Add(mani)
 
@@ -140,9 +141,8 @@ func TestUpdateRetryLoop(t *testing.T) {
 func TestSousUpdate_Execute(t *testing.T) {
 	cl, control, err := server.TestingInMemoryClient()
 	require.NoError(t, err)
-
 	ls, _ := logging.NewLogSinkSpy()
-	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl}, ls)
+	hsm := sous.NewHTTPStateManager(cl, sous.TraceID("test-trace"), ls)
 
 	manifest := sous.Manifest{
 		Source: sous.SourceLocation{

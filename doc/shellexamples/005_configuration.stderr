@@ -1,59 +1,0 @@
-
-bash-3.2$ # This is kind of a hack - in normal operation, Sous would block un< a hack - in normal operation, Sous would block unt                         il its
-bash-3.2$ # services had been accepted, but when bootstrapping, we need to wa<en accepted, but when bootstrapping, we need to wai                         t for them
-bash-3.2$ # to come up.
-bash-3.2$ for n in {1..50}; do
-> cygnus -H --env PORT0 http://192.168.99.100:7099/singularity > ~/server-sin<p://192.168.99.100:7099/singularity > ~/server-sing                         ularity.txt
->   if [ $( grep sous-server ~/server-singularity.txt | wc -l) -ge 2 ]; then
->   break
-> fi
->   sleep 0.1
-> done
-bash-3.2$ cat ~/server-singularity.txt >2
-bash-3.2$ 
-bash-3.2$ leftport=$(grep 'sous-server.*left' ~/server-singularity.txt | awk <sous-server.*left' ~/server-singularity.txt | awk '                         { print $3 }')
-bash-3.2$ rightport=$(grep 'sous-server.*right' ~/server-singularity.txt | aw<'sous-server.*right' ~/server-singularity.txt | awk                          '{ print $3 }')
-bash-3.2$ 
-bash-3.2$ serverURL=http://192.168.99.100:$leftport
-bash-3.2$ echo "Determined server url as $serverURL"
-bash-3.2$ 
-bash-3.2$ until curl -s -I $serverURL; do
->   sleep 0.1
-> done
-bash-3.2$ sous config Server "$serverURL"
-bash-3.2$ echo "Set server URL to: $(sous config Server)"
-bash-3.2$ 
-bash-3.2$ ETAG=$(curl -s -v http://192.168.99.100:$leftport/servers 2>&1 | se< http://192.168.99.100:$leftport/servers 2>&1 | sed                          -n '/Etag:/{s/.*: //; P;<ftport/servers 2>&1 | sed -n '/Etag:/{s/.*: //; P;                          }')
-bash-3.2$ echo $ETAG
-bash-3.2$ sed "s/LEFTPORT/$leftport/; s/RIGHTPORT/$rightport/" < ~/templated-<leftport/; s/RIGHTPORT/$rightport/" < ~/templated-c                         onfigs/servers.json > ~/s<ghtport/" < ~/templated-configs/servers.json > ~/se                         rvers.json
-bash-3.2$ cat ~/servers.json
-bash-3.2$ curl -v -X PUT -H "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Typ< "If-Match: ${ETAG//[$'\t\r\n ']}" -H "Content-Type                         : application/json" "${se<r\n ']}" -H "Content-Type: application/json" "${ser                         verURL}/servers" --data "< application/json" "${serverURL}/servers" --data "$                         (< ~/servers.json)"
-  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-                                 Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0*   Trying 192.168.99.100...
-* TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 31526 (#0)
-> PUT /servers HTTP/1.1
-> Host: 192.168.99.100:31526
-> User-Agent: curl/7.51.0
-> Accept: */*
-> If-Match: g5VMZUpJRha40Z6CUDIfPQ==
-> Content-Type: application/json
-> Content-Length: 192
-> 
-} [192 bytes data]
-* upload completely sent off: 192 out of 192 bytes
-< HTTP/1.1 200 OK
-< Content-Length: 133
-< Content-Type: application/json
-< Etag: XrefNkPKDlD25U0J6pMEFA==
-< Date: Tue, 07 Mar 2017 19:49:16 GMT
-< 
-{ [133 bytes data]
-* Curl_http_done: called premature == 0
-100   325  100   133  100   192  69487    97k --:--:-- --:--:-- --:--:--  187k
-* Connection #0 to host 192.168.99.100 left intact
-bash-3.2$ curl -s "${serverURL}/servers"
-bash-3.2$ cygnus --env TASK_HOST --env PORT0 -K -s http://192.168.99.100:7099<_HOST --env PORT0 -K -s http://192.168.99.100:7099/                         singularity
-bash-3.2$ 
-bash-3.2$ 

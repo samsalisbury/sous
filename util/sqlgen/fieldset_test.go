@@ -10,9 +10,10 @@ func TestRowDedupe(t *testing.T) {
 	fs.Row(func(rd RowDef) { rd.CF("?", "testcol", 2) })
 
 	sql := fs.InsertSQL("testtable", "")
-	expectedSQL := "insert into testtable (testcol) values ($1),\n($2) "
+	expectedSQL := `insert into testtable ("testcol") values ($1),
+($2) `
 	if sql != expectedSQL {
-		t.Errorf("Expected fieldset to generate %q; got %q", expectedSQL, sql)
+		t.Errorf("Expected fieldset to generate \n%q; got \n%q", expectedSQL, sql)
 	}
 
 	vals := fs.InsertValues()
@@ -36,9 +37,11 @@ func TestRowDedupe_without_candidates(t *testing.T) {
 	fs.Row(func(rd RowDef) { rd.FD("?", "testcol", 2) })
 
 	sql := fs.InsertSQL("testtable", "")
-	expectedSQL := "insert into testtable (testcol) values ($1),\n($2),\n($3) "
+	expectedSQL := `insert into testtable ("testcol") values ($1),
+($2),
+($3) `
 	if sql != expectedSQL {
-		t.Errorf("Expected fieldset to generate %q; got %q", expectedSQL, sql)
+		t.Errorf("Expected fieldset to generate \n%q; got \n%q", expectedSQL, sql)
 	}
 
 	vals := fs.InsertValues()

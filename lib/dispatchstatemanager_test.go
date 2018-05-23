@@ -19,48 +19,56 @@ type dispatchSMScenario struct {
 }
 
 func setupDispatchStateManager(t *testing.T) dispatchSMScenario {
-	state := NewState()
+	state := DefaultStateFixture()
+	deployments, err := state.Deployments()
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	localCluster := "local"
-	clusters := []string{"left", "right"}
+	clusters := []string{"cluster1", "cluster2"}
 
 	local, lc := NewStateManagerSpy()
 	lc.MatchMethod("ReadState", spies.AnyArgs, state, nil)
+	lc.MatchMethod("ReadCluster", spies.AnyArgs, deployments, nil)
 
 	lup, lupc := restfultest.NewUpdateSpy()
-	left, rlc := restfultest.NewHTTPClientSpy()
+	cluster1, rlc := restfultest.NewHTTPClientSpy()
 	rlc.MatchMethod("Retrieve", spies.AnyArgs, state, lup, nil)
+	rlc.MatchMethod("ReadCluster", spies.AnyArgs, deployments, nil)
 
 	rup, rupc := restfultest.NewUpdateSpy()
-	right, rrc := restfultest.NewHTTPClientSpy()
+	cluster2, rrc := restfultest.NewHTTPClientSpy()
 	rrc.MatchMethod("Retrieve", spies.AnyArgs, state, rup, nil)
+	rrc.MatchMethod("ReadCluster", spies.AnyArgs, deployments, nil)
 
 	wup, wupc := restfultest.NewUpdateSpy()
 	whole, rwc := restfultest.NewHTTPClientSpy()
 	rwc.MatchMethod("Retrieve", spies.AnyArgs, state, wup, nil)
+	rwc.MatchMethod("ReadCluster", spies.AnyArgs, deployments, nil)
 
-	clients := map[string]restful.HTTPClient{
-		"left":  left,
-		"right": right,
-	}
+	tid := TraceID("testtrace")
 
 	ls, _ := logging.NewLogSinkSpy()
 
-	remote := NewHTTPStateManager(whole, clients, ls)
+	remote := NewHTTPStateManager(whole, tid, ls)
+	remote.clusterClients = map[string]restful.HTTPClient{}
+	remote.clusterClients["cluster1"] = cluster1
+	remote.clusterClients["cluster2"] = cluster2
 
 	dsm := NewDispatchStateManager(localCluster, clusters, local, remote, ls)
 
 	return dispatchSMScenario{
 		dsm: dsm,
 		httpClients: map[string]*spies.Spy{
-			"whole": rwc,
-			"left":  rlc,
-			"right": rrc,
+			"whole":    rwc,
+			"cluster1": rlc,
+			"cluster2": rrc,
 		},
 		httpUpdaters: map[string]*spies.Spy{
-			"whole": wupc,
-			"left":  lupc,
-			"right": rupc,
+			"whole":    wupc,
+			"cluster1": lupc,
+			"cluster2": rupc,
 		},
 		local: lc,
 	}
@@ -75,12 +83,12 @@ func TestDispatchStateManagerRead(t *testing.T) {
 	assert.NotNil(t, state)
 
 	assert.Len(t, scenario.httpClients["whole"].CallsTo("Retrieve"), 0)
-	if assert.Len(t, scenario.httpClients["left"].CallsTo("Retrieve"), 1) {
-		retrieve := scenario.httpClients["left"].CallsTo("Retrieve")[0]
+	if assert.Len(t, scenario.httpClients["cluster1"].CallsTo("Retrieve"), 1) {
+		retrieve := scenario.httpClients["cluster1"].CallsTo("Retrieve")[0]
 		assert.Equal(t, retrieve.PassedArgs().String(0), "./state/deployments")
 	}
-	if assert.Len(t, scenario.httpClients["right"].CallsTo("Retrieve"), 1) {
-		retrieve := scenario.httpClients["right"].CallsTo("Retrieve")[0]
+	if assert.Len(t, scenario.httpClients["cluster2"].CallsTo("Retrieve"), 1) {
+		retrieve := scenario.httpClients["cluster2"].CallsTo("Retrieve")[0]
 		assert.Equal(t, retrieve.PassedArgs().String(0), "./state/deployments")
 	}
 	assert.Len(t, scenario.local.CallsTo("ReadState"), 2)
@@ -99,17 +107,17 @@ func TestDispatchStateManagerWrite(t *testing.T) {
 	assert.Len(t, scenario.httpClients["whole"].CallsTo("Retrieve"), 0)
 	assert.Len(t, scenario.httpUpdaters["whole"].CallsTo("Update"), 0)
 
-	if assert.Len(t, scenario.httpClients["left"].CallsTo("Retrieve"), 1) {
-		retrieve := scenario.httpClients["left"].CallsTo("Retrieve")[0]
+	if assert.Len(t, scenario.httpClients["cluster1"].CallsTo("Retrieve"), 1) {
+		retrieve := scenario.httpClients["cluster1"].CallsTo("Retrieve")[0]
 		assert.Equal(t, retrieve.PassedArgs().String(0), "./state/deployments")
 	}
-	assert.Len(t, scenario.httpUpdaters["left"].CallsTo("Update"), 1)
+	assert.Len(t, scenario.httpUpdaters["cluster1"].CallsTo("Update"), 1)
 
-	if assert.Len(t, scenario.httpClients["right"].CallsTo("Retrieve"), 1) {
-		retrieve := scenario.httpClients["right"].CallsTo("Retrieve")[0]
+	if assert.Len(t, scenario.httpClients["cluster2"].CallsTo("Retrieve"), 1) {
+		retrieve := scenario.httpClients["cluster2"].CallsTo("Retrieve")[0]
 		assert.Equal(t, retrieve.PassedArgs().String(0), "./state/deployments")
 	}
-	assert.Len(t, scenario.httpUpdaters["right"].CallsTo("Update"), 1)
+	assert.Len(t, scenario.httpUpdaters["cluster2"].CallsTo("Update"), 1)
 
 	assert.Len(t, scenario.local.CallsTo("ReadState"), 1)
 	assert.Len(t, scenario.local.CallsTo("WriteState"), 1)

@@ -45,6 +45,7 @@ TEST_DB_NAME = sous_test_template
 LIQUIBASE_SERVER := jdbc:postgresql://localhost:$(PGPORT)
 
 LIQUIBASE_FLAGS := $(LIQUIBASE_SERVER)/$(DB_NAME)?user=postgres
+LIQUIBASE_DEV_FLAGS := $(LIQUIBASE_SERVER)/sous?user=postgres
 LIQUIBASE_TEST_FLAGS := $(LIQUIBASE_SERVER)/$(TEST_DB_NAME)?user=postgres
 
 GO_VERSION := 1.10
@@ -124,7 +125,7 @@ COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
-SOUS_PACKAGES_WITH_TESTS:= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+GO_TEST_PATHS ?= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
 
 GO_FILES := $(shell find . -regex '.*\.go')
@@ -319,23 +320,23 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
-test-unit-base: $(COVER_DIR) $(GO_FILES)
+.PHONY: test-unit-base
+test-unit-base: $(COVER_DIR) $(GO_FILES) postgres-start | postgres-clean # | is "order only"
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
 	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
 		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
-		-timeout 3m -race $(SOUS_PACKAGES_WITH_TESTS) $(TEST_TEAMCITY)
+		-timeout 12m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
 
-test-unit:
-	$(MAKE) postgres-clean-restart
-	$(MAKE) test-unit-base
+.PHONY: test-unit
+test-unit: postgres-clean test-unit-base
 
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 	go test \
 		-covermode=count -coverprofile=$(COVER_DIR)/count_merged.txt \
-		$(SOUS_PACKAGES_WITH_TESTS)
+		$(GO_TEST_PATHS)
 
-test-integration: setup-containers
+test-integration: setup-containers postgres-start
 	@echo
 	@echo
 	@echo Integration tests timeout in $(INTEGRATION_TEST_TIMEOUT)
@@ -344,7 +345,9 @@ test-integration: setup-containers
 	@echo Set INTEGRATION_TEST_TIMEOUT to override.
 	@echo
 	@echo
-	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) ./integration --tags=integration $(TEST_TEAMCITY)
+	PGHOST=$(PGHOST) \
+	PGPORT=$(PGPORT) \
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration --tags=integration $(TEST_TEAMCITY)
 	@date
 
 $(SMOKE_TEST_BINARY):
@@ -426,31 +429,30 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 	fpm -s dir -t deb -n sous -v $(SOUS_VERSION) --description $(DESCRIPTION) --url $(URL) artifacts/$(LINUX_RELEASE_DIR)/sous=/usr/bin/sous
 	mv sous_$(SOUS_VERSION)_amd64.deb artifacts/
 
-postgres-start:
+.PHONY: postgres-start
+postgres-start: | postgres-stop postgres-clean # "order only" prereqs
 	if ! (docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT)); then \
 		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3;\
 		echo Waiting until Postgres completes booting...;\
 		until docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT); do sleep 1; done;\
 		echo Postgres container started;\
 	fi;
-	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME)
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w sous || true
+	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_DEV_FLAGS)" jcastillo/liquibase:0.0.7
+	docker run --net=host postgres:10.3 createdb -h localhost -p $(PGPORT) -U postgres -w $(TEST_DB_NAME) || true
 	docker run --net=host --rm -e CHANGELOG_FILE=changelog.xml -v $(PWD)/database:/changelogs -e "URL=$(LIQUIBASE_TEST_FLAGS)" jcastillo/liquibase:0.0.7
 
 .PHONY: postgres-restart
-postgres-restart:
-	$(MAKE) postgres-stop
-	$(MAKE) postgres-start
+postgres-restart: postgres-stop postgres-start
 
 .PHONY: postgres-clean-restart
-postgres-clean-restart:
-	$(MAKE) postgres-clean
-	$(MAKE) postgres-start
+postgres-clean-restart: postgres-start postgres-clean
 
 postgres-stop:
 	$(STOP_POSTGRES)
 
 postgres-connect:
-	psql -h $(DOCKER_HOST_IP) -p $(PGPORT) --username=postgres $(DB_NAME)
+	psql -h $(PGHOST) -p $(PGPORT) --username=postgres $(DB_NAME)
 
 postgres-validate-schema:
 	liquibase $(LIQUIBASE_FLAGS) validate
@@ -468,4 +470,3 @@ postgres-clean: postgres-stop
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
 	postgres-clean postgres-create-testdb build-debug homebrew install-gotags \
 	install-debug-linux install-debug-darwin
-

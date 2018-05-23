@@ -95,6 +95,11 @@ func Set(fs ...func(*error)) error {
 	return s.Set(fs...)
 }
 
+// Panic is shorthand for Sequential().Panic
+func Panic(fs ...func(*error)) error {
+	return s.Panic(fs...)
+}
+
 // Returned is shorthand for Sequential().Returned
 func Returned(fs ...func() error) error {
 	return s.Returned(fs...)
@@ -122,6 +127,17 @@ var (
 	s S
 	p P
 )
+
+// Panic takes a list of func(*error) and calls them one at a time, in the order
+func (S) Panic(fs ...func(*error)) error {
+	for _, f := range fs {
+		var err error
+		if f(&err); err != nil {
+			panic(err)
+		}
+	}
+	return nil
+}
 
 // Set takes a list of func(*error) and calls them one at a time, in the order
 // they were passed in. Each function can optionally set the error pointer

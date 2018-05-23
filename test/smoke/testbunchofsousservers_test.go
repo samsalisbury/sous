@@ -87,25 +87,44 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 	return nil
 }
 
-func (c *TestBunchOfSousServers) Configure(envDesc desc.EnvDesc) error {
+func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) error {
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr
 	}
-	for _, i := range c.Instances {
+
+	dbport := "6543"
+	if np, set := os.LookupEnv("PGPORT"); set {
+		dbport = np
+	}
+
+	host := "localhost"
+	if h, set := os.LookupEnv("PGHOST"); set {
+		host = h
+	}
+
+	for n, i := range c.Instances {
+		sous.SetupDB(t, n)
+		dbname := sous.DBNameForTest(t, n)
 		config := &config.Config{
 			StateLocation: i.StateDir,
 			SiblingURLs:   siblingURLs,
+			Database: storage.PostgresConfig{
+				DBName: dbname,
+				User:   "postgres",
+				Host:   host,
+				Port:   dbport,
+			},
 			Docker: docker.Config{
-				RegistryHost:       envDesc.RegistryName(),
-				DatabaseDriver:     "sqlite3_sous" + i.ClusterName,
-				DatabaseConnection: "file:dummy_" + i.ClusterName + ".db?mode=memory&cache=shared",
+				RegistryHost: envDesc.RegistryName(),
+				//DatabaseConnection: "file:dummy_" + i.ClusterName + ".db?mode=memory&cache=shared",
 			},
 			User: sous.User{
 				Name:  "Sous Server " + i.ClusterName,
 				Email: "sous-" + i.ClusterName + "@example.com",
 			},
 		}
+		config.Logging.Basic.Level = "debug"
 		if err := i.Configure(config, c.RemoteGDMDir); err != nil {
 			return errors.Wrapf(err, "configuring instance %d", i)
 		}
@@ -124,4 +143,7 @@ func (c *TestBunchOfSousServers) Start(t *testing.T, sousBin string) error {
 func (c *TestBunchOfSousServers) Stop(t *testing.T) {
 	t.Helper()
 	stopPIDs(t)
+	for n := range c.Instances {
+		sous.ReleaseDB(t, n)
+	}
 }

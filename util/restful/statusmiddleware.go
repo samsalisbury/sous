@@ -21,12 +21,16 @@ type (
 
 func (ph *StatusMiddleware) errorBody(status int, rq *http.Request, w io.Writer, data interface{}, err error, stack []byte) {
 	if ph.gatelatch == "" {
-		w.Write([]byte(fmt.Sprintf("%v\n", data)))
+		if data != nil {
+			w.Write([]byte(fmt.Sprintf("%v\n", data)))
+		}
 		return
 	}
 
 	if header := rq.Header.Get("X-Gatelatch"); header != ph.gatelatch {
-		w.Write([]byte(fmt.Sprintf("%s\n", data)))
+		if data != nil {
+			w.Write([]byte(fmt.Sprintf("%s\n", data)))
+		}
 		messages.ReportLogFieldsMessage("Gatelatch header didn't match gatelatch env", logging.WarningLevel, ph.LogSink, ph.gatelatch, header)
 		return
 	}
@@ -61,7 +65,5 @@ func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, 
 		ph.LogSink = &fallbackLogger{}
 	}
 	messages.ReportLogFieldsMessage("Recovered, returned 500", logging.WarningLevel, ph.LogSink, recovered)
-	ph.errorBody(http.StatusInternalServerError, r, w, nil, recovered.(error), stack)
-	// XXX in a dev mode, print the panic in the response body
-	// (normal ops it might leak secure data)
+	ph.errorBody(http.StatusInternalServerError, r, w, "panicked - see logs", recovered.(error), stack)
 }

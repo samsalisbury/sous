@@ -94,7 +94,8 @@ func (i *Instance) RunCmd(t *testing.T, binPath string, args ...string) (*exec.C
 		return cmd, err
 	}
 
-	stdout, stderr := prefixWithTestName(t, fmt.Sprintf("instance%d", i.Num))
+	//stdout, stderr := prefixWithTestName(t, fmt.Sprintf("instance%d", i.Num))
+	stdout, stderr := ioutil.Discard, ioutil.Discard
 
 	cmd.Stdout = io.MultiWriter(stdout, stdoutFile, combinedFile)
 	cmd.Stderr = io.MultiWriter(stderr, stderrFile, combinedFile)

@@ -10,6 +10,7 @@ import (
 // RefinedResolveFilter is a sous.ResolveFilter refined by user-requested flags.
 type RefinedResolveFilter sous.ResolveFilter
 
+// OT_ENV_FLAVOR is the environment name to use for flavors.
 const OT_ENV_FLAVOR = "OT_ENV_FLAVOR"
 
 func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDiscovery) (*RefinedResolveFilter, error) {
@@ -55,7 +56,7 @@ func newTargetDeploymentID(rrf *RefinedResolveFilter) (TargetDeploymentID, error
 	}
 	cluster, err := rrf.Cluster.Value()
 	if err != nil {
-		return TargetDeploymentID{}, fmt.Errorf("cluster: %s", err)
+		return TargetDeploymentID{}, fmt.Errorf("Setting up target deployment: cluster: %s", err)
 	}
 
 	return TargetDeploymentID{
@@ -88,12 +89,16 @@ func newTargetManifestID(rrf *RefinedResolveFilter) (TargetManifestID, error) {
 	}, nil
 }
 
-func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestID, s *sous.State) TargetManifest {
+func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestID, sm *ClientStateManager) (TargetManifest, error) {
+	s, err := sm.ReadState()
+	if err != nil {
+		return TargetManifest{}, err
+	}
 	mid := sous.ManifestID(tmid)
 	m, ok := s.Manifests.Get(mid)
 
 	if ok {
-		return TargetManifest{m}
+		return TargetManifest{m}, nil
 	}
 
 	var deploySpecs sous.DeploySpecs
@@ -119,7 +124,7 @@ func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestI
 
 	fls := m.Validate()
 	sous.RepairAll(fls)
-	return TargetManifest{m}
+	return TargetManifest{m}, nil
 }
 
 // QueryMap returns a map suitable for use with the HTTP API.

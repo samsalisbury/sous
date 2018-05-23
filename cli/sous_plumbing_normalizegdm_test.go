@@ -20,7 +20,7 @@ func TestHelp(t *testing.T) {
 
 func TestExecute(t *testing.T) {
 
-	gr := graph.DefaultTestGraph()
+	gr := graph.DefaultTestGraph(t)
 
 	//c := &config.Config{Server: "", StateLocation: "/tmp/sous"}
 	// , LocalSousConfig: graph.LocalSousConfig{Config: c}

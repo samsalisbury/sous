@@ -153,7 +153,8 @@ func TestUsesRequestedTag(t *testing.T) {
 	}
 
 	ctx := bc.NewContext()
-	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
+	// 991
+	assert.Equal(`1.2.3`, ctx.Source.Version().Version.String())
 }
 
 func TestAdvisesOfDefaultVersion(t *testing.T) {
@@ -170,7 +171,8 @@ func TestAdvisesOfDefaultVersion(t *testing.T) {
 	}
 
 	ctx := bc.NewContext()
-	assert.Equal(`0.0.0-unversioned+abcd`, ctx.Source.Version().Version.String())
+	// 991
+	assert.Equal(`0.0.0-unversioned`, ctx.Source.Version().Version.String())
 	assert.Contains(ctx.Advisories, string(Unversioned))
 }
 
@@ -194,7 +196,8 @@ func TestTagNotHead(t *testing.T) {
 	}
 
 	ctx := bc.NewContext()
-	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
+	// 991
+	assert.Equal(`1.2.3`, ctx.Source.Version().Version.String())
 	assert.Contains(ctx.Advisories, string(TagNotHead))
 	assert.NotContains(ctx.Advisories, string(EphemeralTag))
 }
@@ -242,7 +245,8 @@ func TestEphemeralTag(t *testing.T) {
 
 	ctx := bc.NewContext()
 	br := contextualizedResults(ctx)
-	assert.Equal(`1.2.3+abcd`, ctx.Source.Version().Version.String())
+	// 991
+	assert.Equal(`1.2.3`, ctx.Source.Version().Version.String())
 	assert.Contains(ctx.Advisories, string(EphemeralTag))
 	assert.NotContains(ctx.Advisories, string(TagNotHead))
 	assert.NoError(bc.GuardRegister(br))

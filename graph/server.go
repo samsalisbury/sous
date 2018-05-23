@@ -6,14 +6,23 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-func newServerComponentLocator(ls LogSink, cfg LocalSousConfig, ins sous.Inserter, sm *ServerStateManager, rf *sous.ResolveFilter, ar *sous.AutoResolver, v semv.Version, qs *sous.R11nQueueSet) server.ComponentLocator {
+func newServerComponentLocator(
+	ls LogSink,
+	cfg LocalSousConfig,
+	ins serverInserter,
+	sm *ServerStateManager,
+	rf *sous.ResolveFilter,
+	ar *sous.AutoResolver,
+	v semv.Version,
+	qs *sous.R11nQueueSet,
+) server.ComponentLocator {
 	cm := sous.MakeClusterManager(sm.StateManager, ls)
 	dm := sous.MakeDeploymentManager(sm.StateManager, ls)
 	return server.ComponentLocator{
 
 		LogSink:           ls.LogSink,
 		Config:            cfg.Config,
-		Inserter:          ins,
+		Inserter:          ins.Inserter,
 		StateManager:      sm.StateManager,
 		ClusterManager:    cm,
 		DeploymentManager: dm,

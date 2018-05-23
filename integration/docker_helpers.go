@@ -177,11 +177,27 @@ func BuildImageName(reponame, tag string) string {
 	return fmt.Sprintf("%s/%s:%s", registryName, reponame, tag)
 }
 
-func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir, tag string, ports []int32, startup sous.Startup) error {
+func registerAndDeploy(t *testing.T, clusterName, reponame, sourceRepo, dir, tag string, ports []int32, startup sous.Startup) error {
+	if err := registerImage(t, reponame, dir, tag); err != nil {
+		return err
+	}
+	if err := deployImage(t, clusterName, reponame, sourceRepo, tag, ports, startup); err != nil {
+		return err
+	}
+	return nil
+}
+
+func registerImage(t *testing.T, reponame, dir, tag string) error {
 	imageName := BuildImageName(reponame, tag)
-	if err := BuildAndPushContainer(dir, imageName); err != nil {
+	//t.Logf("registerAndDeploy for %s", imageName)
+	if err := BuildAndPushContainer(t, dir, imageName); err != nil {
 		panic(fmt.Errorf("building test container failed: %s", err))
 	}
+	return nil
+}
+
+func deployImage(t *testing.T, clusterName, reponame, sourceRepo, tag string, ports []int32, startup sous.Startup) error {
+	imageName := BuildImageName(reponame, tag)
 	if err := startInstance(SingularityURL, clusterName, imageName, sourceRepo, ports, startup); err != nil {
 		panic(fmt.Errorf("starting a singularity instance failed: %s", err))
 	}
@@ -192,13 +208,15 @@ func registerAndDeploy(ip net.IP, clusterName, reponame, sourceRepo, dir, tag st
 // BuildAndPushContainer builds a container based on the source found in
 // containerDir, and then pushes it to the integration docker registration
 // under tagName
-func BuildAndPushContainer(containerDir, tagName string) error {
+func BuildAndPushContainer(t *testing.T, containerDir, tagName string) error {
+	t.Helper()
 	build := exec.Command("docker", "build", ".")
 	build.Dir = containerDir
 	output, err := build.CombinedOutput()
+	//t.Logf("Running %v\n%s", build, output)
 	if err != nil {
-		log.Print("Problem building container: ", containerDir, "\n", string(output))
-		log.Print(err)
+		t.Logf("Problem building container: %s\n%s", containerDir, string(output))
+		t.Log(err)
 		return err
 	}
 
@@ -211,16 +229,20 @@ func BuildAndPushContainer(containerDir, tagName string) error {
 	tag := exec.Command("docker", "tag", containerID, tagName)
 	tag.Dir = containerDir
 	output, err = tag.CombinedOutput()
+	//t.Logf("Running %v\n%s", tag, output)
 	if err != nil {
-		log.Print("Problem tagging container: ", containerDir, "\n", string(output))
+		t.Logf("Problem tagging container: %s\n%s", containerDir, string(output))
+		t.Log(err)
 		return err
 	}
 
 	push := exec.Command("docker", "push", tagName)
 	push.Dir = containerDir
 	output, err = push.CombinedOutput()
+	//t.Logf("Running %v\n%s", push, output)
 	if err != nil {
-		log.Print("Problem pushing container: ", containerDir, "\n", string(output))
+		t.Logf("Problem pushing container: %s\n%s", containerDir, string(output))
+		t.Log(err)
 		return err
 	}
 

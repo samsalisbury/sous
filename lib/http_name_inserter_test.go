@@ -1,19 +1,23 @@
 package sous
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
 
 func TestHTTPNameInserter(t *testing.T) {
 
 	reqd := false
-	h := func(rw http.ResponseWriter, r *http.Request) {
+
+	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if meth := r.Method; strings.ToUpper(meth) != "PUT" {
 			t.Errorf("Method should be PUT was: %s", meth)
 		}
@@ -29,11 +33,35 @@ func TestHTTPNameInserter(t *testing.T) {
 		}
 		rw.WriteHeader(200)
 		reqd = true
+	}))
+
+	startSrv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		if meth := r.Method; strings.ToUpper(meth) != "GET" {
+			t.Errorf("Method should be GET was %s", meth)
+		}
+		if path := r.URL.Path; path != "/servers" {
+			t.Errorf("Path should be '/server' but was: %s", path)
+		}
+		rw.Header().Set("Content-Type", "application/json")
+		sdata := serverListData{
+			Servers: []server{{
+				ClusterName: "test",
+				URL:         srv.URL,
+			}},
+		}
+		enc := json.NewEncoder(rw)
+		enc.Encode(sdata)
+	}))
+
+	ls, _ := logging.NewLogSinkSpy()
+	tid := TraceID("trace!")
+
+	cl, err := restful.NewClient(startSrv.URL, ls, map[string]string{"OT-RequestId": string(tid)})
+	if err != nil {
+		t.Fatal(err)
 	}
 
-	srv := httptest.NewServer(http.HandlerFunc(h))
-
-	hni, err := NewHTTPNameInserter(srv.URL)
+	hni := NewHTTPNameInserter(cl, tid, ls)
 	if err != nil {
 		t.Error(err)
 	}

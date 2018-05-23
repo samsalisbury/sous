@@ -29,7 +29,7 @@ func (m *BuildManager) Build() (*BuildResult, error) {
 		bc *BuildContext
 		br *BuildResult
 	)
-	err := firsterr.Set(
+	err := firsterr.Panic(
 		func(e *error) { *e = m.BuildConfig.Validate() },
 		func(e *error) { bc = m.BuildConfig.NewContext() },
 		func(e *error) { *e = m.BuildConfig.GuardStrict(bc) },
