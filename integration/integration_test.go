@@ -204,6 +204,19 @@ func (suite *integrationSuite) deployDefaultContainers() {
 	WaitForSingularity()
 }
 
+func (suite *integrationSuite) withDeployment(clusters []string, repo string, count int, fn func(require.TestingT, *sous.DeployState)) {
+	var deps map[sous.DeploymentID]*sous.DeployState
+	for tries := 5; tries > 0; tries-- {
+		ds, which := suite.deploymentWithRepo(clusters, repo)
+		deps = ds.Snapshot()
+		if len(deps) == count {
+			fn(suite.T(), deps[which])
+			return
+		}
+	}
+	suite.FailNow("Expected there to be %d deployments, but there are %d: \nDeployState map:\n%+#v", count, len(deps), deps)
+}
+
 func (suite *integrationSuite) tearDown() {
 	sous.ReleaseDB(suite.T())
 
@@ -291,10 +304,7 @@ func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
 	suite.deployDefaultContainers()
 	clusters := []string{"other-cluster"}
 
-	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
-	deps := ds.Snapshot()
-	if suite.depsCount(deps, 1) {
-		webapp := deps[which]
+	suite.withDeployment(clusters, "github.com/example/webapp", 1, func(_ require.TestingT, webapp *sous.DeployState) {
 		suite.Equal(SingularityURL, webapp.Cluster.BaseURL)
 		suite.Regexp("^0\\.1", webapp.Resources["cpus"])    // XXX strings and floats...
 		suite.Regexp("^100\\.", webapp.Resources["memory"]) // XXX strings and floats...
@@ -303,7 +313,7 @@ func TestGetRunningDeploymentSet_otherCluster(t *testing.T) {
 		//suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta) //991
 		suite.Equal(1, webapp.NumInstances)
 		suite.Equal(sous.ManifestKindService, webapp.Kind)
-	}
+	})
 
 }
 
@@ -313,20 +323,16 @@ func TestGetRunningDeploymentSet_all(t *testing.T) {
 	suite.deployDefaultContainers()
 	clusters := []string{"test-cluster", "other-cluster"}
 
-	ds, which := suite.deploymentWithRepo(clusters, "github.com/example/webapp")
-	deps := ds.Snapshot()
-	if suite.depsCount(deps, 5) {
-		webapp := deps[which]
-		suite.Equal(SingularityURL, webapp.Cluster.BaseURL)
-		suite.Regexp("^0\\.1", webapp.Resources["cpus"])    // XXX strings and floats...
-		suite.Regexp("^100\\.", webapp.Resources["memory"]) // XXX strings and floats...
-		suite.Equal("1", webapp.Resources["ports"])         // XXX strings and floats...
-		suite.Equal(17, webapp.SourceID.Version.Patch)
-		//suite.Equal("91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta) //991
-		suite.Equal(1, webapp.NumInstances)
-		suite.Equal(sous.ManifestKindService, webapp.Kind)
-	}
-
+	suite.withDeployment(clusters, "github.com/example/webapp", 5, func(t require.TestingT, webapp *sous.DeployState) {
+		assert.Equal(t, SingularityURL, webapp.Cluster.BaseURL)
+		assert.Regexp(t, "^0\\.1", webapp.Resources["cpus"])    // XXX strings and floats...
+		assert.Regexp(t, "^100\\.", webapp.Resources["memory"]) // XXX strings and floats...
+		assert.Equal(t, "1", webapp.Resources["ports"])         // XXX strings and floats...
+		assert.Equal(t, 17, webapp.SourceID.Version.Patch)
+		//assert.Equal(t, "91495f1b1630084e301241100ecf2e775f6b672c", webapp.SourceID.Version.Meta) //991
+		assert.Equal(t, 1, webapp.NumInstances)
+		assert.Equal(t, sous.ManifestKindService, webapp.Kind)
+	})
 }
 
 func TestFailedService(t *testing.T) {
