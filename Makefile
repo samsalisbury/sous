@@ -113,7 +113,7 @@ INTEGRATION_TEST_TIMEOUT := 30m
 endif
 
 
-FLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
+FLAGS := '-X "main.Revision=$(COMMIT)" -X "main.VersionString=$(SOUS_VERSION)"'
 BIN_DIR := artifacts/bin
 DARWIN_RELEASE_DIR := sous-darwin-amd64_$(SOUS_VERSION)
 LINUX_RELEASE_DIR := sous-linux-amd64_$(SOUS_VERSION)
@@ -126,9 +126,11 @@ TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
 GO_TEST_PATHS ?= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
-DOCKER_BUILD_CMDS_LINUX := docker run --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -e GOOS=linux -e GOARCH=amd64 -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go build -ldflags $(FLAGS) -o
-DOCKER_BUILD_CMDS_DARWIN := docker run --rm --user $(USER_ID):$(GROUP_ID) -v /etc/passwd:/etc/passwd:ro -e GOOS=darwin -e GOARCH=amd64 -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go build -ldflags $(FLAGS) -o
 
+DOCKER_BUILD_RELEASE := docker run --rm -e GOOS=$$GOOS -e GOARCH=$$GOARCH -e OUTPUT_BIN=$$OUTPUT_BIN -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 bash -c "( go build -ldflags $(FLAGS) -o $$OUTPUT_BIN && chown $(USER_ID):$(GROUP_ID) $$OUTPUT_BIN )"
+
+DOCKER_BUILD_CMDS_LINUX := GOOS=linux GOARCH=amd64; $(DOCKER_BUILD_RELEASE)
+DOCKER_BUILD_CMDS_DARWIN := GOOS=darwin GOARCH=amd64; $(DOCKER_BUILD_RELEASE)
 
 GO_FILES := $(shell find . -regex '.*\.go')
 GO_PROJECT_FILES := $(shell find . -type d -name vendor -prune -o -regex '.*\.go')
@@ -164,14 +166,14 @@ build-debug-linux:
 	@if [[ $(SOUS_VERSION) != *"debug" ]]; then echo 'missing debug at the end of semv, please add'; exit -1; fi
 	echo "building debug version" $(SOUS_VERSION) "to" $(BIN_DIR)
 	mkdir -p $(BIN_DIR)
-	$(DOCKER_BUILD_CMDS_LINUX) artifacts/bin/sous-linux-amd64
+	export OUTPUT_BIN=artifacts/bin/sous-linux-amd64 $(DOCKER_BUILD_CMDS_LINUX)
 	mv ./artifacts/bin/sous-linux-amd64 ./artifacts/bin/sous-linux-$(SOUS_VERSION)
 
 build-debug-darwin:
 	@if [[ $(SOUS_VERSION) != *"debug" ]]; then echo 'missing debug at the end of semv, please add'; exit -1; fi
 	echo "building debug version" $(SOUS_VERSION) "to" $(BIN_DIR)
 	mkdir -p $(BIN_DIR)
-	$(DOCKER_BUILD_CMDS_DARWIN) artifacts/bin/sous-darwin-amd64
+	export OUTPUT_BIN=artifacts/bin/sous-darwin-amd64 $(DOCKER_BUILD_CMDS_DARWIN)
 	mv ./artifacts/bin/sous-darwin-amd64 ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
 
 install-debug-linux: build-debug-linux
@@ -407,7 +409,7 @@ artifacts/$(DARWIN_RELEASE_DIR)/sous:
 	cp README.md artifacts/$(DARWIN_RELEASE_DIR)
 	cp LICENSE artifacts/$(DARWIN_RELEASE_DIR)
 	mkdir -p $(BIN_DIR)
-	$(DOCKER_BUILD_CMDS_DARWIN) $(BIN_DIR)/sous-darwin-10.6-amd64
+	export OUTPUT_BIN=$(BIN_DIR)/sous-darwin-10.6-amd64 $(DOCKER_BUILD_CMDS_DARWIN) 
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
 artifacts/$(LINUX_RELEASE_DIR)/sous:
@@ -416,7 +418,7 @@ artifacts/$(LINUX_RELEASE_DIR)/sous:
 	cp README.md artifacts/$(LINUX_RELEASE_DIR)
 	cp LICENSE artifacts/$(LINUX_RELEASE_DIR)
 	mkdir -p $(BIN_DIR)
-	$(DOCKER_BUILD_CMDS_DARWIN) $(BIN_DIR)/sous-linux-amd64
+	export OUTPUT_BIN=$(BIN_DIR)/sous-linux-amd64 $(DOCKER_BUILD_CMDS_LINUX)
 	mv $(BIN_DIR)/sous-linux-amd64 $@
 
 artifacts/$(LINUX_TARBALL): artifacts/$(LINUX_RELEASE_DIR)/sous
