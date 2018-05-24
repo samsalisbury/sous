@@ -15,6 +15,9 @@ with respect to its command line interface and HTTP interface
 * Client: Refactor plumbing normalize gdm to action
 * Client: sous deploy can now send a slack notification if you specify SlackHookURL and
   SlackChannel configuration in config.yaml or via environment variables
+* All: when tags do not parse correctly, the error message is much clearer about why
+  it was invalid, including invalid characters and their positions in the semver
+  portion of the tag.
 
 ## [0.5.92](//github.com/opentable/sous/compare/0.5.91...0.5.92)
 ### Added
