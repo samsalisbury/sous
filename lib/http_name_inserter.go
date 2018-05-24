@@ -59,18 +59,19 @@ func (hni *HTTPNameInserter) Insert(sid SourceID, in, etag string, qs []Quality)
 		go func(client restful.HTTPClient) {
 			defer wg.Done()
 			art := &BuildArtifact{Name: in, Type: "docker", Qualities: qs}
-			_, err := client.Create("./artifact", simplifyQV(sid.QueryValues()), art, nil)
-			errs <- err
+			if _, err := client.Create("./artifact", simplifyQV(sid.QueryValues()), art, nil); err != nil {
+				errs <- err
+			}
 		}(cl)
 	}
 
 	wg.Wait()
 	select {
 	default:
-		return nil
 	case err := <-errs:
-		return err
+		logging.ReportError(hni.log, err)
 	}
+	return nil
 }
 
 func simplifyQV(qvs url.Values) map[string]string {
