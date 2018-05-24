@@ -171,10 +171,8 @@ func (c *BuildConfig) Resolve() {
 
 // Validate checks that the Config is well formed
 func (c *BuildConfig) Validate() error {
-	if _, ve := parseSemverTagWithOptionalPrefix(c.Tag); ve != nil {
-		return fmt.Errorf("semver git tag required: invalid tag: %q", c.Tag)
-	}
-	return nil
+	_, _, err := parseSemverTagWithOptionalPrefix(c.Tag)
+	return err
 }
 
 // GuardStrict returns an error if there are imperfections in the proposed build

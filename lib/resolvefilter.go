@@ -92,11 +92,10 @@ func (rf *ResolveFilter) matchDeployStatus(status DeployStatus) bool {
 
 // SetTag sets the tag based on a tag string - is ensures the tag parses as semver.
 func (rf *ResolveFilter) SetTag(tag string) error {
-	tagVersion, err := parseSemverTagWithOptionalPrefix(tag)
+	_, tagVersion, err := parseSemverTagWithOptionalPrefix(tag)
 	if err != nil {
-		return fmt.Errorf("version %q not valid: expected something like [servicename-]1.2.3", tag)
+		return err
 	}
-
 	rf.Tag = NewResolveFieldMatcher(tagVersion.Format(semv.Complete))
 	return nil
 }
