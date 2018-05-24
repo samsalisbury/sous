@@ -21,6 +21,12 @@
 			"revisionTime": "2017-08-25T18:38:27Z"
 		},
 		{
+			"checksumSHA1": "3kX711WTuMgIjYdPqZ/fexoC4w0=",
+			"path": "github.com/ashwanthkumar/slack-go-webhook",
+			"revision": "eb0e8e892f3ae0359ab8bd2777e7fb727ba28113",
+			"revisionTime": "2018-03-19T06:36:40Z"
+		},
+		{
 			"checksumSHA1": "/6H1rhQmbq8mEP29pnmLmdwBKUE=",
 			"path": "github.com/cyberdelia/go-metrics-graphite",
 			"revision": "39f87cc3b432bbb898d7c643c0e93cac2bc865ad",
@@ -242,16 +248,16 @@
 			"revisionTime": "2017-11-07T05:05:31Z"
 		},
 		{
-			"checksumSHA1": "kUqagcesbbz7A2eCwDYntlvrEqs=",
-			"path": "github.com/mattn/go-sqlite3",
-			"revision": "696e2e43cb00dcb1acaf6073e01493e3c4197b75",
-			"revisionTime": "2018-02-18T13:15:52Z"
-		},
-		{
 			"checksumSHA1": "DcYIZnMiq/Tj22/ge9os3NwOhs4=",
 			"path": "github.com/mitchellh/go-ps",
 			"revision": "4fdf99ab29366514c69ccccddab5dc58b8d84062",
 			"revisionTime": "2017-03-09T13:30:38Z"
+		},
+		{
+			"checksumSHA1": "CxNwJP++vjUAyy3bbJnNss1Il9Q=",
+			"path": "github.com/moul/http2curl",
+			"revision": "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d",
+			"revisionTime": "2017-09-19T18:10:01Z"
 		},
 		{
 			"checksumSHA1": "8qtroQuabLt2WML4Oh/Qzgp9mW8=",
@@ -288,6 +294,12 @@
 			"path": "github.com/opentable/swaggering",
 			"revision": "956c121ad7f4ea709e4cd19e18a7e421938163da",
 			"revisionTime": "2017-12-07T17:05:25Z"
+		},
+		{
+			"checksumSHA1": "eMb+00rKbq8U/bt40OvX1bXMNVQ=",
+			"path": "github.com/parnurzeal/gorequest",
+			"revision": "8e3aed27fe49f7fdc765dad067845f600fc984e8",
+			"revisionTime": "2017-10-15T11:04:55Z"
 		},
 		{
 			"checksumSHA1": "xN14ZoFcgefABp24aowYtQVMDsc=",
@@ -434,6 +446,12 @@
 			"path": "golang.org/x/net/context",
 			"revision": "35b06af0720201bc2f326773a80767387544f8c4",
 			"revisionTime": "2016-03-15T03:00:09Z"
+		},
+		{
+			"checksumSHA1": "ZSIQuoAzHbZEPMSJFXNyjz0YC6g=",
+			"path": "golang.org/x/net/publicsuffix",
+			"revision": "d11bb6cd8e3c4e60239c9cb20ef68586d74500d0",
+			"revisionTime": "2018-05-05T13:28:24Z"
 		},
 		{
 			"checksumSHA1": "DWm5iz5FvadHwann9QfLyD8zX38=",

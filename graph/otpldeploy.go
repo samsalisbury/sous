@@ -24,10 +24,15 @@ func newUserSelectedOTPLDeploySpecs(
 	detected detectedOTPLDeployManifest,
 	tmid TargetManifestID,
 	flags *config.OTPLFlags,
-	state *sous.State,
+	sm *ClientStateManager,
 	ls LogSink,
 ) (userSelectedOTPLDeployManifest, error) {
 	var nowt userSelectedOTPLDeployManifest
+
+	state, err := sm.ReadState()
+	if err != nil {
+		return userSelectedOTPLDeployManifest{}, err
+	}
 
 	if detected.Manifests.Len() == 0 {
 		if flags.UseOTPLDeploy {

@@ -72,9 +72,11 @@ func (rf *ResolveFilter) matchTag(tag string) bool {
 	return rf.Tag.match(tag)
 }
 
+/* 991
 func (rf *ResolveFilter) matchRevision(rev string) bool {
 	return rf.Revision.match(rev)
 }
+*/
 
 func (rf *ResolveFilter) matchFlavor(flavor string) bool {
 	return rf.Flavor.match(flavor)
@@ -112,7 +114,7 @@ func (rf *ResolveFilter) All() bool {
 	return rf.Repo.All() &&
 		rf.Offset.All() &&
 		rf.Tag.All() &&
-		rf.Revision.All() &&
+		//rf.Revision.All() &&
 		rf.Flavor.All() &&
 		rf.Cluster.All()
 	// xxx && rf.Status.All() ?
@@ -191,7 +193,7 @@ func (rf *ResolveFilter) FilterDeployment(d *Deployment) bool {
 	return rf.matchRepo(d.SourceID.Location.Repo) &&
 		rf.matchOffset(d.SourceID.Location.Dir) &&
 		rf.matchTag(d.SourceID.Version.String()) &&
-		rf.matchRevision(d.SourceID.RevID()) &&
+		//rf.matchRevision(d.SourceID.RevID()) &&
 		rf.matchFlavor(d.Flavor) &&
 		rf.matchCluster(d.ClusterName)
 }

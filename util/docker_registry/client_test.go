@@ -26,3 +26,18 @@ func TestNewClient(t *testing.T) {
 	assert.NotNil(c)
 	c.Cancel()
 }
+
+func TestSplitHost(t *testing.T) {
+	url, ref, err := splitHost("192.168.11.1:5000/some/repo:some-tag")
+	wantURL := "192.168.11.1:5000"
+	if url != wantURL {
+		t.Fatalf("got url=%q; want %q", url, wantURL)
+	}
+	wantRef := "some/repo:some-tag"
+	if ref.String() != wantRef {
+		t.Fatalf("got ref=%q; want %q", ref, wantRef)
+	}
+	if err != nil {
+		t.Fatalf("got error %q; want nil", err)
+	}
+}

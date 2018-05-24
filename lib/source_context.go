@@ -72,8 +72,8 @@ func NormalizedOffset(root, workdir string) (string, error) {
 // Version returns the SourceID.
 func (sc *SourceContext) Version() SourceID {
 	v := nearestVersion(append([]Tag{sc.NearestTag}, sc.Tags...))
-	// Append revision ID.
-	v.Meta = sc.Revision
+
+	//v.Meta = sc.Revision //991
 	v.DefaultFormat = semv.Complete //XXX issue with semv?
 
 	sv := SourceID{

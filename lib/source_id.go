@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 	"golang.org/x/text/unicode/norm"
@@ -75,15 +76,24 @@ func (sid SourceID) QueryValues() url.Values {
 	return v
 }
 
+// EachField implements logging.EachFielder on SourceID.
+func (sid SourceID) EachField(fn logging.FieldReportFn) {
+	fn(logging.SousSourceId, sid.String())
+	// XXX consider a version field - would need to be added to OTLs
+	sid.Location.EachField(fn)
+}
+
 // Tag returns the version tag for this source ID.
 func (sid SourceID) Tag() string {
 	return sid.Version.Format(semv.MajorMinorPatch)
 }
 
+/*
 // RevID returns the revision id for this SourceID.
 func (sid SourceID) RevID() string {
 	return sid.Version.Meta
 }
+*/
 
 // Equal tests the equality between this SourceID and another.
 func (sid SourceID) Equal(o SourceID) bool {

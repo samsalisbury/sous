@@ -21,7 +21,7 @@ func prepareCommand(t *testing.T, cl []string) (*CLI, *cmdr.PreparedExecution, f
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
+	di := graph.BuildTestGraph(t, semv.Version{}, stdin, stdout, stderr)
 	type logSetScoop struct {
 		*logging.LogSet
 	}
@@ -239,7 +239,7 @@ func TestInvokeVersion(t *testing.T) {
 func TestInvokeHarvest(t *testing.T) {
 	assert := assert.New(t)
 
-	exe := justCommand(t, []string{`sous`, `harvest`, `sms-continual-test`})
+	exe := justCommand(t, []string{`sous`, `harvest`, `-cluster`, `blah`, `sms-continual-test`})
 	assert.NotNil(exe)
 	assert.Len(exe.Args, 1)
 }
@@ -312,7 +312,7 @@ func TestInvokeWithUnknownFlags(t *testing.T) {
 	stderr := &bytes.Buffer{}
 
 	s := &Sous{Version: semv.MustParse(`1.2.3`)}
-	di := graph.BuildTestGraph(semv.Version{}, stdin, stdout, stderr)
+	di := graph.BuildTestGraph(t, semv.Version{}, stdin, stdout, stderr)
 	ls, _ := logging.NewLogSinkSpy()
 	c, err := NewSousCLI(di, s, ls, stdout, stderr)
 	require.NoError(err)

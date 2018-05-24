@@ -364,6 +364,7 @@ func TestStatusPoller_brokenServer(t *testing.T) {
 		// The race detector picked up this issue.
 		handleMutex.Lock()
 		defer handleMutex.Unlock()
+		rw.Header().Set("Content-Type", "application/json")
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
@@ -455,6 +456,7 @@ func TestStatusPoller(t *testing.T) {
 		// The race detector picked up this issue.
 		handleMutex.Lock()
 		defer handleMutex.Unlock()
+		rw.Header().Set("Content-Type", "application/json")
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
@@ -596,6 +598,7 @@ func TestStatusPoller_OldServer2(t *testing.T) {
 	var gdmJSON, serversJSON, statusJSON []byte
 
 	h := func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
@@ -700,6 +703,7 @@ func TestStatusPoller_MesosFailed(t *testing.T) {
 	h := func(rw http.ResponseWriter, r *http.Request) {
 		handleMutex.Lock()
 		defer handleMutex.Unlock()
+		rw.Header().Set("Content-Type", "application/json")
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)
@@ -843,6 +847,7 @@ func TestStatusPoller_NotIntended(t *testing.T) {
 	var gdmJSON, serversJSON, statusJSON []byte
 
 	h := func(rw http.ResponseWriter, r *http.Request) {
+		rw.Header().Set("Content-Type", "application/json")
 		url := r.URL.String()
 		if serversRE.MatchString(url) {
 			rw.Write(serversJSON)

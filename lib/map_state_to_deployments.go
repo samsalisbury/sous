@@ -11,6 +11,9 @@ import (
 
 // Deployments returns all deployments described by the state.
 func (s *State) Deployments() (Deployments, error) {
+	if s == nil {
+		return Deployments{}, errors.New("Nil state")
+	}
 	return s.Manifests.Deployments(s.Defs)
 }
 

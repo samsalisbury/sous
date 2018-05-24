@@ -54,8 +54,6 @@ SiblingURLs: {}
 BuildStateDir: ""
 Docker:
   RegistryHost: '$DOCKER_REG'
-  DatabaseDriver: sqlite3_sous
-  DatabaseConnection: file:dummy.db?mode=memory&cache=shared
 Logging:
   Basic:
     Level: "critical"
@@ -84,4 +82,3 @@ trap kill_servers SIGINT
 echo "Sous servers running; press ctrl+c to kill."
 
 wait
-
