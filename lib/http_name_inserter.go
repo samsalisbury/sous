@@ -67,10 +67,10 @@ func (hni *HTTPNameInserter) Insert(sid SourceID, in, etag string, qs []Quality)
 	wg.Wait()
 	select {
 	default:
-		return nil
 	case err := <-errs:
-		return err
+		logging.ReportError(hni.log, err)
 	}
+	return nil
 }
 
 func simplifyQV(qvs url.Values) map[string]string {
