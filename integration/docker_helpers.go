@@ -213,7 +213,6 @@ func BuildAndPushContainer(t *testing.T, containerDir, tagName string) error {
 	build := exec.Command("docker", "build", ".")
 	build.Dir = containerDir
 	output, err := build.CombinedOutput()
-	//t.Logf("Running %v\n%s", build, output)
 	if err != nil {
 		t.Logf("Problem building container: %s\n%s", containerDir, string(output))
 		t.Log(err)
@@ -229,7 +228,6 @@ func BuildAndPushContainer(t *testing.T, containerDir, tagName string) error {
 	tag := exec.Command("docker", "tag", containerID, tagName)
 	tag.Dir = containerDir
 	output, err = tag.CombinedOutput()
-	//t.Logf("Running %v\n%s", tag, output)
 	if err != nil {
 		t.Logf("Problem tagging container: %s\n%s", containerDir, string(output))
 		t.Log(err)
@@ -239,7 +237,6 @@ func BuildAndPushContainer(t *testing.T, containerDir, tagName string) error {
 	push := exec.Command("docker", "push", tagName)
 	push.Dir = containerDir
 	output, err = push.CombinedOutput()
-	//t.Logf("Running %v\n%s", push, output)
 	if err != nil {
 		t.Logf("Problem pushing container: %s\n%s", containerDir, string(output))
 		t.Log(err)

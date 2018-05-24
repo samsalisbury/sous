@@ -47,6 +47,10 @@ type (
 		MaxHTTPConcurrencySingularity int `env:"MAX_HTTP_CONCURRENCY_SINGULARITY"`
 		// PollIntervalForClient is the maximum number of checks for client on SOUS Deploy
 		PollIntervalForClient int `env:"SOUS_POLL_INTERVAL_FOR_CLIENT"`
+		// SlackHookURL when set with SlackChannel will send messages to specified web hook
+		SlackHookURL string `env:"SOUS_SLACK_HOOK_URL"`
+		// SlackChannel that should receive messages
+		SlackChannel string `env:"SOUS_SLACK_CHANNEL"`
 	}
 )
 

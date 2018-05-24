@@ -103,8 +103,12 @@ func (sc *deployer) RunningDeployments(reg sous.Registry, clusters sous.Clusters
 				messages.ReportLogFieldsMessage("Errors channel closed. Finishing up.", logging.DebugLevel, sc.log)
 				return deps, nil
 			}
-			if isMalformed(sc.log, err) || ignorableDeploy(sc.log, err) {
-				logging.ReportError(sc.log, errors.Wrapf(err, "malformed or ignorable deploy"))
+			if isMalformed(err) || ignorableDeploy(sc.log, err) {
+				if isMalformed(err) {
+					logging.ReportError(sc.log, errors.Wrapf(err, "malformed"))
+				} else {
+					messages.ReportLogFieldsMessage("Ignorable deploy.", logging.DebugLevel, sc.log)
+				}
 				depWait.Done()
 			} else {
 				retryable := retries.maybe(err, reqCh)
