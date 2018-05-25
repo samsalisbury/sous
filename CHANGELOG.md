@@ -9,7 +9,7 @@ with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.93...HEAD)
 ### Changed
-* Client: add additional channels to send via config
+* Client: Slack add additional channels to send via config
 
 
 ## [0.5.93](//github.com/opentable/sous/compare/0.5.92...0.5.93)

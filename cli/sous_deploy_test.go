@@ -10,18 +10,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSlackMessage(t *testing.T) {
-
-	sd := &SousDeploy{}
+func returnAction(t *testing.T, c *config.Config) actions.Action {
 	user := sous.User{
 		Name:  "Bob Smith",
 		Email: "bsmith@test.com",
 	}
 
-	config := &config.Config{
-		User: user,
-	}
-
+	c.User = user
 	rMid := sous.MustParseManifestID("github.com/blah/blah")
 	rf := &sous.ResolveFilter{
 		Repo:    sous.NewResolveFieldMatcher("github.com/from/flags"),
@@ -35,11 +30,61 @@ func TestSlackMessage(t *testing.T) {
 		ResolveFilter:      rf,
 		TargetDeploymentID: did,
 		LogSink:            ls,
-		User:               user,
-		Config:             config,
+		User:               c.User,
+		Config:             c,
 	}
-	var dAction actions.Action
-	dAction = d
+	return d
+}
+
+func TestSlackMessage_just_hookandchannel(t *testing.T) {
+	sd := &SousDeploy{}
+	config := &config.Config{
+		SlackHookURL: "http://foo.com",
+		SlackChannel: "bar",
+	}
+
+	dAction := returnAction(t, config)
+	assert.NotPanics(t, func() { sd.slackMessage(dAction, nil) }, "shouldn't panic")
+
+}
+
+func TestSlackMessage_noslack(t *testing.T) {
+	sd := &SousDeploy{}
+	config := &config.Config{}
+
+	dAction := returnAction(t, config)
+	assert.NotPanics(t, func() { sd.slackMessage(dAction, nil) }, "shouldn't panic")
+
+}
+
+func TestSlackMessage_justadditinonal(t *testing.T) {
+	additionalChannels := make(map[string]string)
+	sd := &SousDeploy{}
+
+	additionalChannels["bar"] = "http://foo.com"
+
+	config := &config.Config{
+		AdditionalSlackChannels: additionalChannels,
+	}
+
+	dAction := returnAction(t, config)
+	assert.NotPanics(t, func() { sd.slackMessage(dAction, nil) }, "shouldn't panic")
+
+}
+
+func TestSlackMessage_both(t *testing.T) {
+	additionalChannels := make(map[string]string)
+	sd := &SousDeploy{}
+
+	additionalChannels["channel"] = "http://hook.com"
+
+	config := &config.Config{
+		SlackHookURL:            "http://foo.com",
+		SlackChannel:            "bar",
+		AdditionalSlackChannels: additionalChannels,
+	}
+
+	dAction := returnAction(t, config)
 	assert.NotPanics(t, func() { sd.slackMessage(dAction, nil) }, "shouldn't panic")
 
 }
