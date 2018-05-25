@@ -52,7 +52,7 @@ type (
 		// SlackChannel that should receive messages
 		SlackChannel string `env:"SOUS_SLACK_CHANNEL"`
 		// AdditionalSlackChannels that should receive messages
-		AdditionalSlackChannels map[string]string `env"SOUS_ADDITIONAL_SLACK_CHANNELS"`
+		AdditionalSlackChannels map[string]string `env:"SOUS_ADDITIONAL_SLACK_CHANNELS"`
 	}
 )
 
