@@ -116,7 +116,7 @@ func (b *Builder) metadataDockerfile(bp *sous.BuildProduct) io.Reader {
 		Advisories []string
 	}{
 		bp.ID,
-		Labels(sv, bp.RevisionName),
+		Labels(sv, bp.RevID),
 		bp.Advisories,
 	})
 	return &bf

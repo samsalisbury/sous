@@ -82,6 +82,8 @@ type (
 		Source SourceID
 		Kind   string
 
+		RevID string
+
 		// ID is the artifact identifier - specific to product kind; e.g. docker
 		// products have image ids.
 		// Advisories contain the QA advisories determined on the build, and convey
@@ -114,6 +116,7 @@ func (br *BuildResult) Contextualize(c *BuildContext) {
 			prdt.Advisories = make([]string, 0, len(advs))
 		}
 		prdt.Advisories = append(prdt.Advisories, advs...)
+		prdt.RevID = c.RevID()
 	}
 }
 
