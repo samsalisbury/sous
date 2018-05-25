@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
+
+## [Unreleased](//github.com/opentable/sous/compare/0.5.93...HEAD)
+### Changed
+* Client: add additional channels to send via config
+
+
 ## [0.5.93](//github.com/opentable/sous/compare/0.5.92...0.5.93)
 ### Changed
 * Server: Postgres is now required for the server to operate.
