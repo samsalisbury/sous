@@ -71,14 +71,25 @@ func (sd *SousDeploy) Execute(args []string) cmdr.Result {
 func (sd *SousDeploy) slackMessage(action actions.Action, err error) {
 
 	var slackURL, slackChannel string
+	var additionalChannels map[string]string
+
 	d, ok := action.(*actions.Deploy)
 
 	if ok {
 		slackURL = d.Config.SlackHookURL
 		slackChannel = d.Config.SlackChannel
+		additionalChannels = d.Config.AdditionalSlackChannels
 	}
 
-	if len(slackURL) < 1 || len(slackChannel) < 1 {
+	if additionalChannels == nil {
+		additionalChannels = make(map[string]string)
+	}
+
+	if len(slackURL) > 0 && len(slackChannel) > 0 {
+		additionalChannels[slackChannel] = slackURL
+	}
+
+	if len(additionalChannels) < 1 {
 		return
 	}
 
@@ -101,12 +112,16 @@ func (sd *SousDeploy) slackMessage(action actions.Action, err error) {
 
 	payload := slack.Payload{
 		Username:    "Sous Bot",
-		Channel:     slackChannel,
 		IconEmoji:   ":chefhat:",
 		Attachments: []slack.Attachment{attachment},
 	}
 
-	errs := slack.Send(slackURL, "", payload)
+	var errs []error
+	for k, v := range additionalChannels {
+		payload.Channel = k
+		newErrors := slack.Send(v, "", payload)
+		errs = append(errs, newErrors...)
+	}
 
 	if len(errs) > 0 {
 		messages.ReportLogFieldsMessage("Error sending slack message", logging.WarningLevel, d.LogSink, errs)
