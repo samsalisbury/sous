@@ -91,6 +91,7 @@ type (
 
 	gitStateManager  struct{ sous.StateManager }
 	diskStateManager struct{ sous.StateManager }
+	distStateManager struct{ sous.StateManager }
 
 	// Wrappers for the Inserter interface, to make explicit the difference
 	// between client and server handling.
@@ -224,10 +225,11 @@ func AddShells(graph adder) {
 func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
-		newMaybeDatabase,           // we need to be able to progress in the absence of a DB.
-		newGitStateManagerFactory,  // provides a seam for testing
-		newDiskStateManagerFactory, // provides a seam for testing
+		newMaybeDatabase, // we need to be able to progress in the absence of a DB.
 		newServerStateManager,
+		newDistributedStateManager,
+		newGitStateManager,
+		newDiskStateManager,
 	)
 }
 
@@ -621,36 +623,35 @@ func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink, gmf gitStateManagerFactory) (*ServerStateManager, error) {
-	var secondary sous.StateManager
+func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm distStateManager) (*ServerStateManager, error) {
+	primary := gm
+	secondary := dm
+
+	duplex := storage.NewDuplexStateManager(primary.StateManager, secondary.StateManager, log.Child("duplex-state"))
+	return &ServerStateManager{StateManager: duplex}, nil
+}
+
+func newDistributedStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) distStateManager {
+	var dist sous.StateManager
 	err := mdb.Err
 	if err == nil {
-		secondary, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
+		dist, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
 	}
 
 	if err != nil { // because DB Err wasn't nil, or distributed didn't set up well
 		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
-		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
+		dist = storage.NewLogOnlyStateManager(log.Child("database"))
 	}
 
-	duplex := storage.NewDuplexStateManager(gmf(), secondary, log.Child("duplex-state"))
-	return &ServerStateManager{StateManager: duplex}, nil
+	return distStateManager{dist}
 }
 
-type gitStateManagerFactory func() gitStateManager
-
-func newGitStateManagerFactory(dmf diskStateManagerFactory, log LogSink) gitStateManagerFactory {
-	return func() gitStateManager {
-		return gitStateManager{storage.NewGitStateManager(dmf(), log.Child("git-state-manager"))}
-	}
+func newGitStateManager(dm *storage.DiskStateManager, log LogSink) gitStateManager {
+	return gitStateManager{storage.NewGitStateManager(dm, log.Child("git-state-manager"))}
 }
 
-type diskStateManagerFactory func() *storage.DiskStateManager
-
-func newDiskStateManagerFactory(c LocalSousConfig, log LogSink) diskStateManagerFactory {
-	return func() *storage.DiskStateManager {
-		return storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
-	}
+func newDiskStateManager(c LocalSousConfig, log LogSink) *storage.DiskStateManager {
+	return storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
 }
 
 func newDistributedStorage(db *sql.DB, c LocalSousConfig, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {

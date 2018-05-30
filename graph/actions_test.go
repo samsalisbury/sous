@@ -36,10 +36,8 @@ func fixtureGraph(t *testing.T) *SousGraph {
 			return &docker.NameCache{}, nil
 		}
 	})
-	tg.Replace(func(ls LogSink) gitStateManagerFactory {
-		return func() gitStateManager {
-			return gitStateManager{sous.NewDummyStateManager()}
-		}
+	tg.Replace(func(ls LogSink) gitStateManager {
+		return gitStateManager{sous.NewDummyStateManager()}
 	})
 	tg.Replace(func() LogSink {
 		return LogSink{logging.SilentLogSet()}
