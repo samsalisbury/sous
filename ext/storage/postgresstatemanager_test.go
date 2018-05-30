@@ -117,13 +117,21 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	suite.require.NoError(err)
 
 	for diff := range oldD.Diff(newD).Pairs {
+		different, differences := diff.Post.Deployment.Diff(diff.Prior.Deployment)
+		if different {
+			suite.Fail("Differences detected between written and read states", "%+#v", differences)
+		}
 		switch diff.Kind() {
 		default:
 			suite.Fail("Difference detected between written and read states", "They are: %s %+#v", diff.Kind(), diff)
 		case sous.ModifiedKind:
 			suite.Fail("Difference detected between written and read states", "%+#v %+#v", diff, diff.Diffs())
-
 		case sous.SameKind:
+			different, differences := diff.Post.Deployment.Diff(diff.Prior.Deployment)
+			if different {
+				suite.Fail("Differences detected between written and read states", "%+#v", differences)
+			}
+			// OK, we expect them all the be the same.
 		}
 	}
 }
