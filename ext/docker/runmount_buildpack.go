@@ -63,9 +63,11 @@ func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult,
 	err = templateDockerfile(*ctx, tempDir, subBuilders)
 	fmt.Println("templateDockerfile err : ", err)
 
-	runnables, err := buildRunnables(*ctx, tempDir, subBuilders)
+	err = buildRunnables(*ctx, tempDir, subBuilders)
 	fmt.Println("err : ", err)
-	fmt.Println("runnables : ", runnables)
+	//fmt.Println("runnables : ", runnables)
+	// TODO LH need these runnables to go to products.
+	// TODO LH need to fix the naming of the runnables/subbuilders in here
 
 	products := products(*ctx, subBuilders)
 	fmt.Println("products : ", products)

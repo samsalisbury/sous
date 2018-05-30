@@ -209,17 +209,17 @@ func templateDockerfileBytes(dockerfile io.Writer, builder builder) error {
 	return tmpl.Execute(dockerfile, builder)
 }
 
-func buildRunnables(ctx sous.BuildContext, buildDir string, runnableBuilders []*runnableBuilder) ([]string, error) {
-	deployIDs := make([]string, len(runnableBuilders))
-	for i, builder := range runnableBuilders {
-		deployID, err := buildRunnable(ctx, buildDir, builder)
+func buildRunnables(ctx sous.BuildContext, buildDir string, runnableBuilders []*runnableBuilder) error {
+
+	for _, builder := range runnableBuilders {
+		_, err := buildRunnable(ctx, buildDir, builder)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		deployIDs[i] = deployID
+
 	}
-	fmt.Println("deployIDs : ", deployIDs)
-	return deployIDs, nil
+	fmt.Println("runnableBuilders : ", runnableBuilders)
+	return nil
 }
 func versionNameLocal(ctx sous.BuildContext) string {
 	v := ctx.Version().Version
@@ -239,23 +239,23 @@ func revisionConfigLocal(ctx sous.BuildContext) string {
 	return fmt.Sprintf("%s=%s", AppRevisionBuildArg, revisionNameLocal(ctx))
 }
 
-func buildRunnable(ctx sous.BuildContext, buildDir string, builder *runnableBuilder) (string, error) {
+func buildRunnable(ctx sous.BuildContext, buildDir string, builder *runnableBuilder) (*runnableBuilder, error) {
 	sh := ctx.Sh.Clone()
 	sh.LongRunning(true)
 	sh.CD(buildDir)
 
 	out, err := sh.Stdout("docker", "build", ".")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	match := successfulBuildRE.FindStringSubmatch(string(out))
 	if match == nil {
-		return "", fmt.Errorf("Couldn't find container id in:\n%s", out)
+		return nil, fmt.Errorf("Couldn't find container id in:\n%s", out)
 	}
-	deployImageID := match[1]
+	builder.deployImageID = match[1]
 
-	return deployImageID, nil
+	return builder, nil
 }
 
 func products(ctx sous.BuildContext, runnableBuilders []*runnableBuilder) []*sous.BuildProduct {
