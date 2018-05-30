@@ -36,6 +36,11 @@ type (
 		Startup Startup `yaml:",omitempty"`
 		// Schedule is a cronjob-format schedule for jobs.
 		Schedule string
+
+		// Hidden fields...
+		// SingularityRequestID is the ID of the request representing this
+		// deployment in a Singularity scheduler.
+		SingularityRequestID string `yaml:"-"`
 	}
 
 	// A DeployConfigs is a map from cluster name to DeployConfig
@@ -147,9 +152,12 @@ func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
 			diffs = append(diffs, fmt.Sprintf("volumes; this: %v; other: %v", dc.Volumes, o.Volumes))
 		}
 	}
+	if dc.SingularityRequestID != o.SingularityRequestID {
+		diffs = append(diffs, fmt.Sprintf("SingularityRequestID; this: %q; other %q",
+			dc.SingularityRequestID, o.SingularityRequestID))
+	}
 	diffs = append(diffs, dc.Startup.diff(o.Startup)...)
-	// TODO: Compare Args
-	return len(diffs) == 0, diffs
+	return len(diffs) != 0, diffs
 }
 
 // Clone returns a deep copy of this DeployConfig.
