@@ -624,10 +624,15 @@ func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
 }
 
 func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm distStateManager) (*ServerStateManager, error) {
-	primary := gm
-	secondary := dm
+	var primary, secondary sous.StateManager
+	primary = gm
+	secondary = dm
 
-	duplex := storage.NewDuplexStateManager(primary.StateManager, secondary.StateManager, log.Child("duplex-state"))
+	if c.DatabasePrimary {
+		primary, secondary = secondary, primary
+	}
+
+	duplex := storage.NewDuplexStateManager(primary, secondary, log.Child("duplex-state"))
 	return &ServerStateManager{StateManager: duplex}, nil
 }
 
