@@ -266,6 +266,7 @@ func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {
 		}
 
 		dc.Startup = c.Startup
+		dc.SingularityRequestID = c.SingularityRequestID
 	}
 	return dc
 }
