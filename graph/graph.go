@@ -630,6 +630,19 @@ func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, d
 
 	if c.DatabasePrimary {
 		primary, secondary = secondary, primary
+		logging.Deliver(log,
+			logging.InformationLevel,
+			logging.SousGenericV1,
+			logging.GetCallerInfo(),
+			logging.MessageField("database is primary datastore"),
+		)
+	} else {
+		logging.Deliver(log,
+			logging.InformationLevel,
+			logging.SousGenericV1,
+			logging.GetCallerInfo(),
+			logging.MessageField("git is primary datastore"),
+		)
 	}
 
 	duplex := storage.NewDuplexStateManager(primary, secondary, log.Child("duplex-state"))
