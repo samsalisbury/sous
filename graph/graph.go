@@ -89,9 +89,16 @@ type (
 	// ServerStateManager wraps the sous.StateManager interface and is used by `sous server`
 	ServerStateManager struct{ sous.StateManager }
 
-	gitStateManager  struct{ sous.StateManager }
+	distStateManager struct {
+		sous.StateManager
+		Error error
+	}
+
+	gitStateManager struct {
+		sous.StateManager
+		Error error
+	}
 	diskStateManager struct{ sous.StateManager }
-	distStateManager struct{ sous.StateManager }
 
 	// Wrappers for the Inserter interface, to make explicit the difference
 	// between client and server handling.
@@ -625,24 +632,26 @@ func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
 
 func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm distStateManager) (*ServerStateManager, error) {
 	var primary, secondary sous.StateManager
-	primary = gm
-	secondary = dm
+	var perr, serr error
+	primary = gm.StateManager
+	secondary = dm.StateManager
+	perr = gm.Error
+	serr = dm.Error
 
 	if c.DatabasePrimary {
-		primary, secondary = secondary, primary
-		logging.Deliver(log,
-			logging.InformationLevel,
-			logging.SousGenericV1,
-			logging.GetCallerInfo(),
-			logging.MessageField("database is primary datastore"),
-		)
+		primary, perr, secondary, serr = secondary, serr, primary, perr
+		logging.Deliver(log, logging.InformationLevel, logging.SousGenericV1, logging.GetCallerInfo(), logging.MessageField("database is primary datastore"))
 	} else {
-		logging.Deliver(log,
-			logging.InformationLevel,
-			logging.SousGenericV1,
-			logging.GetCallerInfo(),
-			logging.MessageField("git is primary datastore"),
-		)
+		logging.Deliver(log, logging.InformationLevel, logging.SousGenericV1, logging.GetCallerInfo(), logging.MessageField("git is primary datastore"))
+	}
+
+	if perr != nil {
+		return nil, perr
+	}
+
+	if serr != nil { // because DB Err wasn't nil, or distributed didn't set up well
+		logging.ReportError(log, errors.Wrapf(serr, "connecting to database with %#v", c.Database))
+		secondary = storage.NewLogOnlyStateManager(log.Child("secondary"))
 	}
 
 	duplex := storage.NewDuplexStateManager(primary, secondary, log.Child("duplex-state"))
@@ -656,16 +665,14 @@ func newDistributedStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.T
 		dist, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
 	}
 
-	if err != nil { // because DB Err wasn't nil, or distributed didn't set up well
-		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
-		dist = storage.NewLogOnlyStateManager(log.Child("database"))
+	return distStateManager{
+		StateManager: dist,
+		Error:        err,
 	}
-
-	return distStateManager{dist}
 }
 
 func newGitStateManager(dm *storage.DiskStateManager, log LogSink) gitStateManager {
-	return gitStateManager{storage.NewGitStateManager(dm, log.Child("git-state-manager"))}
+	return gitStateManager{StateManager: storage.NewGitStateManager(dm, log.Child("git-state-manager"))}
 }
 
 func newDiskStateManager(c LocalSousConfig, log LogSink) *storage.DiskStateManager {
