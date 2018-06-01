@@ -60,7 +60,8 @@ func (res *StateDeploymentResource) Put(_ *restful.RouteMap, _ logging.LogSink, 
 
 // Exchange implements restful.Exchanger on GETStateDeployments
 func (gsd *GETStateDeployments) Exchange() (interface{}, int) {
-	logging.Deliver(gsd.log, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(), logging.MessageField(fmt.Sprintf("GETStateDeployments %q, %T", gsd.clusterName, gsd.cluster)))
+	logging.Deliver(gsd.log, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(fmt.Sprintf("GETStateDeployments %q, %T", gsd.clusterName, gsd.cluster)))
 
 	data := dto.GDMWrapper{Deployments: []*sous.Deployment{}}
 	deps, err := gsd.cluster.ReadCluster(gsd.clusterName)
