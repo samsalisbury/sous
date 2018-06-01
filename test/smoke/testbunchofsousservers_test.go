@@ -23,7 +23,7 @@ type TestBunchOfSousServers struct {
 	Instances    []*Instance
 }
 
-func newBunchOfSousServers(t *testing.T, state *sous.State, baseDir string, nextFreeAddr func() string) (*TestBunchOfSousServers, error) {
+func newBunchOfSousServers(t *testing.T, state *sous.State, baseDir string, nextFreeAddr func() string, fcfg fixtureConfig) (*TestBunchOfSousServers, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 	return nil
 }
 
-func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) error {
+func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr
@@ -115,6 +115,7 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc) e
 				Host:   host,
 				Port:   dbport,
 			},
+			DatabasePrimary: fcfg.dbPrimary,
 			Docker: docker.Config{
 				RegistryHost: envDesc.RegistryName(),
 				//DatabaseConnection: "file:dummy_" + i.ClusterName + ".db?mode=memory&cache=shared",
