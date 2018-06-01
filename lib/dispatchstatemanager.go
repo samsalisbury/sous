@@ -1,6 +1,8 @@
 package sous
 
 import (
+	"fmt"
+
 	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
@@ -33,11 +35,13 @@ func NewDispatchStateManager(localCluster string, clusters []string, local State
 
 // ReadState implements StateManager on DispatchStateManager.
 func (dsm *DispatchStateManager) ReadState() (*State, error) {
-	baseState, err := dsm.local.ReadState()
+	logging.Deliver(dsm.log, logging.DebugLevel, logging.GetCallerInfo(), logging.SousGenericV1, logging.MessageField("DispatchStateManager ReadState"))
+	baseState, err := dsm.local.ReadState() // ReadState to get e.g. Defs
 	if err != nil {
 		return nil, errors.Wrapf(err, "base state")
 	}
 	for cluster, manager := range dsm.remotes {
+		logging.Deliver(dsm.log, logging.DebugLevel, logging.GetCallerInfo(), logging.SousGenericV1, logging.MessageField(fmt.Sprintf("DispatchStateManager ReadState %q %T", cluster, manager)))
 		c, err := manager.ReadCluster(cluster)
 		if err != nil {
 			return nil, errors.Wrapf(err, cluster)
@@ -55,11 +59,13 @@ func (dsm *DispatchStateManager) ReadState() (*State, error) {
 
 // WriteState implements StateManager on DispatchStateManager.
 func (dsm *DispatchStateManager) WriteState(state *State, user User) error {
+	logging.Deliver(dsm.log, logging.DebugLevel, logging.GetCallerInfo(), logging.SousGenericV1, logging.MessageField("DispatchStateManager WriteState"))
 	deps, err := state.Deployments()
 	if err != nil {
 		return err
 	}
 	for cn, cm := range dsm.remotes {
+		logging.Deliver(dsm.log, logging.DebugLevel, logging.GetCallerInfo(), logging.SousGenericV1, logging.MessageField(fmt.Sprintf("DispatchStateManager WriteState %q %T", cn, cm)))
 		cds := deps.Filter(func(d *Deployment) bool {
 			return d.ClusterName == cn
 		})
