@@ -89,7 +89,15 @@ type (
 	// ServerStateManager wraps the sous.StateManager interface and is used by `sous server`
 	ServerStateManager struct{ sous.StateManager }
 
-	gitStateManager  struct{ sous.StateManager }
+	distStateManager struct {
+		sous.StateManager
+		Error error
+	}
+
+	gitStateManager struct {
+		sous.StateManager
+		Error error
+	}
 	diskStateManager struct{ sous.StateManager }
 
 	// Wrappers for the Inserter interface, to make explicit the difference
@@ -224,10 +232,11 @@ func AddShells(graph adder) {
 func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
-		newMaybeDatabase,           // we need to be able to progress in the absence of a DB.
-		newGitStateManagerFactory,  // provides a seam for testing
-		newDiskStateManagerFactory, // provides a seam for testing
+		newMaybeDatabase, // we need to be able to progress in the absence of a DB.
 		newServerStateManager,
+		newDistributedStateManager,
+		newGitStateManager,
+		newDiskStateManager,
 	)
 }
 
@@ -621,36 +630,53 @@ func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink, gmf gitStateManagerFactory) (*ServerStateManager, error) {
-	var secondary sous.StateManager
-	err := mdb.Err
-	if err == nil {
-		secondary, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
+func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm distStateManager) (*ServerStateManager, error) {
+	var primary, secondary sous.StateManager
+	var perr, serr error
+	primary = gm.StateManager
+	secondary = dm.StateManager
+	perr = gm.Error
+	serr = dm.Error
+
+	if c.DatabasePrimary {
+		primary, perr, secondary, serr = secondary, serr, primary, perr
+		logging.Deliver(log, logging.InformationLevel, logging.SousGenericV1, logging.GetCallerInfo(), logging.MessageField("database is primary datastore"))
+	} else {
+		logging.Deliver(log, logging.InformationLevel, logging.SousGenericV1, logging.GetCallerInfo(), logging.MessageField("git is primary datastore"))
 	}
 
-	if err != nil { // because DB Err wasn't nil, or distributed didn't set up well
-		logging.ReportError(log, errors.Wrapf(err, "connecting to database with %#v", c.Database))
-		secondary = storage.NewLogOnlyStateManager(log.Child("database"))
+	if perr != nil {
+		return nil, perr
 	}
 
-	duplex := storage.NewDuplexStateManager(gmf(), secondary, log.Child("duplex-state"))
+	if serr != nil { // because DB Err wasn't nil, or distributed didn't set up well
+		logging.ReportError(log, errors.Wrapf(serr, "connecting to database with %#v", c.Database))
+		secondary = storage.NewLogOnlyStateManager(log.Child("secondary"))
+	}
+
+	duplex := storage.NewDuplexStateManager(primary, secondary, log.Child("duplex-state"))
 	return &ServerStateManager{StateManager: duplex}, nil
 }
 
-type gitStateManagerFactory func() gitStateManager
+func newDistributedStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) distStateManager {
+	var dist sous.StateManager
+	err := mdb.Err
+	if err == nil {
+		dist, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
+	}
 
-func newGitStateManagerFactory(dmf diskStateManagerFactory, log LogSink) gitStateManagerFactory {
-	return func() gitStateManager {
-		return gitStateManager{storage.NewGitStateManager(dmf(), log.Child("git-state-manager"))}
+	return distStateManager{
+		StateManager: dist,
+		Error:        err,
 	}
 }
 
-type diskStateManagerFactory func() *storage.DiskStateManager
+func newGitStateManager(dm *storage.DiskStateManager, log LogSink) gitStateManager {
+	return gitStateManager{StateManager: storage.NewGitStateManager(dm, log.Child("git-state-manager"))}
+}
 
-func newDiskStateManagerFactory(c LocalSousConfig, log LogSink) diskStateManagerFactory {
-	return func() *storage.DiskStateManager {
-		return storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
-	}
+func newDiskStateManager(c LocalSousConfig, log LogSink) *storage.DiskStateManager {
+	return storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
 }
 
 func newDistributedStorage(db *sql.DB, c LocalSousConfig, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {

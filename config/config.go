@@ -28,6 +28,12 @@ type (
 		Server string `env:"SOUS_SERVER"`
 		// Database contains configuration for the local Postgresql DB.
 		Database storage.PostgresConfig
+		// DatabasePrimary controls whether the PostgreSQL database is the primary
+		// datastore, or the git repo at StateLocation is.
+		// As of May 30, 2018, this is being added as a temporary feature flag. The
+		// idea is to use it to transition to DB only and then change the behavior
+		// to be (unconditionally) DatabasePrimary=true.
+		DatabasePrimary bool `env:"SOUS_DATABASE_IS_PRIMARY"`
 		// SiblingURLs is a temporary measure for setting up a distributed cluster
 		// of sous servers. Each server must be configured with accessible URLs for
 		// all the servers in production, as named by cluster.
