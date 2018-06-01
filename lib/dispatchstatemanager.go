@@ -79,6 +79,7 @@ func (dsm *DispatchStateManager) WriteState(state *State, user User) error {
 // ReadCluster implements ClusterManager on DispatchStateManager.
 func (dsm *DispatchStateManager) ReadCluster(clusterName string) (Deployments, error) {
 	cm, ok := dsm.remotes[clusterName]
+	logging.Deliver(dsm.log, logging.DebugLevel, logging.GetCallerInfo(), logging.SousGenericV1, logging.MessageField(fmt.Sprintf("DispatchStateManager ReadCluster %q %T", clusterName, cm)))
 	if !ok {
 		return Deployments{}, errors.Errorf("No cluster manager for %q", clusterName)
 	}
@@ -88,6 +89,7 @@ func (dsm *DispatchStateManager) ReadCluster(clusterName string) (Deployments, e
 // WriteCluster implements ClusterManager on DispatchStateManager.
 func (dsm *DispatchStateManager) WriteCluster(clusterName string, deps Deployments, user User) error {
 	cm, ok := dsm.remotes[clusterName]
+	logging.Deliver(dsm.log, logging.DebugLevel, logging.GetCallerInfo(), logging.SousGenericV1, logging.MessageField(fmt.Sprintf("DispatchStateManager WriteCluster %q %T", clusterName, cm)))
 	if !ok {
 		return errors.Errorf("No cluster manager for %q", clusterName)
 	}
