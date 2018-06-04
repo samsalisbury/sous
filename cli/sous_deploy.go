@@ -5,7 +5,6 @@ import (
 
 	slack "github.com/ashwanthkumar/slack-go-webhook"
 	"github.com/opentable/sous/cli/actions"
-	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
@@ -16,10 +15,7 @@ import (
 type SousDeploy struct {
 	SousGraph *graph.SousGraph
 
-	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
-	waitStable        bool
-	force             bool
-	dryrunOption      string
+	opts graph.DeployActionOpts
 }
 
 func init() { TopLevelCommands["deploy"] = &SousDeploy{} }
@@ -37,20 +33,22 @@ func (sd *SousDeploy) Help() string { return sousDeployHelp }
 
 // AddFlags adds the flags for sous init.
 func (sd *SousDeploy) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sd.DeployFilterFlags, NewDeployFilterFlagsHelp)
+	MustAddFlags(fs, &sd.opts.DFF, NewDeployFilterFlagsHelp)
 
-	fs.BoolVar(&sd.force, "force", false,
+	fs.BoolVar(&sd.opts.Force, "force", false,
 		"force deploy no matter if GDM already is at the correct version")
-	fs.BoolVar(&sd.waitStable, "wait-stable", true,
+	fs.BoolVar(&sd.opts.WaitStable, "wait-stable", true,
 		"wait for the deploy to complete before returning (otherwise, use --wait-stable=false)")
-	fs.StringVar(&sd.dryrunOption, "dry-run", "none",
+	fs.StringVar(&sd.opts.DryRun, "dry-run", "none",
 		"prevent rectify from actually changing things - "+
 			"values are none,scheduler,registry,both")
+	fs.StringVar(&sd.opts.InitSingularityRequestID, "init-singularity-request-id", "",
+		"If this is the first deployment to this cluster; set the Singularity request ID to this value.")
 }
 
 // Execute fulfills the cmdr.Executor interface.
 func (sd *SousDeploy) Execute(args []string) cmdr.Result {
-	deploy, err := sd.SousGraph.GetDeploy(sd.DeployFilterFlags, sd.dryrunOption, sd.force, sd.waitStable)
+	deploy, err := sd.SousGraph.GetDeploy(sd.opts)
 
 	if err != nil {
 		sd.slackMessage(deploy, err)
