@@ -120,6 +120,15 @@ LINUX_RELEASE_DIR := sous-linux-amd64_$(SOUS_VERSION)
 RELEASE_DIRS := $(DARWIN_RELEASE_DIR) $(LINUX_RELEASE_DIR)
 DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
 LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
+
+# RELEASE_FILES are the files that this system can produce for make release.
+RELEASE_FILES := artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL) 
+# Right now only Linux systems can produce the .deb package as fpm fails on
+# Darwin...
+ifeq ($(shell uname),Linux)
+RELEASE_FILES := $(RELEASE_FILES) artifacts/sous_$(SOUS_VERSION)_amd64.deb
+endif
+
 COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
@@ -133,8 +142,10 @@ SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/
 
 DOCKER_BUILD_RELEASE := docker run --rm -e GOOS=$$GOOS -e GOARCH=$$GOARCH -e OUTPUT_BIN=$$OUTPUT_BIN -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 bash -c "( go build -o $$OUTPUT_BIN -ldflags $(FLAGS) && chown $(USER_ID):$(GROUP_ID) $$OUTPUT_BIN )"
 
-GO_FILES := $(shell find . -regex '.*\.go')
-GO_PROJECT_FILES := $(shell find . -type d -name vendor -prune -o -regex '.*\.go')
+FIND_EXCLUSIONS := -type d -name \\.git -prune -o -type d -name \\.smoketest -prune
+
+GO_FILES := $(shell find . $(FIND_EXCLUSIONS) -o -regex '.*\.go')
+GO_PROJECT_FILES := $(shell find . $(FIND_EXCLUSIONS) -o -type d -name vendor -prune -o -regex '.*\.go')
 
 SOUS_CONTAINER_IMAGES:= "docker images | egrep '127.0.0.1:5000|testregistry_'"
 TC_TEMP_DIR ?= /tmp/sous
@@ -158,7 +169,13 @@ help:
 	@echo "make build-debug: builds a linux debug version "
 	@echo "make generate-ctags: builds a tags file for project"
 	@echo
+	@echo "This system can build the following release packages:"
+	@echo "$(RELEASE_FILES)"
 	@echo "Add VERBOSE=1 for tons of extra output."
+
+.PHONY: print-go-files
+print-go-files:
+	@echo $(GO_FILES)
 
 .PHONY: build-debug-linux build-debug-darwin
 build-debug: build-debug-linux build-debug-darwin
@@ -274,7 +291,7 @@ install-build-tools: install-govendor install-engulf install-staticcheck
 generate-ctags: install-gotags
 	gotags -R -f .tags .
 
-release: artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL) artifacts/sous_$(SOUS_VERSION)_amd64.deb
+release: $(RELEASE_FILES)
 
 artifactory: artifacts/sous_$(SOUS_VERSION)_amd64.deb
 	jfrog rt upload -deb trusty/main/amd64 artifacts/sous_$(SOUS_VERSION)_amd64.deb opentable-ppa/pool/sous_$(SOUS_VERSION)_amd64.deb

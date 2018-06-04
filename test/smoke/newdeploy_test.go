@@ -58,7 +58,7 @@ func TestSousDeploy(t *testing.T) {
 		NumFreeAddrs: 128,
 	})
 
-	for _, deployCommand := range []string{"newdeploy", "deploy"} {
+	for _, deployCommand := range []string{"deploy"} {
 		deployCommand := deployCommand
 		t.Run(deployCommand, func(t *testing.T) {
 			t.Parallel()
