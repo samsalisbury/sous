@@ -120,7 +120,6 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 				r.FD("?", "versionstring", dep.SourceID.Version.String())
 				r.FD("?", "num_instances", dep.NumInstances)
 				r.FD("?", "schedule_string", dep.Schedule)
-				r.FD("?", "singularity_request_id", dep.DeployConfig.SingularityRequestID)
 				r.FD("?", "lifecycle", "active")
 				startupFields(r, "cr", s)
 			})
@@ -139,7 +138,6 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 				r.FD("?", "versionstring", dep.SourceID.Version.String())
 				r.FD("?", "num_instances", dep.NumInstances)
 				r.FD("?", "schedule_string", dep.Schedule)
-				r.FD("?", "singularity_request_id", dep.DeployConfig.SingularityRequestID)
 				r.FD("?", "lifecycle", "decommisioned")
 				startupFields(r, "cr", s)
 			})
@@ -154,6 +152,17 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 					r.FD("?", "email", ownername)
 				})
 			}
+		})); err != nil {
+		return err
+	}
+
+	if err := ins.Exec("singularity_deployment_bindings", sqlgen.DoNothing,
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			fields.Row(func(r sqlgen.RowDef) {
+				compIDFunc(r.CF, dep)
+				clusterIDFunc(r.CF, dep)
+				r.FD("?", "singularity_request_id", dep.DeployConfig.SingularityRequestID)
+			})
 		})); err != nil {
 		return err
 	}
@@ -240,14 +249,21 @@ func depID(row sqlgen.RowDef, dep *sous.Deployment) {
 }
 
 func compID(row sqlgen.RowDef, dep *sous.Deployment) {
+	compIDFunc(row.FD, dep)
+}
+
+func compIDFunc(f sqlgen.FieldDefFunc, dep *sous.Deployment) {
 	sid := dep.SourceID
-	row.FD(`(select component_id from components
-	  where repo = ? and dir = ? and flavor = ? and kind = ?)`,
+	f(`(select component_id from components where repo = ? and dir = ? and flavor = ? and kind = ?)`,
 		"component_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind)
 }
 
 func clusterID(row sqlgen.RowDef, dep *sous.Deployment) {
-	row.FD(`(select "cluster_id" from clusters where name = ?)`, "cluster_id", dep.ClusterName)
+	clusterIDFunc(row.FD, dep)
+}
+
+func clusterIDFunc(f sqlgen.FieldDefFunc, dep *sous.Deployment) {
+	f(`(select "cluster_id" from clusters where name = ?)`, "cluster_id", dep.ClusterName)
 }
 
 func ownerID(row sqlgen.RowDef, ownername string) {

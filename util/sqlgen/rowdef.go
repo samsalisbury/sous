@@ -6,12 +6,15 @@ type (
 		// FD is short for Field Definition - used for defining fields in the row.
 		FD(fmt string, col string, vals ...interface{})
 
-		// CF is short for Candidate Field - used to define fields in the row that partipate in distinguishing the row.
+		// CF is short for Candidate Field - used to define fields in the row that participate in distinguishing the row.
 		// Two rows with the same values for their "CFs" will be considered the same.
 		CF(fmt string, col string, vals ...interface{})
 
 		KV(col string, val interface{})
 	}
+
+	// FieldDefFunc represents RowDef.FD and RowDef.CF.
+	FieldDefFunc func(fmt, col string, vals ...interface{})
 
 	rowdef struct {
 		row      *row

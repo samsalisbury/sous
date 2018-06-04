@@ -23,14 +23,11 @@ type (
 		// assumes the greatest priority.
 		Env `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
 
-		// No manifest uses this, it doesn't get sent to Singularity. If we want it we should bring it back.
-		//Args []string `yaml:",omitempty" validate:"values=nonempty"`
 		// NumInstances is a guide to the number of instances that should be
 		// deployed in this cluster, note that the actual number may differ due
-		// to decisions made by Sous. If set to zero, Sous will decide how many
-		// instances to launch.
+		// to decisions made by Sous.
 		NumInstances int
-		// Volumes lists the volume mappings for this deploy
+		// Volumes lists the volume mappings for this deploy.
 		Volumes Volumes
 		// Startup containts healthcheck options for this deploy.
 		Startup Startup `yaml:",omitempty"`
