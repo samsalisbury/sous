@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"sort"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/dto"
 	"github.com/opentable/sous/lib"
@@ -30,7 +31,7 @@ type (
 	PUTGDMHandler struct {
 		*http.Request
 		logging.LogSink
-		GDM          *sous.State
+		//GDM          *sous.State
 		StateManager sous.StateManager
 		User         ClientUser
 	}
@@ -75,9 +76,9 @@ func (h *GETGDMHandler) Exchange() (interface{}, int) {
 // Put implements Putable on GDMResource
 func (gr *GDMResource) Put(_ *restful.RouteMap, ls logging.LogSink, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
 	return &PUTGDMHandler{
-		Request:      req,
-		LogSink:      ls,
-		GDM:          gr.context.liveState(),
+		Request: req,
+		LogSink: ls,
+		//GDM:          gr.context.liveState(),
 		StateManager: gr.context.StateManager,
 		User:         gr.GetUser(req),
 	}
@@ -85,12 +86,14 @@ func (gr *GDMResource) Put(_ *restful.RouteMap, ls logging.LogSink, _ http.Respo
 
 // Exchange implements the Handler interface
 func (h *PUTGDMHandler) Exchange() (interface{}, int) {
-	reportDebugHandleGDMMessage(fmt.Sprintf("Put GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
+	//reportDebugHandleGDMMessage(fmt.Sprintf("Put GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
 
 	data := dto.GDMWrapper{}
 	dec := json.NewDecoder(h.Request.Body)
 	dec.Decode(&data)
 	deps := sous.NewDeployments(data.Deployments...)
+
+	reportDebugHandleGDMMessage(fmt.Sprintf("Put GDM Handler Exchange with Client deployments: %v", deps), nil, nil, h.LogSink)
 
 	state, err := h.StateManager.ReadState()
 	if err != nil {
@@ -98,6 +101,8 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 		reportHandleGDMMessage(msg, nil, err, h.LogSink)
 		return msg, http.StatusInternalServerError
 	}
+
+	reportDebugHandleGDMMessage(fmt.Sprintf("Put GDM Handler Exchange with Server State: %v", state), nil, nil, h.LogSink)
 
 	state.Manifests, err = deps.PutbackManifests(state.Defs, state.Manifests, h.LogSink)
 	if err != nil {
@@ -117,11 +122,21 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 		state.SetEtag(h.Header.Get("Etag"))
 	}
 
+	logging.Deliver(h.LogSink, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(spew.Sprintf("%T", h.StateManager)))
+	logging.Deliver(h.LogSink, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(spew.Sprintf("%#v", state)))
+
 	if err := h.StateManager.WriteState(state, sous.User(h.User)); err != nil {
 		msg := "Error committing state"
 		reportHandleGDMMessage(msg, flaws, err, h.LogSink)
 		return msg, http.StatusInternalServerError
 	}
+
+	readstate, err := h.StateManager.ReadState()
+
+	logging.Deliver(h.LogSink, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(spew.Sprintf("%v %#v", err, readstate)))
 
 	return "", http.StatusNoContent
 }

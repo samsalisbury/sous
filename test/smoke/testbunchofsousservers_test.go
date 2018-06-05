@@ -23,10 +23,12 @@ type TestBunchOfSousServers struct {
 	Instances    []*Instance
 }
 
-func newBunchOfSousServers(t *testing.T, state *sous.State, baseDir string, nextFreeAddr func() string, fcfg fixtureConfig) (*TestBunchOfSousServers, error) {
+func newBunchOfSousServers(t *testing.T, baseDir string, nextFreeAddr func() string, fcfg fixtureConfig) (*TestBunchOfSousServers, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
+
+	state := fcfg.startState
 
 	gdmDir := path.Join(baseDir, "remote-gdm")
 	if err := createRemoteGDM(gdmDir, state); err != nil {
@@ -126,7 +128,7 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, f
 			},
 		}
 		config.Logging.Basic.Level = "debug"
-		if err := i.Configure(config, c.RemoteGDMDir); err != nil {
+		if err := i.Configure(config, c.RemoteGDMDir, fcfg); err != nil {
 			return errors.Wrapf(err, "configuring instance %d", i)
 		}
 	}

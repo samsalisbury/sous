@@ -49,7 +49,9 @@ func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() s
 
 	addURLsToState(state, envDesc)
 
-	c, err := newBunchOfSousServers(t, state, baseDir, nextAddr, fcfg)
+	fcfg.startState = state
+
+	c, err := newBunchOfSousServers(t, baseDir, nextAddr, fcfg)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}

@@ -8,6 +8,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	sous "github.com/opentable/sous/lib"
 )
 
 type (
@@ -19,7 +21,8 @@ type (
 	}
 
 	fixtureConfig struct {
-		dbPrimary bool
+		dbPrimary  bool
+		startState *sous.State
 	}
 
 	ParallelTestFixture struct {

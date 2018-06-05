@@ -90,7 +90,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 				r.FD("?", "kind", dep.Kind)
 			})
 		})); err != nil {
-		return nil
+		return err
 	}
 
 	if err := ins.Exec("clusters", sqlgen.Upsert,
@@ -104,7 +104,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 				startupFields(r, "crdef", s)
 			})
 		})); err != nil {
-		return nil
+		return err
 	}
 
 	// We use application diffs for deployments (instead of upserts) because
