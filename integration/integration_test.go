@@ -35,7 +35,6 @@ type integrationSuite struct {
 	client    *singularity.RectiAgent
 	deployer  sous.Deployer
 	ls        *logging.LogSet
-	user      sous.User
 }
 
 func setupTest(t *testing.T) *integrationSuite {
@@ -51,7 +50,6 @@ func setupTest(t *testing.T) *integrationSuite {
 	suite.ls = logging.NewLogSet(semv.MustParse("0.0.0-integration"), "integration", "integration", suite.logbuf)
 	suite.ls.BeChatty()
 
-	suite.user = sous.User{}
 	imageName = fmt.Sprintf("%s/%s:%s", registryName, "webapp", "latest")
 
 	suite.registry = docker_registry.NewClient(suite.ls)
@@ -59,7 +57,7 @@ func setupTest(t *testing.T) *integrationSuite {
 
 	suite.T().Logf("New name cache for %q", t.Name())
 	suite.nameCache = suite.newNameCache(suite.ls)
-	suite.client = singularity.NewRectiAgent(suite.nameCache, suite.ls, suite.user)
+	suite.client = singularity.NewRectiAgent(suite.nameCache, suite.ls)
 	suite.deployer = singularity.NewDeployer(suite.client, suite.ls)
 	return suite
 }
@@ -597,7 +595,7 @@ func TestResolve(t *testing.T) {
 	// XXX Let's hope this is a temporary solution to a testing issue
 	// The problem is laid out in DCOPS-7625
 	for tries := 100; tries > 0; tries-- {
-		client := singularity.NewRectiAgent(suite.nameCache, logsink, suite.user)
+		client := singularity.NewRectiAgent(suite.nameCache, logsink)
 		deployer := singularity.NewDeployer(client, logging.SilentLogSet())
 
 		rf := &sous.ResolveFilter{}

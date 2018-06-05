@@ -20,8 +20,7 @@ func TestBuildDeployRequest(t *testing.T) {
 	rID := "expectedRID"
 	dID := "expectedDID"
 	ls, _ := logging.NewLogSinkSpy()
-	user := sous.User{}
-	dr, err := buildDeployRequest(user, sous.Deployable{
+	dr, err := buildDeployRequest(sous.Deployable{
 		BuildArtifact: &sous.BuildArtifact{
 			Name: "an-image",
 			Type: "docker",
@@ -59,8 +58,7 @@ func TestDockerMetadataSet(t *testing.T) {
 	rID := "expectedRID"
 	dID := "expectedDID"
 	ls, _ := logging.NewLogSinkSpy()
-	user := sous.User{}
-	dr, err := buildDeployRequest(user, sous.Deployable{
+	dr, err := buildDeployRequest(sous.Deployable{
 		BuildArtifact: &sous.BuildArtifact{
 			Name: "an-image",
 			Type: "docker",

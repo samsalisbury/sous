@@ -557,7 +557,7 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 		return nil, err
 	}
 	return singularity.NewDeployer(
-		singularity.NewRectiAgent(labeller, ls, user),
+		singularity.NewRectiAgent(labeller, ls),
 		ls,
 		singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
 	), nil

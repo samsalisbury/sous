@@ -40,7 +40,6 @@ type (
 		sync.RWMutex
 		labeller sous.ImageLabeller
 		log      logging.LogSink
-		user     sous.User
 	}
 
 	singularityTaskData struct {
@@ -49,12 +48,11 @@ type (
 )
 
 // NewRectiAgent returns a set-up RectiAgent
-func NewRectiAgent(l sous.ImageLabeller, ls logging.LogSink, user sous.User) *RectiAgent {
+func NewRectiAgent(l sous.ImageLabeller, ls logging.LogSink) *RectiAgent {
 	return &RectiAgent{
 		singClients: make(map[string]*singularity.Client),
 		labeller:    l,
 		log:         ls,
-		user:        user,
 	}
 }
 
@@ -81,7 +79,7 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 	}
 	messages.ReportLogFieldsMessage("Build deploying instance", logging.DebugLevel, ra.log, d, reqID)
 
-	depReq, err := buildDeployRequest(ra.user, d, reqID, depID, labels, ra.log)
+	depReq, err := buildDeployRequest(d, reqID, depID, labels, ra.log)
 	if err != nil {
 		return err
 	}
@@ -94,7 +92,7 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 	return err
 }
 
-func buildDeployRequest(user sous.User, d sous.Deployable, reqID, depID string, metadata map[string]string, log logging.LogSink) (*dtos.SingularityDeployRequest, error) {
+func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[string]string, log logging.LogSink) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
 	dockerImage := d.BuildArtifact.Name
 	r := d.Deployment.DeployConfig.Resources
@@ -150,7 +148,7 @@ func buildDeployRequest(user sous.User, d sous.Deployable, reqID, depID string, 
 		"ContainerInfo": ci,
 		"Env":           map[string]string(e),
 		"Metadata":      metadata,
-		"User":          user.Name,
+		"User":          d.Deployment.User.Name,
 	}
 
 	if err := MapStartupIntoHealthcheckOptions((*map[string]interface{})(&depMap), d.Deployment.DeployConfig.Startup); err != nil {

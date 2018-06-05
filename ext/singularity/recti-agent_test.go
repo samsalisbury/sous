@@ -93,8 +93,7 @@ func TestFailOnNilBuildArtifact(t *testing.T) {
 	r := sous.NewDummyRegistry()
 	d := sous.Deployable{}
 	ls, _ := logging.NewLogSinkSpy()
-	user := sous.User{}
-	ra := NewRectiAgent(r, ls, user)
+	ra := NewRectiAgent(r, ls)
 	err := ra.Deploy(d, "testReq", "testDep")
 	if err != nil {
 		t.Logf("Correctly returned an error upon encountering: %#v", err)
@@ -168,8 +167,7 @@ func TestContainerStartupOptions(t *testing.T) {
 
 	ls, _ := logging.NewLogSinkSpy()
 
-	user := sous.User{}
-	dr, err := buildDeployRequest(user, d, "fake-request-id", "fake-deploy-id", map[string]string{}, ls)
+	dr, err := buildDeployRequest(d, "fake-request-id", "fake-deploy-id", map[string]string{}, ls)
 	if err != nil {
 		t.Fatal(err)
 	}
