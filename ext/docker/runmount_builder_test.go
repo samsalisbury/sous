@@ -60,9 +60,8 @@ func TestRunmountBuilder_Runmount(t *testing.T) {
 	err = templateDockerfile(ctx, tempDir, subBuilders)
 	fmt.Println("templateDockerfile err : ", err)
 
-	runnables, err := buildRunnables(ctx, tempDir, subBuilders)
+	err = buildRunnables(ctx, tempDir, subBuilders)
 	fmt.Println("err : ", err)
-	fmt.Println("runnables : ", runnables)
 
 	products := products(ctx, subBuilders)
 	fmt.Println("products : ", products)

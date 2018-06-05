@@ -1,10 +1,16 @@
 package docker
 
 import (
+	"errors"
 	"fmt"
+	"io/ioutil"
+	"path/filepath"
+	"strings"
 	"time"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -19,10 +25,27 @@ func NewRunmountBuildpack() *RunmountBuildpack {
 	return &RunmountBuildpack{}
 }
 
+func readDockerfile() (string, error) {
+	b, err := ioutil.ReadFile("Dockerfile")
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, error) {
-	fmt.Println("Runmount Detector.. always return true")
+	dfPath := filepath.Join(ctx.Source.OffsetDir, "Dockerfile")
+	if !ctx.Sh.Exists(dfPath) {
+		return nil, errors.New(fmt.Sprintf("%s does not exist", dfPath))
+	}
+
+	messages.ReportLogFieldsMessage("Runmount dockerfile detection", logging.DebugLevel, logging.Log, dfPath)
+
+	dockerContent, _ := readDockerfile()
+
+	// TODO LH simplest check so far, scan docker content for runmount
 	result := sous.DetectResult{
-		Compatible: true, //ctx.Source.DevBuild, // TODO LH only for testing porpoises
+		Compatible: strings.Contains(dockerContent, "runmount"),
 	}
 	rmbp.detected = &result
 	return &result, nil
