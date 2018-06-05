@@ -150,7 +150,7 @@ func buildDeployRequest(user sous.User, d sous.Deployable, reqID, depID string, 
 		"ContainerInfo": ci,
 		"Env":           map[string]string(e),
 		"Metadata":      metadata,
-		"User":          user.Email,
+		"User":          user.Name,
 	}
 
 	if err := MapStartupIntoHealthcheckOptions((*map[string]interface{})(&depMap), d.Deployment.DeployConfig.Startup); err != nil {
