@@ -90,10 +90,13 @@ func NewDeployer(c rectificationClient, ls logging.LogSink, options ...DeployerO
 func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 	postID := ""
 	version := ""
+	var user sous.User
 	if pair.Post != nil {
 		postID = pair.Post.ID().String()
 		version = pair.Post.DeploySpec().Version.String()
+		user = pair.Post.Deployment.User
 	}
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("User: %s loking to %s %s", user.Name, postID, version), logging.ExtraDebug1Level, r.log, user)
 	if pair.UUID == uuid.Nil {
 		pair.UUID = uuid.NewV4()
 	}
