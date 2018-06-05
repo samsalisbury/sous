@@ -43,7 +43,7 @@ func (sd *Deploy) Do() error {
 	q := sd.TargetDeploymentID.QueryMap()
 	q["force"] = strconv.FormatBool(sd.Force)
 
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("\t Executing deployment by user: %s", sd.User.Name), logging.ExtraDebug1Level, sd.LogSink, sd.User)
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("\t Executing deployment by user: %s", sd.User.Email), logging.ExtraDebug1Level, sd.LogSink, sd.User)
 
 	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, sd.User.HTTPHeaders())
 	if err != nil {
