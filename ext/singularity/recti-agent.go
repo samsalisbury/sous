@@ -141,6 +141,10 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 		return nil, err
 	}
 
+	user := "unknown_sous_deploy"
+	if len(d.Deployment.User.Email) > 1 {
+		user = d.Deployment.User.Email
+	}
 	depMap := dtoMap{
 		"Id":            depID,
 		"RequestId":     reqID,
@@ -148,7 +152,7 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 		"ContainerInfo": ci,
 		"Env":           map[string]string(e),
 		"Metadata":      metadata,
-		"User":          d.Deployment.User.Email,
+		"User":          user,
 	}
 
 	if err := MapStartupIntoHealthcheckOptions((*map[string]interface{})(&depMap), d.Deployment.DeployConfig.Startup); err != nil {
