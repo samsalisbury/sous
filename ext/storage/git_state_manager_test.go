@@ -93,6 +93,7 @@ func TestGitReadState(t *testing.T) {
 }
 
 func sameYAML(t *testing.T, actual *sous.State, expected *sous.State) {
+	t.Helper()
 	assert := assert.New(t)
 	require := require.New(t)
 

@@ -212,7 +212,7 @@ func exampleState() *sous.State {
 								"ports":  "1",
 							},
 							Volumes:              sous.Volumes{},
-							SingularityRequestID: "service1-other-cluster",
+							SingularityRequestID: "service2-other-cluster",
 						},
 						Version: semv.MustParse("0.3.1-beta+b4d455ee"),
 					},

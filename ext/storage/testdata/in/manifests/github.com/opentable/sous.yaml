@@ -18,6 +18,7 @@ Deployments:
       CheckReadyURIPath: /health
     Schedule: ""
     Version: 1.0.0-rc.1+deadbeef
+    SingularityRequestID: "service1-cluster1"
   other-cluster:
     Resources:
       cpus: "0.1"
@@ -35,3 +36,4 @@ Deployments:
       - 503
     Schedule: ""
     Version: 1.0.0-rc.1+deadbeef
+    SingularityRequestID: "service1-other-cluster"

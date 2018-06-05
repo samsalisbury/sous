@@ -34,10 +34,9 @@ type (
 		// Schedule is a cronjob-format schedule for jobs.
 		Schedule string
 
-		// Hidden fields...
 		// SingularityRequestID is the ID of the request representing this
 		// deployment in a Singularity scheduler.
-		SingularityRequestID string `yaml:"-"`
+		SingularityRequestID string `yaml:",omitempty"`
 	}
 
 	// A DeployConfigs is a map from cluster name to DeployConfig
