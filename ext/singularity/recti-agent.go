@@ -145,6 +145,7 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 	if len(d.Deployment.User.Email) > 1 {
 		user = d.Deployment.User.Email
 	}
+	message := fmt.Sprintf("Deployed by %s", user)
 	depMap := dtoMap{
 		"Id":            depID,
 		"RequestId":     reqID,
@@ -152,7 +153,6 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 		"ContainerInfo": ci,
 		"Env":           map[string]string(e),
 		"Metadata":      metadata,
-		"User":          user,
 	}
 
 	if err := MapStartupIntoHealthcheckOptions((*map[string]interface{})(&depMap), d.Deployment.DeployConfig.Startup); err != nil {
@@ -165,7 +165,8 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 	}
 	messages.ReportLogFieldsMessage("Deploy", logging.DebugLevel, log, dep, ci, dockerInfo)
 
-	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
+	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep, "Message": message})
+
 	if err != nil {
 		return nil, err
 	}
