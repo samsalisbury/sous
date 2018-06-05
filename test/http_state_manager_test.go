@@ -91,6 +91,8 @@ func TestWriteState(t *testing.T) {
 	)
 
 	serverScoop := struct{ Handler graph.ServerHandler }{}
+	user := sous.User{}
+	di.Add(user)
 	di.Add(&config.Verbosity{})
 	di.MustInject(&serverScoop)
 	if serverScoop.Handler.Handler == nil {

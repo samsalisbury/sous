@@ -540,7 +540,7 @@ func newRegistry(graph *SousGraph, nc lazyNameCache, dryrun DryrunOption, c Loca
 	return sous.NewDummyRegistry(), nil
 }
 
-func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousConfig) (sous.Deployer, error) {
+func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousConfig, user sous.User) (sous.Deployer, error) {
 	// Eventually, based on configuration, we may make different decisions here.
 	if dryrun == DryrunBoth || dryrun == DryrunScheduler || c.Server != "" {
 		drc := sous.NewDummyRectificationClient()
@@ -557,7 +557,7 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 		return nil, err
 	}
 	return singularity.NewDeployer(
-		singularity.NewRectiAgent(labeller, ls),
+		singularity.NewRectiAgent(labeller, ls, user),
 		ls,
 		singularity.OptMaxHTTPReqsPerServer(c.MaxHTTPConcurrencySingularity),
 	), nil
