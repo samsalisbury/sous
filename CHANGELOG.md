@@ -11,6 +11,8 @@ with respect to its command line interface and HTTP interface
 ### Added
 * Server: state storage toggle behind a feature flag - servers can be
   configured to use the database as the source of truth.
+* Manifest: per-deployment SingularityRequestID field. NOTE: This does not
+  do anything yet, just gets round-tripped to Git and Postgres.
 
 ### Changed
 * Client: Slack add additional channels to send via config
