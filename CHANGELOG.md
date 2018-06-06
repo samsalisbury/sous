@@ -7,13 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.93...HEAD)
+## [0.5.100](//github.com/opentable/sous/compare/0.5.93...0.5.100)
 ### Added
 * Server: state storage toggle behind a feature flag - servers can be
   configured to use the database as the source of truth.
 
 ### Changed
 * Client: Slack add additional channels to send via config
+* Client: Now returns error/message when sous newdeploy is used to inform no longer valid.
 
 ## [0.5.93](//github.com/opentable/sous/compare/0.5.92...0.5.93)
 ### Changed

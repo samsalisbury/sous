@@ -51,13 +51,5 @@ func (sd *SousNewDeploy) AddFlags(fs *flag.FlagSet) {
 
 // Execute creates the new deployment.
 func (sd *SousNewDeploy) Execute(args []string) cmdr.Result {
-	deploy, err := sd.SousGraph.GetDeploy(sd.DeployFilterFlags, sd.dryrunOption, sd.force, sd.waitStable)
-	if err != nil {
-		return cmdr.EnsureErrorResult(err)
-	}
-
-	if err := deploy.Do(); err != nil {
-		return EnsureErrorResult(err)
-	}
-	return cmdr.Success("Done.")
+	return cmdr.UsageErrorf("sous newdeploy has been deprecated, please use `sous deploy` instead.")
 }
