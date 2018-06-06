@@ -85,9 +85,23 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 	}
 
 	messages.ReportLogFieldsMessage("Sending Deploy req to singularity Client", logging.DebugLevel, ra.log, depReq)
-	_, err = ra.singularityClient(clusterURI).Deploy(depReq)
+
+	pathParamMap := map[string]interface{}{}
+
+	user := "unknown_sous_deploy"
+	if d.Deployment != nil && len(d.Deployment.User.Email) > 1 {
+		user = "sous_" + d.Deployment.User.Email
+	}
+	queryParamMap := map[string]interface{}{
+		"user": user,
+	}
+
+	//Note: Due to lack of way to pass User/queryParamMap easily, just lifting the singularityClient.Deploy code here
+	response := new(dtos.SingularityRequestParent)
+	err = ra.singularityClient(clusterURI).DTORequest("singularity-deploy", response, "POST", "/api/deploys", pathParamMap, queryParamMap, depReq)
+
 	if err != nil {
-		messages.ReportLogFieldsMessage("Singularity client returned following error", logging.WarningLevel, ra.log, depReq, reqID, err)
+		messages.ReportLogFieldsMessage("Singularity client returned following error", logging.WarningLevel, ra.log, depReq, reqID, err, response)
 	}
 	return err
 }
@@ -142,7 +156,7 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 	}
 
 	user := "unknown_sous_deploy"
-	if len(d.Deployment.User.Email) > 1 {
+	if d.Deployment != nil && len(d.Deployment.User.Email) > 1 {
 		user = d.Deployment.User.Email
 	}
 	message := fmt.Sprintf("Deployed by %s", user)

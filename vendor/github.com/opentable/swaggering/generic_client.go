@@ -70,7 +70,7 @@ func (gc *GenericClient) Request(resourceName, method, path string, pathParams, 
 		return
 	}
 
-	messages.ReportClientHTTPResponse(gc.Logger, "singularity request", res, resourceName, time.Now().Sub(start))
+	messages.ReportClientHTTPResponse(gc.Logger, "GenericClient", res, resourceName, time.Now().Sub(start))
 
 	if res.StatusCode > 299 {
 		rerr := &ReqError{
@@ -99,6 +99,12 @@ func (gc *GenericClient) buildRequest(method, path string, pathParams, queryPara
 		return
 	}
 	url.Path = strings.Join([]string{strings.TrimRight(url.Path, "/"), strings.TrimLeft(path, "/")}, "/")
+
+	q := url.Query()
+	for k, v := range queryParams {
+		q.Set(k, fmt.Sprintf("%v", v))
+	}
+	url.RawQuery = q.Encode()
 
 	if len(bodies) > 0 {
 		req, err = gc.buildBodyRequest(method, url.String(), bodies[0])
