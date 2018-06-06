@@ -147,7 +147,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		return result
 	case sous.ModifiedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting a ModifiedKind %s:%s by user", postID, version, user), logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting a ModifiedKind %s:%s by user %s", postID, version, user), logging.ExtraDebug1Level, r.log, pair)
 		if err := r.RectifySingleModification(pair); err != nil {
 			dp := &sous.DeploymentPair{
 				Prior: pair.Prior.Deployment.Clone(),
