@@ -158,27 +158,12 @@ func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
 
 // Clone returns an independent copy of e.
 func (e Env) Clone() Env {
-	if e == nil {
-		return nil
-	}
 	env := make(Env, len(e))
 	for k, v := range e {
 		env[k] = v
 	}
 	return env
 }
-
-//// Clone returns an independent copy of r.
-//func (r Resources) Clone() Resources {
-//	if r == nil {
-//		return nil
-//	}
-//	resources := make(Resources, len(r))
-//	for k, v := range r {
-//		resources[k] = v
-//	}
-//	return resources
-//}
 
 // Clone returns an independent copy of m.
 func (e Metadata) Clone() Metadata {
