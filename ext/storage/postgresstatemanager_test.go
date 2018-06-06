@@ -77,7 +77,7 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	}
 	suite.Equal(int64(4), suite.pluckSQL("select count(*) from deployments"))
 
-	assert.Len(t, suite.logs.CallsTo("Fields"), 13)
+	assert.Len(t, suite.logs.CallsTo("Fields"), 15)
 	message := suite.logs.CallsTo("Fields")[0].PassedArgs().Get(0).([]logging.EachFielder)
 	// XXX This message deserves its own test
 	logging.AssertMessageFieldlist(t, message, append(
