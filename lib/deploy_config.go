@@ -156,29 +156,49 @@ func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
 	return len(diffs) != 0, diffs
 }
 
-// Clone returns a deep copy of this DeployConfig.
-func (dc DeployConfig) Clone() (c DeployConfig) {
-	c.NumInstances = dc.NumInstances
-	c.Env = make(Env)
-	for k, v := range dc.Env {
-		c.Env[k] = v
+// Clone returns an independent copy of e.
+func (e Env) Clone() Env {
+	if e == nil {
+		return nil
 	}
-	c.Resources = make(Resources)
-	for k, v := range dc.Resources {
-		c.Resources[k] = v
+	env := make(Env, len(e))
+	for k, v := range e {
+		env[k] = v
 	}
-	if dc.Metadata != nil {
-		c.Metadata = make(Metadata)
-		for k, v := range dc.Metadata {
-			c.Metadata[k] = v
-		}
-	}
-	c.Volumes = dc.Volumes.Clone()
-	c.Startup = dc.Startup
-	c.Schedule = dc.Schedule
-	c.SingularityRequestID = dc.SingularityRequestID
+	return env
+}
 
-	return
+//// Clone returns an independent copy of r.
+//func (r Resources) Clone() Resources {
+//	if r == nil {
+//		return nil
+//	}
+//	resources := make(Resources, len(r))
+//	for k, v := range r {
+//		resources[k] = v
+//	}
+//	return resources
+//}
+
+// Clone returns an independent copy of m.
+func (e Metadata) Clone() Metadata {
+	if e == nil {
+		return nil
+	}
+	metadata := make(Metadata, len(e))
+	for k, v := range e {
+		metadata[k] = v
+	}
+	return metadata
+}
+
+// Clone returns a deep copy of this DeployConfig.
+func (dc DeployConfig) Clone() DeployConfig {
+	dc.Env = dc.Env.Clone()
+	dc.Resources = dc.Resources.Clone()
+	dc.Metadata = dc.Metadata.Clone()
+	dc.Volumes = dc.Volumes.Clone()
+	return dc
 }
 
 // Equal compares Envs
