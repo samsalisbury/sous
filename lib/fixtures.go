@@ -47,6 +47,7 @@ func DeployConfigFixture(name string) DeployConfig {
 			Startup: Startup{
 				SkipCheck: true,
 			},
+			SingularityRequestID: "blah",
 		}
 	}
 }

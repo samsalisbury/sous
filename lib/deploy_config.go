@@ -36,7 +36,7 @@ type (
 
 		// SingularityRequestID is the ID of the request representing this
 		// deployment in a Singularity scheduler.
-		SingularityRequestID string `yaml:",omitempty"`
+		SingularityRequestID string
 	}
 
 	// A DeployConfigs is a map from cluster name to DeployConfig

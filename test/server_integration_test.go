@@ -184,6 +184,14 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Precondition() {
 	suite.Nil(res)
 }
 
+func (suite integrationServerTests) assertNoEmptySingReqIDs(name string, gdm dto.GDMWrapper) {
+	for _, d := range gdm.Deployments {
+		if d.DeployConfig.SingularityRequestID == "" {
+			suite.FailNow("%s contains empty sing req id", name)
+		}
+	}
+}
+
 func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 	data := dto.GDMWrapper{}
 
@@ -192,7 +200,12 @@ func (suite integrationServerTests) TestUpdateStateDeployments_Update() {
 	suite.Len(data.Deployments, 2)
 	suite.NotNil(updater)
 
+	suite.assertNoEmptySingReqIDs("test data", data)
+
 	data.Deployments = append(data.Deployments, sous.DeploymentFixture("sequenced-repo"))
+
+	suite.assertNoEmptySingReqIDs("updated test data", data)
+
 	_, err = updater.Update(&data, nil)
 	suite.NoError(err)
 

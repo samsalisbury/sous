@@ -15,8 +15,8 @@ Deployments:
       CheckReadyProtocol: HTTPS
       CheckReadyURIPath: /health
     Schedule: ""
+    SingularityRequestID: service2-cluster1
     Version: 0.3.1-beta+b4d455ee
-    SingularityRequestID: "service2-cluster1"
   other-cluster:
     Resources:
       cpus: "1"
@@ -30,5 +30,5 @@ Deployments:
       CheckReadyProtocol: HTTPS
       CheckReadyURIPath: /health
     Schedule: ""
+    SingularityRequestID: service2-other-cluster
     Version: 0.3.1-beta+b4d455ee
-    SingularityRequestID: "service2-other-cluster"
