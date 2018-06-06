@@ -77,7 +77,7 @@ SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
 SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
 SMOKE_TEST_LATEST_LINK ?= $(SMOKE_TEST_BASEDIR)/latest
 SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
-SMOKE_TEST_TIMEOUT ?= 15m
+SMOKE_TEST_TIMEOUT ?= 30m
 
 # install-dev uses DEV_DESC and DATE to make a git described, timestamped dev build.
 DEV_DESC ?= $(shell git describe)
@@ -122,7 +122,7 @@ DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
 LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 
 # RELEASE_FILES are the files that this system can produce for make release.
-RELEASE_FILES := artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL) 
+RELEASE_FILES := artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 # Right now only Linux systems can produce the .deb package as fpm fails on
 # Darwin...
 ifeq ($(shell uname),Linux)

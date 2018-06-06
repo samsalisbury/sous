@@ -110,6 +110,8 @@ func sameYAML(t *testing.T, actual *sous.State, expected *sous.State) {
 	require.NoError(t, err)
 	expectedYAML, err := yaml.Marshal(expected)
 	require.NoError(t, err)
+
+	// splitting into lines gets us a full diff without roundtripping the the FS.
 	assert.Equal(t, strings.Split(string(actualYAML), "\n"), strings.Split(string(expectedYAML), "\n"))
 }
 

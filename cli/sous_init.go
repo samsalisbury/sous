@@ -2,8 +2,8 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
@@ -99,8 +99,8 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		return cmdr.InternalErrorf("getting current state: %s", err)
 	}
 
-	logging.Deliver(si.LogSink, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
-		logging.MessageField(spew.Sprintf("Existing base state: %#v", state)))
+	logging.Deliver(si.LogSink, logging.ExtraDebug1Level, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(fmt.Sprintf("Existing base state: %#v", state)))
 
 	if _, ok := state.Defs.Clusters[cluster]; !ok && cluster != "" {
 		return cmdr.UsageErrorf("cluster %q not defined, pick one of: %s", cluster, state.Defs.Clusters)
@@ -120,8 +120,8 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	if ok := state.Manifests.Add(m); !ok {
 		return cmdr.UsageErrorf("manifest %q already exists", m.ID())
 	}
-	logging.Deliver(si.LogSink, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
-		logging.MessageField(spew.Sprintf("Updated state: %#v", state)))
+	logging.Deliver(si.LogSink, logging.ExtraDebug1Level, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(fmt.Sprintf("Updated state: %#v", state)))
 	if err := si.StateManager.WriteState(state, si.User); err != nil {
 		return EnsureErrorResult(err)
 	}
