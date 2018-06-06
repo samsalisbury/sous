@@ -176,6 +176,7 @@ func (dc DeployConfig) Clone() (c DeployConfig) {
 	c.Volumes = dc.Volumes.Clone()
 	c.Startup = dc.Startup
 	c.Schedule = dc.Schedule
+	c.SingularityRequestID = dc.SingularityRequestID
 
 	return
 }
