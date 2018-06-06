@@ -276,7 +276,7 @@ func clusterID(row sqlgen.RowDef, dep *sous.Deployment) {
 }
 
 func advisoryID(row sqlgen.RowDef, advName string) {
-	row.FD(`(select "quality_id" from qualities where name = ?)`, "quality", advName)
+	row.FD(`(select "quality_id" from qualities where name = ?)`, "quality_id", advName)
 }
 
 func ownerID(row sqlgen.RowDef, ownername string) {
