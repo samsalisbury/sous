@@ -80,6 +80,7 @@ func makeTestManifests() Manifests {
 						Startup: Startup{
 							CheckReadyURIPath: omalleyReadyURI,
 						},
+						SingularityRequestID: "project1-cluster-1",
 					},
 				},
 				"cluster-2": {
@@ -98,7 +99,8 @@ func makeTestManifests() Manifests {
 							"everybody": "wants to be a cat",
 							"name":      "Duchess",
 						},
-						NumInstances: 3,
+						NumInstances:         3,
+						SingularityRequestID: "project1-cluster-2",
 					},
 				},
 			},
@@ -119,7 +121,8 @@ func makeTestManifests() Manifests {
 						Env: Env{
 							"ENV_1": "ENV ONE FLAVORED",
 						},
-						NumInstances: 4,
+						NumInstances:         4,
+						SingularityRequestID: "project1-some-flavor-cluster-1",
 					},
 				},
 				"cluster-2": {
@@ -132,7 +135,8 @@ func makeTestManifests() Manifests {
 						Env: Env{
 							"ENV_2": "ENV TWO FLAVORED",
 						},
-						NumInstances: 5,
+						NumInstances:         5,
+						SingularityRequestID: "project1-some-flavor-cluster-2",
 					},
 				},
 			},
@@ -149,6 +153,7 @@ func makeTestManifests() Manifests {
 							"cpus": "0.4",
 							"mem":  "256",
 						},
+						SingularityRequestID: "project2-cluster-2",
 					},
 				},
 			},
@@ -185,6 +190,7 @@ var expectedDeployments = NewDeployments(
 			Startup: Startup{
 				CheckReadyURIPath: omalleyReadyURI,
 			},
+			SingularityRequestID: "project1-cluster-1",
 		},
 	},
 	&Deployment{
@@ -208,7 +214,8 @@ var expectedDeployments = NewDeployments(
 				"everybody": "wants to be a cat",
 				"name":      "Duchess",
 			},
-			NumInstances: 3,
+			NumInstances:         3,
+			SingularityRequestID: "project1-cluster-2",
 		},
 	},
 	&Deployment{
@@ -227,7 +234,8 @@ var expectedDeployments = NewDeployments(
 				"ENV_1":             "ENV ONE FLAVORED",
 				"CLUSTER_LONG_NAME": "Cluster One",
 			},
-			NumInstances: 4,
+			NumInstances:         4,
+			SingularityRequestID: "project1-some-flavor-cluster-1",
 		},
 	},
 	&Deployment{
@@ -246,7 +254,8 @@ var expectedDeployments = NewDeployments(
 				"ENV_2":             "ENV TWO FLAVORED",
 				"CLUSTER_LONG_NAME": "Cluster Two",
 			},
-			NumInstances: 5,
+			NumInstances:         5,
+			SingularityRequestID: "project1-some-flavor-cluster-2",
 		},
 	},
 	&Deployment{
@@ -263,6 +272,7 @@ var expectedDeployments = NewDeployments(
 			Env: Env{
 				"CLUSTER_LONG_NAME": "Cluster Two",
 			},
+			SingularityRequestID: "project2-cluster-2",
 		},
 	},
 )
