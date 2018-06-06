@@ -139,10 +139,13 @@ func assertSameClusters(t *testing.T, old *sous.State, new *sous.State) {
 
 	assert.ElementsMatch(t, onames, nnames)
 
+	t.Logf("Cluster names: %q", onames)
+
 	for _, n := range onames {
 		oc, nc := ocs[n], ncs[n]
 
 		assert.ElementsMatch(t, oc.AllowedAdvisories, nc.AllowedAdvisories)
+		t.Logf("Cluster advisories: %q: %q", n, oc.AllowedAdvisories)
 	}
 }
 
