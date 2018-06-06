@@ -88,7 +88,7 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 
 	pathParamMap := map[string]interface{}{}
 
-	user := "unknown_sous_deploy"
+	user := "sous"
 	if d.Deployment != nil && len(d.Deployment.User.Email) > 1 {
 		user = "sous_" + d.Deployment.User.Email
 	}
