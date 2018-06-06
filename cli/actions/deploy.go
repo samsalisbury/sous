@@ -43,8 +43,6 @@ func (sd *Deploy) Do() error {
 	q := sd.TargetDeploymentID.QueryMap()
 	q["force"] = strconv.FormatBool(sd.Force)
 
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("\t Executing deployment by user: %s", sd.User.Email), logging.ExtraDebug1Level, sd.LogSink, sd.User)
-
 	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, sd.User.HTTPHeaders())
 	if err != nil {
 		return errors.Errorf("\nFailed to retrieve current deployment:\n\n\tPlease check your repo, flavor, and offset.  Items are case sensitive.  Use the following command to verify values sous expects.\n\n\tsous query gdm\n\nError returned: %s", err)
