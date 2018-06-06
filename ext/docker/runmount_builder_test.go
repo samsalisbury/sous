@@ -13,6 +13,7 @@ import (
 
 var testBuildID = "cabba9edeadbeef"
 var testContainerBuildID = "deadbeef"
+var testRunID = "A90110"
 
 func TestRunmountBuilder_build(t *testing.T) {
 	sh, ctl := shell.NewTestShell()
@@ -89,41 +90,52 @@ func TestRunmountBuild_validateRunSpec(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-// func TestRunmountBuilder_Runmount(t *testing.T) {
-// 	sh, _ := shell.Default()
-// 	ctx := sous.BuildContext{
-// 		Sh: sh,
-// 	}
+func TestRunmountBuild_constructImageBuilders(t *testing.T) {
+	testRunSpec := getTestRunSpec()
+	builders, err := constructImageBuilders(testRunSpec)
 
-// 	buildContainerID, err := createMountContainer(ctx, testID)
-// 	fmt.Println("err : ", err)
-// 	fmt.Println("buildContainerID : ", buildContainerID)
+	assert.NoError(t, err)
+	builder := *builders[0]
+	assert.Equal(t, "docker.otenv.com/sous-otj-run", builder.RunSpec.Image.From)
+}
 
-// 	runSpec, err := extractRunSpec(ctx, tempDir, buildContainerID)
-// 	fmt.Println("err : ", err)
-// 	fmt.Println("runSpec : ", runSpec)
+func TestRunmountBuild_extractFiles(t *testing.T) {
+	testRunSpec := getTestRunSpec()
+	sh, ctl := shell.NewTestShell()
+	_, cctl := ctl.CmdFor("docker", "cp")
+	cctl.ResultSuccess("", "")
+	ctx := sous.BuildContext{
+		Sh: sh,
+	}
+	builders, _ := constructImageBuilders(testRunSpec)
+	err := extractFiles(ctx, testContainerBuildID, "/tmp", builders)
+	assert.NoError(t, err)
+}
 
-// 	err = validateRunSpec(runSpec)
-// 	fmt.Println("err : ", err)
+func TestRunmountBuild_templateDockerfile(t *testing.T) {
+	testRunSpec := getTestRunSpec()
+	buildDir := "/tmp"
+	builders, _ := constructImageBuilders(testRunSpec) //could abstract this for testing
 
-// 	subBuilders, err := constructImageBuilders(runSpec)
-// 	fmt.Println("err : ", err)
-// 	fmt.Println("subBuilders : ", *subBuilders[0])
+	err := templateDockerfile(sous.BuildContext{}, buildDir, builders)
+	assert.NoError(t, err)
+}
 
-// 	err = extractFiles(ctx, buildContainerID, tempDir, subBuilders)
-// 	fmt.Println("err : ", err)
+func TestRunmountBuild_buildRunnables(t *testing.T) {
+	sh, ctl := shell.NewTestShell()
+	_, cctl := ctl.CmdFor("docker", "build")
+	cctl.ResultSuccess(fmt.Sprintf("Successfully built %s", testRunID), "")
+	ctx := sous.BuildContext{
+		Sh: sh,
+	}
+	builders, _ := constructImageBuilders(getTestRunSpec())
+	err := buildRunnables(ctx, "/tmp", builders)
+	fmt.Println("err : ", err)
+	assert.NoError(t, err)
+}
 
-// 	err = teardownBuildContainer(ctx, buildContainerID)
-// 	fmt.Println("err : ", err)
-
-// 	err = templateDockerfile(ctx, tempDir, subBuilders)
-// 	fmt.Println("templateDockerfile err : ", err)
-
-// 	err = buildRunnables(ctx, tempDir, subBuilders)
-// 	fmt.Println("err : ", err)
-
-// 	products := products(ctx, subBuilders)
-// 	fmt.Println("products : ", products)
-
-// 	//	assert.FailNow(t, "")
-// }
+func TestRunmountBuild_products(t *testing.T) {
+	builders, _ := constructImageBuilders(getTestRunSpec())
+	products := products(sous.BuildContext{}, builders)
+	assert.Equal(t, 1, len(products))
+}
