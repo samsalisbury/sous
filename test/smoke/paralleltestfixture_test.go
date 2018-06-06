@@ -81,6 +81,9 @@ func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
 
 func (pf *ParallelTestFixture) recordTestPassed(t *testing.T) {
 	t.Helper()
+	if t.Failed() {
+		return
+	}
 	name := t.Name()
 	pf.testNamesPassedMu.Lock()
 	defer pf.testNamesPassedMu.Unlock()

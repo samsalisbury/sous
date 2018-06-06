@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"sort"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/dto"
 	"github.com/opentable/sous/lib"
@@ -86,8 +85,6 @@ func (gr *GDMResource) Put(_ *restful.RouteMap, ls logging.LogSink, _ http.Respo
 
 // Exchange implements the Handler interface
 func (h *PUTGDMHandler) Exchange() (interface{}, int) {
-	//reportDebugHandleGDMMessage(fmt.Sprintf("Put GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
-
 	data := dto.GDMWrapper{}
 	dec := json.NewDecoder(h.Request.Body)
 	dec.Decode(&data)
@@ -122,22 +119,11 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 		state.SetEtag(h.Header.Get("Etag"))
 	}
 
-	logging.Deliver(h.LogSink, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
-		logging.MessageField(spew.Sprintf("%T", h.StateManager)))
-	logging.Deliver(h.LogSink, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
-		logging.MessageField(spew.Sprintf("%#v", state)))
-
 	if err := h.StateManager.WriteState(state, sous.User(h.User)); err != nil {
 		msg := "Error committing state"
 		reportHandleGDMMessage(msg, flaws, err, h.LogSink)
 		return msg, http.StatusInternalServerError
 	}
-
-	readstate, err := h.StateManager.ReadState()
-
-	logging.Deliver(h.LogSink, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
-		logging.MessageField(spew.Sprintf("%v %#v", err, readstate)))
-
 	return "", http.StatusNoContent
 }
 

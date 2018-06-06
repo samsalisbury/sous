@@ -448,7 +448,8 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 .PHONY: postgres-start
 postgres-start: | postgres-stop postgres-clean # "order only" prereqs
 	if ! (docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT)); then \
-		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3;\
+		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3 \
+		  -c 'max_connections=1000';\
 		echo Waiting until Postgres completes booting...;\
 		until docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT); do sleep 1; done;\
 		echo Postgres container started;\
