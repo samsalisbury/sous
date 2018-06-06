@@ -42,11 +42,11 @@ func run(ctx sous.BuildContext, buildID string) error {
 		"--mount", "source=product,target=/app/product"}
 	cmd = append(cmd, buildID)
 
-	output, err := ctx.Sh.Stdout("docker", cmd...)
+	err := ctx.Sh.Cmd("docker", cmd...).Succeed()
 	if err != nil {
 		return err
 	}
-	fmt.Println("output : ", output)
+	// fmt.Println("output : ", output)
 
 	// TODO LH need to figure out what the end state of this should be.
 	// Think it needs to detect failure, should test this and return error
@@ -59,7 +59,7 @@ func run(ctx sous.BuildContext, buildID string) error {
 // docker cp dee415777a6814df428f4de6a182bf3e545c608306e67e0505aee4676cb16c4a:app/product/. tmp/test/.
 
 func setupTempDir() (string, error) {
-	dir, err := ioutil.TempDir("", "sous-split-build")
+	dir, err := ioutil.TempDir("", "sous-runmount-build")
 	if err != nil {
 		return "", err
 	}
