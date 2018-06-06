@@ -111,6 +111,8 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	ns, err := suite.manager.ReadState()
 	suite.require.NoError(err)
 
+	assertSameClusters(t, s, ns)
+
 	oldD, err := s.Deployments()
 	suite.require.NoError(err)
 	newD, err := ns.Deployments()
@@ -125,6 +127,22 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 
 		case sous.SameKind:
 		}
+	}
+}
+
+func assertSameClusters(t *testing.T, old *sous.State, new *sous.State) {
+	ocs := old.Defs.Clusters
+	ncs := new.Defs.Clusters
+
+	onames := ocs.Names()
+	nnames := ncs.Names()
+
+	assert.ElementsMatch(t, onames, nnames)
+
+	for _, n := range onames {
+		oc, nc := ocs[n], ncs[n]
+
+		assert.ElementsMatch(t, oc.AllowedAdvisories, nc.AllowedAdvisories)
 	}
 }
 

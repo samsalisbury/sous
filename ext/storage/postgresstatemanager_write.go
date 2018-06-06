@@ -107,6 +107,33 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
+	if err := ins.Exec("qualities", sqlgen.DoNothing,
+		deploymentsFieldSetter(alldeps, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			c := dep.Cluster
+			for _, adv := range c.AllowedAdvisories {
+				fields.Row(func(r sqlgen.RowDef) {
+					r.FD("?", "name", adv)
+					r.FD("?", "kind", "advisory")
+				})
+			}
+		})); err != nil {
+		return err
+	}
+
+	// XXX As written, this makes it hard to delete advisories.
+	if err := ins.Exec("cluster_qualities", sqlgen.DoNothing,
+		deploymentsFieldSetter(alldeps, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			c := dep.Cluster
+			for _, adv := range c.AllowedAdvisories {
+				fields.Row(func(r sqlgen.RowDef) {
+					clusterID(r, dep)
+					advisoryID(r, adv)
+				})
+			}
+		})); err != nil {
+		return err
+	}
+
 	// We use application diffs for deployments (instead of upserts) because
 	// otherwise it would be impossible to return to a previous state for a
 	// manifest. Since rollback is a concrete use case, we do not want e.g.
@@ -246,6 +273,10 @@ func compID(row sqlgen.RowDef, dep *sous.Deployment) {
 
 func clusterID(row sqlgen.RowDef, dep *sous.Deployment) {
 	row.FD(`(select "cluster_id" from clusters where name = ?)`, "cluster_id", dep.ClusterName)
+}
+
+func advisoryID(row sqlgen.RowDef, advName string) {
+	row.FD(`(select "quality_id" from qualities where name = ?)`, "quality", advName)
 }
 
 func ownerID(row sqlgen.RowDef, ownername string) {
