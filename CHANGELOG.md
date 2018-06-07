@@ -6,9 +6,21 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.100...HEAD)
+
+## [Unreleased](//github.com/opentable/sous/compare/0.5.101...HEAD)
 ### Fixed
 * Server: the database storage engine wasn't recording the advisory whitelists.
+
+## [0.5.101](//github.com/opentable/sous/compare/0.5.100...0.5.101)
+### Fixed
+* CLI: 'sous manifest edit' was sometimes silently failing to apply changes on macOS,
+  changes to how we re-read the temp file resolve this.
+
+### Changed
+* CLI: 'sous manifest edit' now uses a temp file with a .yaml extension so text
+  editors are more likely to apply the right highlighting and auto formatting.
+* CLI: Clearer -kind not recognised message.
+
 
 ## [0.5.100](//github.com/opentable/sous/compare/0.5.93...0.5.100)
 ### Added
