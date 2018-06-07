@@ -1,6 +1,8 @@
 package sous
 
 import (
+	"fmt"
+
 	"github.com/nyarly/spies"
 	"github.com/opentable/sous/util/logging"
 )
@@ -41,7 +43,16 @@ func (cm clusterManagerSpy) WriteCluster(clusterName string, deps Deployments, u
 // MakeClusterManager wraps a StateManager in a ClusterManager. This is the easy way to get a ClusterManager;
 // It's assumed that more effecient ClusterManager implementations could be added to specific StateManagers.
 func MakeClusterManager(sm StateManager, ls logging.LogSink) ClusterManager {
-	return &clusterManagerDecorator{sm: sm, log: ls}
+	switch cm := sm.(type) {
+	default:
+		logging.Deliver(ls, logging.DebugLevel, logging.GetCallerInfo(), logging.SousGenericV1,
+			logging.MessageField("Wrapping state manager"), logging.KV("sous-type", fmt.Sprintf("%T", sm)))
+		return &clusterManagerDecorator{sm: sm, log: ls}
+	case ClusterManager:
+		logging.Deliver(ls, logging.DebugLevel, logging.GetCallerInfo(), logging.SousGenericV1,
+			logging.MessageField("Using passed cluster manager"), logging.KV("sous-type", fmt.Sprintf("%T", sm)))
+		return cm
+	}
 }
 
 // ReadCluster implements ClusterManager on the MakeClusterManager implementation

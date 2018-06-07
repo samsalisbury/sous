@@ -81,8 +81,8 @@ func TestWriteState(t *testing.T) {
 
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
 		func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
-		func() graph.ClusterManager {
-			return graph.ClusterManager{ClusterManager: sous.MakeClusterManager(&sm, logger)}
+		func() *graph.ServerClusterManager {
+			return &graph.ServerClusterManager{ClusterManager: sous.MakeClusterManager(&sm, logger)}
 		},
 
 		func() *graph.ServerStateManager { return &graph.ServerStateManager{StateManager: &sm} },

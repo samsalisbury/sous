@@ -9,13 +9,17 @@ import (
 	"github.com/nyarly/spies"
 	"github.com/opentable/sous/dto"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 )
 
 func TestGetStateDeployments(t *testing.T) {
 	cm, ctrl := sous.NewClusterManagerSpy()
+	ls, _ := logging.NewLogSinkSpy()
+
 	ex := &GETStateDeployments{
 		cluster:     cm,
 		clusterName: "test-cluster",
+		log:         ls,
 	}
 	deps := sous.NewDeployments(
 		sous.DeploymentFixture("sequenced-repo"),

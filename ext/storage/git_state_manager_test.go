@@ -93,26 +93,26 @@ func TestGitReadState(t *testing.T) {
 }
 
 func sameYAML(t *testing.T, actual *sous.State, expected *sous.State) {
-	assert := assert.New(t)
-	require := require.New(t)
-
+	t.Helper()
 	actualManifests := actual.Manifests.Snapshot()
 	expectedManifests := expected.Manifests.Snapshot()
-	assert.Len(actualManifests, len(expectedManifests))
+	assert.Len(t, actualManifests, len(expectedManifests))
 	for mid, manifest := range expectedManifests {
 		actual := *actualManifests[mid]
-		assert.Contains(actualManifests, mid)
-		if !assert.Equal(actual, *manifest) {
+		assert.Contains(t, actualManifests, mid)
+		if !assert.Equal(t, actual, *manifest) {
 			_, differences := actual.Diff(manifest)
 			t.Logf("DIFFERENCES (%q): %#v", mid, differences)
 		}
 	}
 
 	actualYAML, err := yaml.Marshal(actual)
-	require.NoError(err)
+	require.NoError(t, err)
 	expectedYAML, err := yaml.Marshal(expected)
-	require.NoError(err)
-	assert.Equal(actualYAML, expectedYAML)
+	require.NoError(t, err)
+
+	// splitting into lines gets us a full diff without roundtripping the the FS.
+	assert.Equal(t, strings.Split(string(actualYAML), "\n"), strings.Split(string(expectedYAML), "\n"))
 }
 
 func runScript(t *testing.T, script string, dir ...string) {

@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -22,6 +23,7 @@ type (
 	GETStateDeployments struct {
 		cluster     sous.ClusterManager
 		clusterName string
+		log         logging.LogSink
 	}
 
 	// A PUTStateDeployments is the exchanger for PUT /state/deployments
@@ -42,6 +44,7 @@ func (res *StateDeploymentResource) Get(*restful.RouteMap, logging.LogSink, http
 	return &GETStateDeployments{
 		cluster:     res.loc.ClusterManager,
 		clusterName: res.loc.ResolveFilter.Cluster.ValueOr("no-cluster"),
+		log:         res.loc.LogSink,
 	}
 }
 
@@ -57,6 +60,9 @@ func (res *StateDeploymentResource) Put(_ *restful.RouteMap, _ logging.LogSink, 
 
 // Exchange implements restful.Exchanger on GETStateDeployments
 func (gsd *GETStateDeployments) Exchange() (interface{}, int) {
+	logging.Deliver(gsd.log, logging.DebugLevel, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(fmt.Sprintf("GETStateDeployments %q, %T", gsd.clusterName, gsd.cluster)))
+
 	data := dto.GDMWrapper{Deployments: []*sous.Deployment{}}
 	deps, err := gsd.cluster.ReadCluster(gsd.clusterName)
 	if err != nil {

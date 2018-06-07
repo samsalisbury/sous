@@ -77,7 +77,7 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	}
 	suite.Equal(int64(4), suite.pluckSQL("select count(*) from deployments"))
 
-	assert.Len(t, suite.logs.CallsTo("Fields"), 13)
+	assert.Len(t, suite.logs.CallsTo("Fields"), 15)
 	message := suite.logs.CallsTo("Fields")[0].PassedArgs().Get(0).([]logging.EachFielder)
 	// XXX This message deserves its own test
 	logging.AssertMessageFieldlist(t, message, append(
@@ -111,6 +111,8 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	ns, err := suite.manager.ReadState()
 	suite.require.NoError(err)
 
+	assertSameClusters(t, s, ns)
+
 	oldD, err := s.Deployments()
 	suite.require.NoError(err)
 	newD, err := ns.Deployments()
@@ -125,6 +127,25 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 
 		case sous.SameKind:
 		}
+	}
+}
+
+func assertSameClusters(t *testing.T, old *sous.State, new *sous.State) {
+	ocs := old.Defs.Clusters
+	ncs := new.Defs.Clusters
+
+	onames := ocs.Names()
+	nnames := ncs.Names()
+
+	assert.ElementsMatch(t, onames, nnames)
+
+	t.Logf("Cluster names: %q", onames)
+
+	for _, n := range onames {
+		oc, nc := ocs[n], ncs[n]
+
+		assert.ElementsMatch(t, oc.AllowedAdvisories, nc.AllowedAdvisories)
+		t.Logf("Cluster advisories: %q: %q", n, oc.AllowedAdvisories)
 	}
 }
 
