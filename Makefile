@@ -396,7 +396,7 @@ test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) s
 
 .PHONY: test-smoke-nofail
 test-smoke-nofail:
-	EXCLUDE_KNOWN_FAILING_TESTS=YES SMOKE_TEST_TIMEOUT=10m $(MAKE) test-smoke
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
 
 .PHONY: docker-is-working
 docker-is-working:
