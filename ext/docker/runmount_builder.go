@@ -138,7 +138,7 @@ func extractFiles(ctx sous.BuildContext, buildContainerID string, buildDir strin
 			// needs to copy to the per-target build directory
 			fromTemp := filepath.Join("/build_output", inst.Source.Dir)
 			fromPath := fmt.Sprintf("%s:%s", buildContainerID, fromTemp)
-			toPath := filepath.Join(buildDir, inst.Destination.Dir)
+			toPath := filepath.Join(buildDir, builder.RunSpec.Offset, inst.Destination.Dir)
 
 			err := os.MkdirAll(filepath.Dir(toPath), os.ModePerm)
 			if err != nil {
@@ -162,7 +162,7 @@ func teardownBuildContainer(ctx sous.BuildContext, buildContainerID string) erro
 
 func templateDockerfile(ctx sous.BuildContext, buildDir string, runnableBuilders []*runnableBuilder) error {
 	for _, rb := range runnableBuilders {
-		dockerfile, err := os.Create(filepath.Join(buildDir, "Dockerfile"))
+		dockerfile, err := os.Create(filepath.Join(buildDir, rb.RunSpec.Offset, "Dockerfile"))
 		if err != nil {
 			return err
 		}
@@ -243,7 +243,8 @@ func revisionConfigLocal(ctx sous.BuildContext) string {
 func buildRunnable(ctx sous.BuildContext, buildDir string, builder *runnableBuilder) (*runnableBuilder, error) {
 	sh := ctx.Sh.Clone()
 	sh.LongRunning(true)
-	sh.CD(buildDir)
+	workDir := filepath.Join(buildDir, builder.RunSpec.Offset)
+	sh.CD(workDir)
 
 	out, err := sh.Stdout("docker", "build", ".")
 	if err != nil {
