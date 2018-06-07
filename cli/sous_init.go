@@ -73,7 +73,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("kind %q not defined, pick one of %q or %q", kind, sous.ManifestKindScheduled, sous.ManifestKindService)
 	case sous.ManifestKindService:
 		skipHealth = false
-	case sous.ManifestKindScheduled, sous.ManifestKindOnDemand:
+	case sous.ManifestKindScheduled:
 		skipHealth = true
 	}
 
