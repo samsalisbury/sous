@@ -39,7 +39,7 @@ func run(ctx sous.BuildContext, buildID string) error {
 	fmt.Println("starting runmount run")
 	// TODO LH may need to house keep /app/product ?? or do that after artifact is fetched, possible to collide on this on the same agent ?
 	cmd := []interface{}{"run", "--mount", "source=cache,target=/cache",
-		"--mount", "source=product,target=/app/product"}
+		"--mount", "source=build_output,target=/build_output"}
 	cmd = append(cmd, buildID)
 
 	err := ctx.Sh.Cmd("docker", cmd...).Succeed()
@@ -70,7 +70,7 @@ func setupTempDir() (string, error) {
 }
 
 func createMountContainer(ctx sous.BuildContext, buildID string) (string, error) {
-	cmd := []interface{}{"create", "--mount", "source=product,target=/app/product"}
+	cmd := []interface{}{"create", "--mount", "source=build_output,target=/build_output"}
 	cmd = append(cmd, buildID)
 	output, err := ctx.Sh.Stdout("docker", cmd...)
 	if err != nil {
@@ -85,7 +85,7 @@ func createMountContainer(ctx sous.BuildContext, buildID string) (string, error)
 func extractRunSpec(ctx sous.BuildContext, tempDir string, buildContainerID string) (MultiImageRunSpec, error) {
 	// TODO need to figure out how to pass detected data in
 	runSpec := MultiImageRunSpec{}
-	runspecPath := "/app/product/run_spec.json" //sb.detected.Data.(detectData).RunImageSpecPath
+	runspecPath := "/build_output/run_spec.json" //sb.detected.Data.(detectData).RunImageSpecPath
 	destPath := filepath.Join(tempDir, "run_spec.json")
 	_, err := ctx.Sh.Stdout("docker", "cp", fmt.Sprintf("%s:%s", buildContainerID, runspecPath), destPath)
 	if err != nil {
@@ -136,7 +136,8 @@ func extractFiles(ctx sous.BuildContext, buildContainerID string, buildDir strin
 	for _, builder := range runnableBuilders {
 		for _, inst := range builder.RunSpec.Files {
 			// needs to copy to the per-target build directory
-			fromPath := fmt.Sprintf("%s:%s", buildContainerID, inst.Source.Dir)
+			fromTemp := filepath.Join("/build_output", inst.Source.Dir)
+			fromPath := fmt.Sprintf("%s:%s", buildContainerID, fromTemp)
 			toPath := filepath.Join(buildDir, inst.Destination.Dir)
 
 			err := os.MkdirAll(filepath.Dir(toPath), os.ModePerm)
