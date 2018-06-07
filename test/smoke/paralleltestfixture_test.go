@@ -95,7 +95,7 @@ func (pf *ParallelTestFixture) recordTestPassed(t *testing.T) {
 
 func (pf *ParallelTestFixture) PrintSummary(t *testing.T) {
 	t.Logf("Test summary: %d out of %d tests passed", len(pf.testNames), len(pf.testNamesPassed))
-	fmt.Fprintf(os.Stdout, "Test summary: %d out of %d tests passed", len(pf.testNames), len(pf.testNamesPassed))
+	fmt.Fprintf(os.Stdout, "Test summary: %d out of %d tests passed", len(pf.testNamesPassed), len(pf.testNames))
 }
 
 func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) TestFixture {
