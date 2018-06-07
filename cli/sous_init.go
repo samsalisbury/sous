@@ -2,11 +2,13 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 )
 
 // SousInit is the command description for `sous init`
@@ -22,6 +24,8 @@ type SousInit struct {
 	flags        struct {
 		Kind string
 	}
+
+	graph.LogSink
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
@@ -70,7 +74,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 
 	switch kind {
 	default:
-		return cmdr.UsageErrorf("kind not defined, pick one of %s or %s", sous.ManifestKindScheduled, sous.ManifestKindService)
+		return cmdr.UsageErrorf("kind %q not defined, pick one of %q, %q or %q", kind, sous.ManifestKindScheduled, sous.ManifestKindService, sous.ManifestKindOnDemand)
 	case sous.ManifestKindService:
 		skipHealth = false
 	case sous.ManifestKindScheduled, sous.ManifestKindOnDemand:
@@ -95,6 +99,9 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		return cmdr.InternalErrorf("getting current state: %s", err)
 	}
 
+	logging.Deliver(si.LogSink, logging.ExtraDebug1Level, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(fmt.Sprintf("Existing base state: %#v", state)))
+
 	if _, ok := state.Defs.Clusters[cluster]; !ok && cluster != "" {
 		return cmdr.UsageErrorf("cluster %q not defined, pick one of: %s", cluster, state.Defs.Clusters)
 	}
@@ -113,6 +120,8 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 	if ok := state.Manifests.Add(m); !ok {
 		return cmdr.UsageErrorf("manifest %q already exists", m.ID())
 	}
+	logging.Deliver(si.LogSink, logging.ExtraDebug1Level, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(fmt.Sprintf("Updated state: %#v", state)))
 	if err := si.StateManager.WriteState(state, si.User); err != nil {
 		return EnsureErrorResult(err)
 	}

@@ -177,6 +177,7 @@ func (mh *MetaHandler) OptionsHandling(resName string, factory ExchangeFactory) 
 // PutHandling handles PUT requests.
 func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) httprouter.Handle {
 	return func(rw http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		messages.ReportServerHTTPRequest(mh.LogSink, "received", r, resName)
 		w := wrapResponseWriter(mh.LogSink, resName, r, rw)
 		if r.Header.Get("If-Match") == "" && r.Header.Get("If-None-Match") == "" {
 			mh.writeHeaders(http.StatusPreconditionRequired, w, r, "PUT requires If-Match or If-None-Match")
@@ -207,6 +208,7 @@ func (mh *MetaHandler) PutHandling(resName string, factory ExchangeFactory) http
 			}
 
 			if !mh.validCanaryAttr(w, r, etag) {
+				w.sendLog()
 				return
 			}
 		}

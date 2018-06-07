@@ -26,7 +26,7 @@ type TestFixture struct {
 	UserEmail     string
 }
 
-func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() string) TestFixture {
+func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) TestFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {
@@ -50,12 +50,14 @@ func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() s
 
 	addURLsToState(state, envDesc)
 
-	c, err := newBunchOfSousServers(t, state, baseDir, nextAddr)
+	fcfg.startState = state
+
+	c, err := newBunchOfSousServers(t, baseDir, nextAddr, fcfg)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}
 
-	if err := c.Configure(t, envDesc); err != nil {
+	if err := c.Configure(t, envDesc, fcfg); err != nil {
 		t.Fatalf("configuring test cluster: %s", err)
 	}
 

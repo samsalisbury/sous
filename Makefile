@@ -78,7 +78,7 @@ SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
 SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
 SMOKE_TEST_LATEST_LINK ?= $(SMOKE_TEST_BASEDIR)/latest
 SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
-SMOKE_TEST_TIMEOUT ?= 15m
+SMOKE_TEST_TIMEOUT ?= 30m
 
 # install-dev uses DEV_DESC and DATE to make a git described, timestamped dev build.
 DEV_DESC ?= $(shell git describe)
@@ -123,7 +123,7 @@ DARWIN_TARBALL := $(DARWIN_RELEASE_DIR).tar.gz
 LINUX_TARBALL := $(LINUX_RELEASE_DIR).tar.gz
 
 # RELEASE_FILES are the files that this system can produce for make release.
-RELEASE_FILES := artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL) 
+RELEASE_FILES := artifacts/$(DARWIN_TARBALL) artifacts/$(LINUX_TARBALL)
 # Right now only Linux systems can produce the .deb package as fpm fails on
 # Darwin...
 ifeq ($(shell uname),Linux)
@@ -397,7 +397,7 @@ test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) s
 
 .PHONY: test-smoke-nofail
 test-smoke-nofail:
-	EXCLUDE_KNOWN_FAILING_TESTS=YES SMOKE_TEST_TIMEOUT=10m $(MAKE) test-smoke
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
 
 .PHONY: docker-is-working
 docker-is-working:
@@ -449,7 +449,8 @@ artifacts/sous_$(SOUS_VERSION)_amd64.deb: artifacts/$(LINUX_RELEASE_DIR)/sous
 .PHONY: postgres-start
 postgres-start: | postgres-stop postgres-clean # "order only" prereqs
 	if ! (docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT)); then \
-		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3;\
+		docker run -d --name $(POSTGRES_CONTAINER_NAME) -p $(PGPORT):5432 -v $(POSTGRES_DATA_VOLUME_NAME):/var/lib/postgresql/data postgres:10.3 \
+		  -c 'max_connections=1000';\
 		echo Waiting until Postgres completes booting...;\
 		until docker run --net=host postgres:10.3 pg_isready -h $(DOCKER_HOST_IP) -p $(PGPORT); do sleep 1; done;\
 		echo Postgres container started;\
