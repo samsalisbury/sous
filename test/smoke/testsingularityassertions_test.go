@@ -47,6 +47,14 @@ func assertNilHealthCheckOnLatestDeploy(t *testing.T, f TestFixture, did sous.De
 	}
 }
 
+func assertUserOnLatestDeploy(t *testing.T, f TestFixture, user string, did sous.DeploymentID) {
+	t.Helper()
+	dep := f.Singularity.GetLatestDeployForDeployment(t, did)
+	if dep.DeployMarker.User != user {
+		t.Errorf("got user %s; want %s", dep.DeployMarker.User, user)
+	}
+}
+
 func assertNonNilHealthCheckOnLatestDeploy(t *testing.T, f TestFixture, did sous.DeploymentID) {
 	t.Helper()
 	dep := f.Singularity.GetLatestDeployForDeployment(t, did)
