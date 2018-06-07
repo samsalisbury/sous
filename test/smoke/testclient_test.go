@@ -77,21 +77,22 @@ func makeClient(baseDir, sousBin string) *TestClient {
 	}
 }
 
-func (c *TestClient) Configure(server, dockerReg, user string) error {
+func (c *TestClient) Configure(server, dockerReg, userEmail string) error {
 	if err := os.MkdirAll(c.ConfigDir, 0777); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(c.LogDir, 0777); err != nil {
 		return err
 	}
+	user := strings.Split(userEmail, "@")
 	conf := config.Config{
 		Server: server,
 		Docker: docker.Config{
 			RegistryHost: dockerReg,
 		},
 		User: sous.User{
-			Name:  user,
-			Email: fmt.Sprintf("%s@example.com", user),
+			Name:  user[0],
+			Email: userEmail,
 		},
 	}
 	conf.PollIntervalForClient = 600
