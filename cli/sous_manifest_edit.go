@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"io/ioutil"
 	"os"
 	"os/exec"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/restful"
+	"github.com/opentable/sous/util/tempfile"
 	"github.com/pkg/errors"
 )
 
@@ -34,8 +34,7 @@ func (sme *SousManifestEdit) AddFlags(fs *flag.FlagSet) {
 // Execute implements Executor on SousManifestEdit.
 func (sme *SousManifestEdit) Execute(args []string) cmdr.Result {
 	var up restful.Updater
-	file, err := ioutil.TempFile("", "sous_manifest")
-
+	file, err := tempfile.New("", "sous_manifest", ".yaml")
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
