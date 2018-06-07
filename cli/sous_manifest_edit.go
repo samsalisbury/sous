@@ -44,20 +44,25 @@ func (sme *SousManifestEdit) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	set, err := sme.SousGraph.GetManifestSet(sme.DeployFilterFlags, &up, file)
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-
 	if err := get.Do(); err != nil {
 		return EnsureErrorResult(errors.Wrapf(err, "getting manifest into %s", file.Name()))
+	}
+
+	if err := file.Close(); err != nil {
+		return EnsureErrorResult(errors.Wrapf(err, "closing file %s", file.Name()))
 	}
 
 	if err := doEdit(file.Name()); err != nil {
 		return EnsureErrorResult(errors.Wrapf(err, "editing file at %s", file.Name()))
 	}
 
-	if _, err := file.Seek(0, 0); err != nil {
+	file, err = os.Open(file.Name())
+	if err != nil {
+		return EnsureErrorResult(errors.Wrapf(err, "reopening file %s", file.Name()))
+	}
+
+	set, err := sme.SousGraph.GetManifestSet(sme.DeployFilterFlags, &up, file)
+	if err != nil {
 		return EnsureErrorResult(err)
 	}
 
