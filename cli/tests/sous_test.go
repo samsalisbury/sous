@@ -42,7 +42,7 @@ func TestSous_Init(t *testing.T) {
 	term.Stdout.ShouldHaveNumLines(0)
 	term.Stderr.ShouldHaveNumLines(1)
 
-	term.Stderr.ShouldHaveExactLine("kind not defined, pick one of scheduled or http-service")
+	term.Stderr.ShouldHaveExactLine(`kind "" not defined, pick one of "scheduled", "http-service" or "on-demand"`)
 }
 
 func TestSousConfig_validConfig(t *testing.T) {
