@@ -3,6 +3,7 @@ package singularity
 import (
 	"testing"
 
+	singularity "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
@@ -178,6 +179,48 @@ func TestContainerStartupOptions(t *testing.T) {
 
 	if dr.Deploy.Healthcheck.StartupTimeoutSeconds != int32(checkReadyTimeout) {
 		t.Errorf("expected:%d got:%d", checkReadyTimeout, dr.Deploy.Healthcheck.StartupTimeoutSeconds)
+	}
+
+}
+
+func TestDeploy_User(t *testing.T) {
+
+	checkReadyPath := "/use-this-route"
+	checkReadyTimeout := 45
+
+	mockStatus := sous.DeployStatus(sous.DeployStatusPending)
+	d := sous.Deployable{
+		Status:        mockStatus,
+		Deployment:    &sous.Deployment{},
+		BuildArtifact: &sous.BuildArtifact{},
+	}
+
+	d.ClusterName = "TestContainerStartupOptionsCluster"
+	d.Startup.CheckReadyURIPath = checkReadyPath
+	d.Startup.Timeout = checkReadyTimeout
+	d.Deployment.Cluster = &sous.Cluster{
+		BaseURL: "http://testcluster.com",
+	}
+	d.Deployment.User.Email = "testuser@example.com"
+
+	ls, _ := logging.NewLogSinkSpy()
+
+	reqID := "fake-request-id"
+	depID := "fake-deploy-id"
+
+	r := sous.NewDummyRegistry()
+	ra := NewRectiAgent(r, ls)
+
+	dummyClient, ctrl := singularity.NewDummyClient(d.Deployment.Cluster.BaseURL)
+	ra.singClients[d.Deployment.Cluster.BaseURL] = dummyClient
+
+	response := new(dtos.SingularityRequestParent)
+
+	ctrl.FeedDTO(response, nil)
+	err := ra.Deploy(d, reqID, depID)
+
+	if err != nil {
+		t.Errorf("Should complete without failure")
 	}
 
 }
