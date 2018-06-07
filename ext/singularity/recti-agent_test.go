@@ -243,6 +243,10 @@ func TestDeploy_User(t *testing.T) {
 
 	err = ra.Deploy(d, reqID, depID)
 
+	if err != nil {
+		t.Errorf("Should complete without failure")
+	}
+
 	myClient.AssertExpectations(t)
 
 }
@@ -260,35 +264,3 @@ func (m *MySingularityClient) Request(resourceName string, method string, path s
 	args := m.Called(queryParams)
 	return ioutil.NopCloser(bytes.NewBufferString("")), args.Error(1)
 }
-
-/*
-func (m *MySingularityClient) DTORequest(rn string, pop swaggering.DTO, me, p string, pp, qp map[string]interface{}, b ...swaggering.DTO) error {
-
-}
-func (m *MySingularityClient) Request(rn, me, p string, pp, qp map[string]interface{}, b ...swaggering.DTO) (io.ReadCloser, error) {
-
-}
-*/
-/*
-// DTORequest performs an HTTP request and populates a DTO based on the response
-func (dc *DummyClient) DTORequest(rn string, pop DTO, m, p string, pp, qp urlParams, b ...DTO) error {
-	dto, err := dc.NextDTO(m, p, pp, qp, b...)
-	if err != nil {
-		return err
-	}
-	err = pop.Absorb(dto)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Request performs an HTTP request and returns the body of the response
-func (dc *DummyClient) Request(rn, m, p string, pp, qp urlParams, b ...DTO) (io.ReadCloser, error) {
-	body, err := dc.NextSimple(m, p, pp, qp, b...)
-	if err != nil {
-		return nil, err
-	}
-
-	return ioutil.NopCloser(bytes.NewBufferString(body)), nil
-}*/
