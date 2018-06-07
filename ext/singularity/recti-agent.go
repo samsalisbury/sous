@@ -36,7 +36,7 @@ func stripMetadata(in string) string {
 type (
 	// RectiAgent is an implementation of the RectificationClient interface
 	RectiAgent struct {
-		singClients map[string]*singularity.Client
+		singClients map[string]swaggering.Requester
 		sync.RWMutex
 		labeller sous.ImageLabeller
 		log      logging.LogSink
@@ -50,7 +50,7 @@ type (
 // NewRectiAgent returns a set-up RectiAgent
 func NewRectiAgent(l sous.ImageLabeller, ls logging.LogSink) *RectiAgent {
 	return &RectiAgent{
-		singClients: make(map[string]*singularity.Client),
+		singClients: make(map[string]swaggering.Requester),
 		labeller:    l,
 		log:         ls,
 	}
@@ -98,7 +98,8 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 
 	//Note: Due to lack of way to pass User/queryParamMap easily, just lifting the singularityClient.Deploy code here
 	response := new(dtos.SingularityRequestParent)
-	err = ra.singularityClient(clusterURI).DTORequest("singularity-deploy", response, "POST", "/api/deploys", pathParamMap, queryParamMap, depReq)
+
+	err = ra.getSingularityRequester(clusterURI).DTORequest("singularity-deploy", response, "POST", "/api/deploys", pathParamMap, queryParamMap, depReq)
 
 	if err != nil {
 		messages.ReportLogFieldsMessage("Singularity client returned following error", logging.WarningLevel, ra.log, depReq, reqID, err, response)
@@ -319,11 +320,31 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 	return err
 }
 
+//Deploy is actually not going to use traditional client, it will use Requester interface
+//Which on normal runs comes from Singularity, but testing gets injected (via the map) for testing
+//It also doesn't call the normal wrapper Client, hence the call straight to DTORequest
+func (ra *RectiAgent) getSingularityRequester(url string) swaggering.Requester {
+	ra.RLock()
+	defer ra.RUnlock()
+	if _, ok := ra.singClients[url]; !ok {
+		c := singularity.NewClient(url)
+		ra.singClients[url] = c
+	}
+
+	return ra.singClients[url]
+}
+
 func (ra *RectiAgent) getSingularityClient(url string) (*singularity.Client, bool) {
 	ra.RLock()
 	defer ra.RUnlock()
-	cl, ok := ra.singClients[url]
-	return cl, ok
+	r, ok := ra.singClients[url]
+
+	var o *singularity.Client
+	if ok {
+		o = r.(*singularity.Client)
+	}
+
+	return o, ok
 }
 
 func (ra *RectiAgent) singularityClient(url string) *singularity.Client {

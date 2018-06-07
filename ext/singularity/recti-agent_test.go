@@ -1,13 +1,18 @@
 package singularity
 
 import (
+	"bytes"
+	"io"
+	"io/ioutil"
 	"testing"
 
 	singularity "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/swaggering"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestStripMetadata(t *testing.T) {
@@ -223,4 +228,67 @@ func TestDeploy_User(t *testing.T) {
 		t.Errorf("Should complete without failure")
 	}
 
+	myClient := new(MySingularityClient)
+
+	user := "sous"
+	if d.Deployment != nil && len(d.Deployment.User.Email) > 1 {
+		user = "sous_" + d.Deployment.User.Email
+	}
+	qMap := make(swaggering.UrlParams)
+	qMap["user"] = user
+
+	myClient.On("DTORequest", qMap).Return(nil)
+
+	ra.singClients[d.Deployment.Cluster.BaseURL] = myClient
+
+	err = ra.Deploy(d, reqID, depID)
+
+	myClient.AssertExpectations(t)
+
 }
+
+type MySingularityClient struct {
+	mock.Mock
+}
+
+func (m *MySingularityClient) DTORequest(resourceName string, dto swaggering.DTO, method string, path string, pathParams swaggering.UrlParams, queryParams swaggering.UrlParams, body ...swaggering.DTO) error {
+	args := m.Called(queryParams)
+	return args.Error(0)
+}
+
+func (m *MySingularityClient) Request(resourceName string, method string, path string, pathParams swaggering.UrlParams, queryParams swaggering.UrlParams, body ...swaggering.DTO) (io.ReadCloser, error) {
+	args := m.Called(queryParams)
+	return ioutil.NopCloser(bytes.NewBufferString("")), args.Error(1)
+}
+
+/*
+func (m *MySingularityClient) DTORequest(rn string, pop swaggering.DTO, me, p string, pp, qp map[string]interface{}, b ...swaggering.DTO) error {
+
+}
+func (m *MySingularityClient) Request(rn, me, p string, pp, qp map[string]interface{}, b ...swaggering.DTO) (io.ReadCloser, error) {
+
+}
+*/
+/*
+// DTORequest performs an HTTP request and populates a DTO based on the response
+func (dc *DummyClient) DTORequest(rn string, pop DTO, m, p string, pp, qp urlParams, b ...DTO) error {
+	dto, err := dc.NextDTO(m, p, pp, qp, b...)
+	if err != nil {
+		return err
+	}
+	err = pop.Absorb(dto)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// Request performs an HTTP request and returns the body of the response
+func (dc *DummyClient) Request(rn, m, p string, pp, qp urlParams, b ...DTO) (io.ReadCloser, error) {
+	body, err := dc.NextSimple(m, p, pp, qp, b...)
+	if err != nil {
+		return nil, err
+	}
+
+	return ioutil.NopCloser(bytes.NewBufferString(body)), nil
+}*/
