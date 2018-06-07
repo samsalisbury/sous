@@ -188,7 +188,7 @@ func TestContainerStartupOptions(t *testing.T) {
 
 }
 
-func TestDeploy_User(t *testing.T) {
+func TestDeploy_MockedSingularity(t *testing.T) {
 
 	checkReadyPath := "/use-this-route"
 	checkReadyTimeout := 45
@@ -227,6 +227,35 @@ func TestDeploy_User(t *testing.T) {
 	if err != nil {
 		t.Errorf("Should complete without failure")
 	}
+}
+
+func TestDeploy_User(t *testing.T) {
+
+	checkReadyPath := "/use-this-route"
+	checkReadyTimeout := 45
+
+	mockStatus := sous.DeployStatus(sous.DeployStatusPending)
+	d := sous.Deployable{
+		Status:        mockStatus,
+		Deployment:    &sous.Deployment{},
+		BuildArtifact: &sous.BuildArtifact{},
+	}
+
+	d.ClusterName = "TestContainerStartupOptionsCluster"
+	d.Startup.CheckReadyURIPath = checkReadyPath
+	d.Startup.Timeout = checkReadyTimeout
+	d.Deployment.Cluster = &sous.Cluster{
+		BaseURL: "http://testcluster.com",
+	}
+	d.Deployment.User.Email = "testuser@example.com"
+
+	ls, _ := logging.NewLogSinkSpy()
+
+	reqID := "fake-request-id"
+	depID := "fake-deploy-id"
+
+	r := sous.NewDummyRegistry()
+	ra := NewRectiAgent(r, ls)
 
 	myClient := new(MySingularityClient)
 
@@ -241,14 +270,13 @@ func TestDeploy_User(t *testing.T) {
 
 	ra.singClients[d.Deployment.Cluster.BaseURL] = myClient
 
-	err = ra.Deploy(d, reqID, depID)
+	err := ra.Deploy(d, reqID, depID)
 
 	if err != nil {
 		t.Errorf("Should complete without failure")
 	}
 
 	myClient.AssertExpectations(t)
-
 }
 
 type MySingularityClient struct {
