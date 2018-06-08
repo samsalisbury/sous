@@ -36,6 +36,8 @@ type (
 		Owners OwnerSet
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
+		// User
+		User User
 	}
 )
 
