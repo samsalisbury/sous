@@ -65,6 +65,7 @@ func TestSousDeploy(t *testing.T) {
 
 	for _, fixtureConfig := range fixtureConfigs {
 		t.Run(fixtureConfig.Desc(), func(t *testing.T) {
+			t.Parallel()
 			deployCommand := "deploy"
 			t.Run(deployCommand, func(t *testing.T) {
 				t.Parallel()
@@ -179,7 +180,7 @@ func TestSousDeploy(t *testing.T) {
 					client.MustFail(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "2")
 					f.Singularity.UnpauseRequestForDeployment(t, did)
 
-					knownToFailHere(t)
+					f.KnownToFailHere(t)
 
 					client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "3")
 					assertActiveStatus(t, f, did)

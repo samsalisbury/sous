@@ -28,7 +28,7 @@ type (
 	ParallelTestFixture struct {
 		NextAddr          func() string
 		testNames         map[string]struct{}
-		testNamesMu       sync.Mutex
+		testNamesMu       sync.RWMutex
 		testNamesPassed   map[string]struct{}
 		testNamesPassedMu sync.Mutex
 	}
@@ -85,17 +85,23 @@ func (pf *ParallelTestFixture) recordTestPassed(t *testing.T) {
 		return
 	}
 	name := t.Name()
+	pf.testNamesMu.RLock()
+	_, started := pf.testNames[name]
+	pf.testNamesMu.RUnlock()
+	if !started {
+		t.Fatalf("test reported as passed but not started!?")
+		return
+	}
+
 	pf.testNamesPassedMu.Lock()
 	defer pf.testNamesPassedMu.Unlock()
-	if _, ok := pf.testNames[name]; !ok {
-		t.Errorf("test reported as passed but not started!?")
-	}
 	pf.testNamesPassed[name] = struct{}{}
 }
 
 func (pf *ParallelTestFixture) PrintSummary(t *testing.T) {
-	t.Logf("Test summary: %d out of %d tests passed", len(pf.testNames), len(pf.testNamesPassed))
-	fmt.Fprintf(os.Stdout, "Test summary: %d out of %d tests passed", len(pf.testNamesPassed), len(pf.testNames))
+	summary := fmt.Sprintf("Test summary: %d out of %d tests passed", len(pf.testNamesPassed), len(pf.testNames))
+	t.Log(summary)
+	fmt.Fprint(os.Stdout, summary)
 }
 
 func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) TestFixture {
