@@ -379,8 +379,8 @@ $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
 test-smoke-compiles: ## Checks that the smoke tests compile.
 	@go test -c -o /dev/null -tags smoke ./test/smoke && echo Smoke tests compiled.
 
-.PHONY: test-smoke
-test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
+.PHONY: test-smoke-all
+test-smoke-all: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
 	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
 	ulimit -n 2048 && \
 	PGHOST=$(PGHOST) \
@@ -394,9 +394,9 @@ test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) s
 	SOUS_TERSE_LOGGING=$(SOUS_TERSE_LOGGING) \
 	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
-.PHONY: test-smoke-nofail
-test-smoke-nofail:
-	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
+.PHONY: test-smoke
+test-smoke:
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
 
 .PHONY: docker-is-working
 docker-is-working:
