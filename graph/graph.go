@@ -643,9 +643,9 @@ func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, d
 
 	if c.DatabasePrimary {
 		primary, perr, secondary, serr = secondary, serr, primary, perr
-		logging.Deliver(log, logging.InformationLevel, logging.SousGenericV1, logging.GetCallerInfo(), logging.MessageField("database is primary datastore"))
+		logging.InfoMsg(log, "database is primary datastore")
 	} else {
-		logging.Deliver(log, logging.InformationLevel, logging.SousGenericV1, logging.GetCallerInfo(), logging.MessageField("git is primary datastore"))
+		logging.InfoMsg(log, "git is primary datastore")
 	}
 
 	if perr != nil {
