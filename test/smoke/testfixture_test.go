@@ -88,9 +88,6 @@ func (f *TestFixture) Stop(t *testing.T) {
 }
 
 func (f *TestFixture) ReportSuccess(t *testing.T) {
-	if f.knownToFail {
-		return
-	}
 	t.Helper()
 	f.Parent.recordTestPassed(t)
 }
