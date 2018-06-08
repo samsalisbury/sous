@@ -36,7 +36,7 @@ func stripMetadata(in string) string {
 type (
 	// RectiAgent is an implementation of the RectificationClient interface
 	RectiAgent struct {
-		singClients map[string]*singularity.Client
+		singClients map[string]swaggering.Requester
 		sync.RWMutex
 		labeller sous.ImageLabeller
 		log      logging.LogSink
@@ -50,7 +50,7 @@ type (
 // NewRectiAgent returns a set-up RectiAgent
 func NewRectiAgent(l sous.ImageLabeller, ls logging.LogSink) *RectiAgent {
 	return &RectiAgent{
-		singClients: make(map[string]*singularity.Client),
+		singClients: make(map[string]swaggering.Requester),
 		labeller:    l,
 		log:         ls,
 	}
@@ -78,15 +78,31 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 		return err
 	}
 	messages.ReportLogFieldsMessage("Build deploying instance", logging.DebugLevel, ra.log, d, reqID)
+
 	depReq, err := buildDeployRequest(d, reqID, depID, labels, ra.log)
 	if err != nil {
 		return err
 	}
 
 	messages.ReportLogFieldsMessage("Sending Deploy req to singularity Client", logging.DebugLevel, ra.log, depReq)
-	_, err = ra.singularityClient(clusterURI).Deploy(depReq)
+
+	pathParamMap := map[string]interface{}{}
+
+	user := "sous"
+	if d.Deployment != nil && len(d.Deployment.User.Email) > 1 {
+		user = "sous_" + d.Deployment.User.Email
+	}
+	queryParamMap := map[string]interface{}{
+		"user": user,
+	}
+
+	//Note: Due to lack of way to pass User/queryParamMap easily, just lifting the singularityClient.Deploy code here
+	response := new(dtos.SingularityRequestParent)
+
+	err = ra.getSingularityRequester(clusterURI).DTORequest("singularity-deploy", response, "POST", "/api/deploys", pathParamMap, queryParamMap, depReq)
+
 	if err != nil {
-		messages.ReportLogFieldsMessage("Singularity client returned following error", logging.WarningLevel, ra.log, depReq, reqID, err)
+		messages.ReportLogFieldsMessage("Singularity client returned following error", logging.WarningLevel, ra.log, depReq, reqID, err, response)
 	}
 	return err
 }
@@ -140,6 +156,11 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 		return nil, err
 	}
 
+	user := "unknown_sous_deploy"
+	if d.Deployment != nil && len(d.Deployment.User.Email) > 1 {
+		user = d.Deployment.User.Email
+	}
+	message := fmt.Sprintf("Deployed by %s", user)
 	depMap := dtoMap{
 		"Id":            depID,
 		"RequestId":     reqID,
@@ -159,7 +180,8 @@ func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[str
 	}
 	messages.ReportLogFieldsMessage("Deploy", logging.DebugLevel, log, dep, ci, dockerInfo)
 
-	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep})
+	depReq, err = swaggering.LoadMap(&dtos.SingularityDeployRequest{}, dtoMap{"Deploy": dep, "Message": message})
+
 	if err != nil {
 		return nil, err
 	}
@@ -298,11 +320,31 @@ func (ra *RectiAgent) Scale(cluster, reqID string, instanceCount int, message st
 	return err
 }
 
+//Deploy is actually not going to use traditional client, it will use Requester interface
+//Which on normal runs comes from Singularity, but testing gets injected (via the map) for testing
+//It also doesn't call the normal wrapper Client, hence the call straight to DTORequest
+func (ra *RectiAgent) getSingularityRequester(url string) swaggering.Requester {
+	ra.RLock()
+	defer ra.RUnlock()
+	if _, ok := ra.singClients[url]; !ok {
+		c := singularity.NewClient(url)
+		ra.singClients[url] = c
+	}
+
+	return ra.singClients[url]
+}
+
 func (ra *RectiAgent) getSingularityClient(url string) (*singularity.Client, bool) {
 	ra.RLock()
 	defer ra.RUnlock()
-	cl, ok := ra.singClients[url]
-	return cl, ok
+	r, ok := ra.singClients[url]
+
+	var o *singularity.Client
+	if ok {
+		o = r.(*singularity.Client)
+	}
+
+	return o, ok
 }
 
 func (ra *RectiAgent) singularityClient(url string) *singularity.Client {
