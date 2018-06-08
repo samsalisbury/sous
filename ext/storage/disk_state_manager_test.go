@@ -229,6 +229,7 @@ func exampleState() *sous.State {
 						CheckReadyProtocol: "HTTPS",
 						CheckReadyURIPath:  "/health",
 					},
+					AllowedAdvisories: sous.AllAdvisoryStrings(),
 				},
 				"other-cluster": &sous.Cluster{
 					Kind:    "singularity",
@@ -237,6 +238,7 @@ func exampleState() *sous.State {
 						CheckReadyProtocol: "HTTPS",
 						CheckReadyURIPath:  "/health",
 					},
+					AllowedAdvisories: sous.AllAdvisoryStrings(),
 				},
 			},
 			EnvVars:   sous.EnvDefs{},

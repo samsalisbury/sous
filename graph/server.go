@@ -1,8 +1,11 @@
 package graph
 
 import (
+	"fmt"
+
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 )
 
@@ -11,20 +14,31 @@ func newServerComponentLocator(
 	cfg LocalSousConfig,
 	ins serverInserter,
 	sm *ServerStateManager,
+	cm *ServerClusterManager,
 	rf *sous.ResolveFilter,
 	ar *sous.AutoResolver,
 	v semv.Version,
 	qs *sous.R11nQueueSet,
 ) server.ComponentLocator {
-	cm := sous.MakeClusterManager(sm.StateManager, ls)
-	dm := sous.MakeDeploymentManager(sm.StateManager, ls)
+
+	logging.Deliver(ls, logging.SousGenericV1, logging.DebugLevel, logging.GetCallerInfo(),
+		logging.MessageField(fmt.Sprintf("Building CL: State manager: %T %[1]p", sm.StateManager)))
+
+	var dm sous.DeploymentManager
+
+	switch ldm := sm.StateManager.(type) {
+	default:
+		dm = sous.MakeDeploymentManager(sm.StateManager, ls)
+	case sous.DeploymentManager:
+		dm = ldm
+	}
 	return server.ComponentLocator{
 
 		LogSink:           ls.LogSink,
 		Config:            cfg.Config,
 		Inserter:          ins.Inserter,
 		StateManager:      sm.StateManager,
-		ClusterManager:    cm,
+		ClusterManager:    cm.ClusterManager,
 		DeploymentManager: dm,
 		ResolveFilter:     rf,
 		AutoResolver:      ar,

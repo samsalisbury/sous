@@ -8,22 +8,31 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	sous "github.com/opentable/sous/lib"
 )
 
-// PTFOpts are options for a ParallelTestFixture.
-type PTFOpts struct {
-	// NumFreeAddrs determines how many free addresses are guaranteed by this
-	// test fixture.
-	NumFreeAddrs int
-}
+type (
+	// PTFOpts are options for a ParallelTestFixture.
+	PTFOpts struct {
+		// NumFreeAddrs determines how many free addresses are guaranteed by this
+		// test fixture.
+		NumFreeAddrs int
+	}
 
-type ParallelTestFixture struct {
-	NextAddr          func() string
-	testNames         map[string]struct{}
-	testNamesMu       sync.Mutex
-	testNamesPassed   map[string]struct{}
-	testNamesPassedMu sync.Mutex
-}
+	fixtureConfig struct {
+		dbPrimary  bool
+		startState *sous.State
+	}
+
+	ParallelTestFixture struct {
+		NextAddr          func() string
+		testNames         map[string]struct{}
+		testNamesMu       sync.Mutex
+		testNamesPassed   map[string]struct{}
+		testNamesPassedMu sync.Mutex
+	}
+)
 
 func resetSingularity(t *testing.T) {
 	envDesc := getEnvDesc(t)
@@ -52,6 +61,13 @@ func newParallelTestFixture(t *testing.T, opts PTFOpts) *ParallelTestFixture {
 	}
 }
 
+func (fcfg fixtureConfig) Desc() string {
+	if fcfg.dbPrimary {
+		return "DB"
+	}
+	return "GIT"
+}
+
 func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
 	t.Helper()
 	name := t.Name()
@@ -65,6 +81,9 @@ func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
 
 func (pf *ParallelTestFixture) recordTestPassed(t *testing.T) {
 	t.Helper()
+	if t.Failed() {
+		return
+	}
 	name := t.Name()
 	pf.testNamesPassedMu.Lock()
 	defer pf.testNamesPassedMu.Unlock()
@@ -76,11 +95,11 @@ func (pf *ParallelTestFixture) recordTestPassed(t *testing.T) {
 
 func (pf *ParallelTestFixture) PrintSummary(t *testing.T) {
 	t.Logf("Test summary: %d out of %d tests passed", len(pf.testNames), len(pf.testNamesPassed))
-	fmt.Fprintf(os.Stdout, "Test summary: %d out of %d tests passed", len(pf.testNames), len(pf.testNamesPassed))
+	fmt.Fprintf(os.Stdout, "Test summary: %d out of %d tests passed", len(pf.testNamesPassed), len(pf.testNames))
 }
 
-func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T) TestFixture {
+func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) TestFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
-	return newTestFixture(t, pf, pf.NextAddr)
+	return newTestFixture(t, pf, pf.NextAddr, fcfg)
 }

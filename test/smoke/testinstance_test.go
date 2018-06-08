@@ -12,6 +12,9 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/ext/storage"
+	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 )
 
@@ -41,7 +44,21 @@ func makeInstance(t *testing.T, i int, clusterName, baseDir, addr string) (*Inst
 	}, nil
 }
 
-func (i *Instance) Configure(config *config.Config, remoteGDMDir string) error {
+func seedDB(config *config.Config, state *sous.State) error {
+	db, err := config.Database.DB()
+	if err != nil {
+		return err
+	}
+	mgr := storage.NewPostgresStateManager(db, logging.SilentLogSet())
+
+	return mgr.WriteState(state, sous.User{})
+}
+
+func (i *Instance) Configure(config *config.Config, remoteGDMDir string, fcfg fixtureConfig) error {
+	if err := seedDB(config, fcfg.startState); err != nil {
+		return err
+	}
+
 	if err := os.MkdirAll(i.StateDir, 0777); err != nil {
 		return err
 	}

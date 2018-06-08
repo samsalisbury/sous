@@ -8,7 +8,20 @@ Clusters:
     Startup:
       CheckReadyProtocol: HTTPS
       CheckReadyURIPath: /health
-    AllowedAdvisories: []
+    AllowedAdvisories:
+    - support container
+    - is a build image
+    - source workspace lacked repo
+    - no repository
+    - requested revision not built
+    - no versioned tag
+    - tag mismatch
+    - tag not on built revision
+    - ephemeral tag
+    - unpushed revision
+    - bogus revision
+    - dirty workspace
+    - developer build
   other-cluster:
     Name: ""
     Kind: singularity
@@ -17,7 +30,20 @@ Clusters:
     Startup:
       CheckReadyProtocol: HTTPS
       CheckReadyURIPath: /health
-    AllowedAdvisories: []
+    AllowedAdvisories:
+    - support container
+    - is a build image
+    - source workspace lacked repo
+    - no repository
+    - requested revision not built
+    - no versioned tag
+    - tag mismatch
+    - tag not on built revision
+    - ephemeral tag
+    - unpushed revision
+    - bogus revision
+    - dirty workspace
+    - developer build
 EnvVars: []
 Resources: []
 Metadata: []

@@ -88,6 +88,8 @@ type (
 	ClientStateManager struct{ sous.StateManager }
 	// ServerStateManager wraps the sous.StateManager interface and is used by `sous server`
 	ServerStateManager struct{ sous.StateManager }
+	// ServerClusterManager wraps the sous.ClusterManager interface and is used by `sous server`
+	ServerClusterManager struct{ sous.ClusterManager }
 
 	distStateManager struct {
 		sous.StateManager
@@ -234,6 +236,7 @@ func AddFilesystem(graph adder) {
 		newConfigLoader,
 		newMaybeDatabase, // we need to be able to progress in the absence of a DB.
 		newServerStateManager,
+		newServerClusterManager,
 		newDistributedStateManager,
 		newGitStateManager,
 		newDiskStateManager,
@@ -656,6 +659,25 @@ func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, d
 
 	duplex := storage.NewDuplexStateManager(primary, secondary, log.Child("duplex-state"))
 	return &ServerStateManager{StateManager: duplex}, nil
+}
+
+func newServerClusterManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm distStateManager) (*ServerClusterManager, error) {
+	var cmgr sous.StateManager
+	var err error
+
+	if c.DatabasePrimary {
+		cmgr = dm.StateManager
+		err = dm.Error
+	} else {
+		cmgr = gm.StateManager
+		err = gm.Error
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &ServerClusterManager{ClusterManager: sous.MakeClusterManager(cmgr, log)}, nil
 }
 
 func newDistributedStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) distStateManager {
