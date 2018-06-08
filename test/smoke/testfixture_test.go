@@ -87,9 +87,9 @@ func (f *TestFixture) Stop(t *testing.T) {
 	f.Cluster.Stop(t)
 }
 
-func (f *TestFixture) ReportSuccess(t *testing.T) {
+func (f *TestFixture) ReportStatus(t *testing.T) {
 	t.Helper()
-	f.Parent.recordTestPassed(t)
+	f.Parent.recordTestStatus(t)
 }
 
 func (f *TestFixture) KnownToFailHere(t *testing.T) {

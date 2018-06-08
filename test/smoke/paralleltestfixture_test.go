@@ -86,7 +86,7 @@ func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
 	pf.testNames[name] = struct{}{}
 }
 
-func (pf *ParallelTestFixture) recordTestPassed(t *testing.T) {
+func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 	t.Helper()
 	name := t.Name()
 	pf.testNamesMu.RLock()

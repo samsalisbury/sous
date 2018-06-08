@@ -77,7 +77,7 @@ func TestSousDeploy(t *testing.T) {
 
 					t.Run("simple", func(t *testing.T) {
 						f := pf.NewIsolatedFixture(t, fixtureConfig)
-						defer f.ReportSuccess(t)
+						defer f.ReportStatus(t)
 						client := setupProject(t, f, simpleServer)
 						client.MustRun(t, "init", nil, "-kind", "http-service")
 						client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
@@ -100,7 +100,7 @@ func TestSousDeploy(t *testing.T) {
 
 					t.Run("zero-instances", func(t *testing.T) {
 						f := pf.NewIsolatedFixture(t, fixtureConfig)
-						defer f.ReportSuccess(t)
+						defer f.ReportStatus(t)
 						client := setupProject(t, f, simpleServer)
 						client.MustRun(t, "init", nil, "-kind", "http-service")
 						client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst0)
@@ -111,7 +111,7 @@ func TestSousDeploy(t *testing.T) {
 
 					t.Run("fails", func(t *testing.T) {
 						f := pf.NewIsolatedFixture(t, fixtureConfig)
-						defer f.ReportSuccess(t)
+						defer f.ReportStatus(t)
 						client := setupProject(t, f, failer)
 						client.MustRun(t, "init", nil, "-kind", "http-service")
 						client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
@@ -134,7 +134,7 @@ func TestSousDeploy(t *testing.T) {
 
 					t.Run("flavors", func(t *testing.T) {
 						f := pf.NewIsolatedFixture(t, fixtureConfig)
-						defer f.ReportSuccess(t)
+						defer f.ReportStatus(t)
 						client := setupProject(t, f, simpleServer)
 						flavor := "flavor1"
 						flavorFlag := &sousFlags{flavor: flavor}
@@ -160,7 +160,7 @@ func TestSousDeploy(t *testing.T) {
 
 					t.Run("pause-unpause", func(t *testing.T) {
 						f := pf.NewIsolatedFixture(t, fixtureConfig)
-						defer f.ReportSuccess(t)
+						defer f.ReportStatus(t)
 						client := setupProject(t, f, simpleServer)
 						client.MustRun(t, "init", nil, "-kind", "http-service")
 						client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
@@ -193,7 +193,7 @@ func TestSousDeploy(t *testing.T) {
 
 					t.Run("scheduled", func(t *testing.T) {
 						f := pf.NewIsolatedFixture(t, fixtureConfig)
-						defer f.ReportSuccess(t)
+						defer f.ReportStatus(t)
 						client := setupProject(t, f, sleeper)
 						client.MustRun(t, "init", nil, "-kind", "scheduled")
 						client.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
