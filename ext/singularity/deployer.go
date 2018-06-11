@@ -193,10 +193,16 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 	if err != nil {
 		return err
 	}
-	reqID, err := computeRequestID(d.Post)
-	if err != nil {
-		return err
+
+	reqID := d.Post.Deployment.DeployConfig.SingularityRequestID
+	if reqID == "" {
+		reqID, err = computeRequestID(d.Post)
+		if err != nil {
+			return err
+		}
 	}
+
+	// TODO SS: Check this reques ID does not already exist.
 	if err = r.Client.PostRequest(*d.Post, reqID); err != nil {
 		return err
 	}
@@ -236,12 +242,27 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	if !ok {
 		return errors.Errorf("Modification record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", pair.ID(), data, pair)
 	}
-	reqID := data.requestID
+	currentReqID := data.requestID
+	desiredReqID := pair.Post.Deployment.DeployConfig.SingularityRequestID
+
+	if desiredReqID == "" {
+		desiredReqID = currentReqID
+	}
 
 	reportDeployerMessage("Operating on request", pair, diffs, data, nil, logging.ExtraDebug1Level, r.log)
 	if changesReq(pair) {
 		reportDeployerMessage("Updating request", pair, diffs, data, nil, logging.DebugLevel, r.log)
-		if err := r.Client.PostRequest(*pair.Post, reqID); err != nil {
+		if err := r.Client.PostRequest(*pair.Post, desiredReqID); err != nil {
+			return err
+		}
+	} else if desiredReqID != currentReqID {
+		// NOTE: This message is WarningLevel whilst the feature is new.
+		// TODO SS: Turn this down to debug level once we're happy with it.
+		m := fmt.Sprintf("Creating request %q to replace %q", currentReqID, desiredReqID)
+		reportDeployerMessage(m, pair, diffs, data, nil, logging.WarningLevel, r.log)
+
+		// TODO SS: Check that this request does not already exist; fail if it does.
+		if err := r.Client.PostRequest(*pair.Post, desiredReqID); err != nil {
 			return err
 		}
 	} else {
@@ -251,11 +272,19 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	if changesDep(pair) {
 		reportDeployerMessage("Deploying", pair, diffs, data, nil, logging.DebugLevel, r.log)
 		depID := computeDeployIDFromUUID(pair.Post, pair.UUID)
-		if err := r.Client.Deploy(*pair.Post, reqID, depID); err != nil {
+		if err := r.Client.Deploy(*pair.Post, desiredReqID, depID); err != nil {
 			return err
 		}
 	} else {
 		reportDeployerMessage("No change to Singularity deployment required", pair, diffs, data, nil, logging.DebugLevel, r.log)
+	}
+
+	// Remove the old request ID only once the new deployment is complete.
+	if desiredReqID != currentReqID {
+		m := fmt.Sprintf("Renamed to %q by Sous", desiredReqID)
+		if err := r.Client.DeleteRequest(pair.Post.Deployment.Cluster.BaseURL, currentReqID, m); err != nil {
+			return err
+		}
 	}
 
 	return nil
