@@ -186,8 +186,8 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 	if err := ins.Exec("singularity_deployment_bindings", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			fields.Row(func(r sqlgen.RowDef) {
-				compIDFunc(r.CF, dep)
-				clusterIDFunc(r.CF, dep)
+				compID(r, dep)
+				clusterID(r, dep)
 				r.FD("?", "singularity_request_id", dep.DeployConfig.SingularityRequestID)
 			})
 		})); err != nil {
@@ -276,21 +276,13 @@ func depID(row sqlgen.RowDef, dep *sous.Deployment) {
 }
 
 func compID(row sqlgen.RowDef, dep *sous.Deployment) {
-	compIDFunc(row.FD, dep)
-}
-
-func compIDFunc(f sqlgen.FieldDefFunc, dep *sous.Deployment) {
 	sid := dep.SourceID
-	f(`(select component_id from components where repo = ? and dir = ? and flavor = ? and kind = ?)`,
+	row.FD(`(select component_id from components where repo = ? and dir = ? and flavor = ? and kind = ?)`,
 		"component_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind)
 }
 
 func clusterID(row sqlgen.RowDef, dep *sous.Deployment) {
-	clusterIDFunc(row.FD, dep)
-}
-
-func clusterIDFunc(f sqlgen.FieldDefFunc, dep *sous.Deployment) {
-	f(`(select "cluster_id" from clusters where name = ?)`, "cluster_id", dep.ClusterName)
+	row.FD(`(select "cluster_id" from clusters where name = ?)`, "cluster_id", dep.ClusterName)
 }
 
 func advisoryID(row sqlgen.RowDef, advName string) {
