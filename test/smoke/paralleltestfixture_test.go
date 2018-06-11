@@ -5,6 +5,7 @@ package smoke
 import (
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -26,11 +27,15 @@ type (
 	}
 
 	ParallelTestFixture struct {
-		NextAddr          func() string
-		testNames         map[string]struct{}
-		testNamesMu       sync.Mutex
-		testNamesPassed   map[string]struct{}
-		testNamesPassedMu sync.Mutex
+		NextAddr           func() string
+		testNames          map[string]struct{}
+		testNamesMu        sync.RWMutex
+		testNamesPassed    map[string]struct{}
+		testNamesPassedMu  sync.Mutex
+		testNamesSkipped   map[string]struct{}
+		testNamesSkippedMu sync.Mutex
+		testNamesFailed    map[string]struct{}
+		testNamesFailedMu  sync.Mutex
 	}
 )
 
@@ -55,9 +60,11 @@ func newParallelTestFixture(t *testing.T, opts PTFOpts) *ParallelTestFixture {
 		return freeAddrs[i]
 	}
 	return &ParallelTestFixture{
-		NextAddr:        nextAddr,
-		testNames:       map[string]struct{}{},
-		testNamesPassed: map[string]struct{}{},
+		NextAddr:         nextAddr,
+		testNames:        map[string]struct{}{},
+		testNamesPassed:  map[string]struct{}{},
+		testNamesSkipped: map[string]struct{}{},
+		testNamesFailed:  map[string]struct{}{},
 	}
 }
 
@@ -79,23 +86,62 @@ func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
 	pf.testNames[name] = struct{}{}
 }
 
-func (pf *ParallelTestFixture) recordTestPassed(t *testing.T) {
+func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 	t.Helper()
-	if t.Failed() {
+	name := t.Name()
+	pf.testNamesMu.RLock()
+	_, started := pf.testNames[name]
+	pf.testNamesMu.RUnlock()
+	if !started {
+		t.Fatalf("test %q reported as finished, but not started", name)
 		return
 	}
-	name := t.Name()
-	pf.testNamesPassedMu.Lock()
-	defer pf.testNamesPassedMu.Unlock()
-	if _, ok := pf.testNames[name]; !ok {
-		t.Errorf("test reported as passed but not started!?")
+	switch {
+	default:
+		pf.testNamesPassedMu.Lock()
+		pf.testNamesPassed[name] = struct{}{}
+		pf.testNamesPassedMu.Unlock()
+		return
+	case t.Skipped():
+		pf.testNamesSkippedMu.Lock()
+		pf.testNamesSkipped[name] = struct{}{}
+		pf.testNamesSkippedMu.Unlock()
+		return
+	case t.Failed():
+		pf.testNamesFailedMu.Lock()
+		pf.testNamesFailed[name] = struct{}{}
+		pf.testNamesFailedMu.Unlock()
+		return
 	}
-	pf.testNamesPassed[name] = struct{}{}
 }
 
 func (pf *ParallelTestFixture) PrintSummary(t *testing.T) {
-	t.Logf("Test summary: %d out of %d tests passed", len(pf.testNames), len(pf.testNamesPassed))
-	fmt.Fprintf(os.Stdout, "Test summary: %d out of %d tests passed", len(pf.testNamesPassed), len(pf.testNames))
+	total := len(pf.testNames)
+	passed := len(pf.testNamesPassed)
+	skipped := len(pf.testNamesSkipped)
+	failed := len(pf.testNamesFailed)
+
+	summary := fmt.Sprintf("Test summary: %d failed; %d skipped; %d passed (total %d)", failed, skipped, passed, total)
+	t.Log(summary)
+	fmt.Fprint(os.Stdout, summary)
+
+	missing := total - (passed + failed + skipped)
+	if missing != 0 {
+		for t := range pf.testNamesPassed {
+			delete(pf.testNames, t)
+		}
+		for t := range pf.testNamesSkipped {
+			delete(pf.testNames, t)
+		}
+		for t := range pf.testNamesFailed {
+			delete(pf.testNames, t)
+		}
+		var missingTests []string
+		for t := range pf.testNames {
+			missingTests = append(missingTests, t)
+		}
+		t.Fatalf("Some tests did not report status: %s", strings.Join(missingTests, ", "))
+	}
 }
 
 func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) TestFixture {

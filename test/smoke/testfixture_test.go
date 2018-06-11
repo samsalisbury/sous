@@ -24,6 +24,7 @@ type TestFixture struct {
 	Parent        *ParallelTestFixture
 	TestName      string
 	UserEmail     string
+	knownToFail   bool
 }
 
 func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) TestFixture {
@@ -89,7 +90,17 @@ func (f *TestFixture) Stop(t *testing.T) {
 	f.Cluster.Stop(t)
 }
 
-func (f *TestFixture) ReportSuccess(t *testing.T) {
+func (f *TestFixture) ReportStatus(t *testing.T) {
 	t.Helper()
-	f.Parent.recordTestPassed(t)
+	f.Parent.recordTestStatus(t)
+}
+
+func (f *TestFixture) KnownToFailHere(t *testing.T) {
+	t.Helper()
+	const skipKnownFailuresEnvVar = "EXCLUDE_KNOWN_FAILING_TESTS"
+	if os.Getenv(skipKnownFailuresEnvVar) == "YES" {
+		f.knownToFail = true
+		t.Skipf("This test is known to fail and you set %s=YES",
+			skipKnownFailuresEnvVar)
+	}
 }

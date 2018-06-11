@@ -25,15 +25,6 @@ import (
 // via the same go test invocation.
 var timeGoTestInvoked = time.Now().Format(time.RFC3339)
 
-func knownToFailHere(t *testing.T) {
-	t.Helper()
-	const skipKnownFailuresEnvVar = "EXCLUDE_KNOWN_FAILING_TESTS"
-	if os.Getenv(skipKnownFailuresEnvVar) == "YES" {
-		t.Skipf("This test is known to fail and you set %s=YES",
-			skipKnownFailuresEnvVar)
-	}
-}
-
 func getEnvDesc(t *testing.T) desc.EnvDesc {
 	descPath := os.Getenv("SOUS_QA_DESC")
 	if descPath == "" {
