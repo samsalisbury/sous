@@ -1,7 +1,6 @@
 package docker
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -14,13 +13,14 @@ import (
 )
 
 type (
+	// RunmountBuildpack builds a container, runs it seperately to use docker mounts for cache and output,
+	// and builds final deploy container
 	RunmountBuildpack struct {
 		detected *sous.DetectResult
 	}
 )
 
-// const SOUS_RUN_IMAGE_SPEC = "SOUS_RUN_IMAGE_SPEC"
-
+// NewRunmountBuildpack returns a new RunmountBuildpack
 func NewRunmountBuildpack() *RunmountBuildpack {
 	return &RunmountBuildpack{}
 }
@@ -33,10 +33,11 @@ func readDockerfile() (string, error) {
 	return string(b), nil
 }
 
+// Detect implements Buildpack on RunmountBuildpack
 func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, error) {
 	dfPath := filepath.Join(ctx.Source.OffsetDir, "Dockerfile")
 	if !ctx.Sh.Exists(dfPath) {
-		return nil, errors.New(fmt.Sprintf("%s does not exist", dfPath))
+		return nil, fmt.Errorf("%s does not exist", dfPath)
 	}
 
 	messages.ReportLogFieldsMessage("Runmount dockerfile detection", logging.DebugLevel, logging.Log, dfPath)
@@ -51,6 +52,7 @@ func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResul
 	return &result, nil
 }
 
+// Build implements Buildpack on RunmountBuildpack
 func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult, error) {
 	fmt.Println("Runmount Build.. ")
 	start := time.Now()
