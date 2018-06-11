@@ -2,6 +2,7 @@ package singularity
 
 import (
 	"fmt"
+	"log"
 	"runtime/debug"
 	"strings"
 
@@ -196,6 +197,7 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 
 	reqID := d.Post.Deployment.DeployConfig.SingularityRequestID
 	if reqID == "" {
+		log.Panicf("no request ID for %s", d.ID())
 		reqID, err = computeRequestID(d.Post)
 		if err != nil {
 			return err
