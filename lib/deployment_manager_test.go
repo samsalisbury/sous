@@ -2,6 +2,8 @@ package sous
 
 import (
 	"testing"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 func TestDeploymentManager_ReadDeployment(t *testing.T) {
@@ -10,7 +12,8 @@ func TestDeploymentManager_ReadDeployment(t *testing.T) {
 	dummy := &DummyStateManager{
 		State: innerState,
 	}
-	dm := MakeDeploymentManager(dummy)
+	ls, _ := logging.NewLogSinkSpy()
+	dm := MakeDeploymentManager(dummy, ls)
 
 	did := DeploymentID{
 		ManifestID: ManifestID{

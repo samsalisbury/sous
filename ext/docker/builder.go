@@ -22,6 +22,7 @@ type (
 		DockerRegistryHost        string
 		SourceShell, ScratchShell shell.Shell
 		Pack                      sous.Buildpack
+		log                       logging.LogSink
 	}
 	// BuildTarget represents a single target within a Build.
 	BuildTarget interface {
@@ -33,12 +34,13 @@ type (
 // NewBuilder creates a new build using source code in the working
 // directory of sourceShell, and using the working dir of scratchShell as
 // temporary storage.
-func NewBuilder(nc sous.Inserter, drh string, sourceShell, scratchShell shell.Shell) (*Builder, error) {
+func NewBuilder(nc sous.Inserter, drh string, sourceShell, scratchShell shell.Shell, ls logging.LogSink) (*Builder, error) {
 	b := &Builder{
 		ImageMapper:        nc,
 		DockerRegistryHost: drh,
 		SourceShell:        sourceShell,
 		ScratchShell:       scratchShell,
+		log:                ls,
 	}
 
 	files, err := scratchShell.List()
@@ -82,16 +84,16 @@ func (b *Builder) Register(br *sous.BuildResult) error {
 }
 
 func (b *Builder) debug(msg string) {
-	messages.ReportLogFieldsMessage(msg, logging.DebugLevel, logging.Log)
+	messages.ReportLogFieldsMessage(msg, logging.DebugLevel, b.log)
 }
 
 func (b *Builder) info(msg string) {
-	messages.ReportLogFieldsMessage(msg, logging.InformationLevel, logging.Log)
+	messages.ReportLogFieldsMessage(msg, logging.InformationLevel, b.log)
 }
 
 func (b *Builder) applyMetadata(bp *sous.BuildProduct) error {
 	bp.VersionName = b.VersionTag(bp.Source, bp.Kind)
-	bp.RevisionName = b.RevisionTag(bp.Source, bp.Kind, time.Now())
+	bp.RevisionName = b.RevisionTag(bp.Source, bp.RevisionName, bp.Kind, time.Now())
 
 	c := b.SourceShell.Cmd("docker", "build", "-t", bp.VersionName, "-t", bp.RevisionName, "-")
 	bf := b.metadataDockerfile(bp)
@@ -114,7 +116,7 @@ func (b *Builder) metadataDockerfile(bp *sous.BuildProduct) io.Reader {
 		Advisories []string
 	}{
 		bp.ID,
-		Labels(sv),
+		Labels(sv, bp.RevID),
 		bp.Advisories,
 	})
 	return &bf
@@ -145,10 +147,10 @@ func (b *Builder) recordName(bp *sous.BuildProduct) error {
 
 // VersionTag computes an image tag from a SourceVersion's version
 func (b *Builder) VersionTag(v sous.SourceID, kind string) string {
-	return versionTag(b.DockerRegistryHost, v, kind)
+	return versionTag(b.DockerRegistryHost, v, kind, b.log)
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
-func (b *Builder) RevisionTag(v sous.SourceID, kind string, time time.Time) string {
-	return revisionTag(b.DockerRegistryHost, v, kind, time)
+func (b *Builder) RevisionTag(v sous.SourceID, rev string, kind string, time time.Time) string {
+	return revisionTag(b.DockerRegistryHost, v, rev, kind, time, b.log)
 }

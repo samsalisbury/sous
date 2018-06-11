@@ -57,7 +57,7 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler, f
 		filepath.Join(temp, "remote"),
 		filepath.Join(temp, "out")
 
-	dsm := storage.NewDiskStateManager(sourcepath)
+	dsm := storage.NewDiskStateManager(sourcepath, logging.SilentLogSet())
 	s, err := dsm.ReadState()
 	suite.Require().NoError(err)
 
@@ -66,7 +66,7 @@ func (suite *integrationServerTests) prepare() (logging.LogSink, http.Handler, f
 	log, ctrl := logging.NewLogSinkSpy()
 	suite.log = ctrl
 
-	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '"+outpath+"'\n")
+	g := graph.TestGraphWithConfig(suite.T(), semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '"+outpath+"'\n")
 	g.Add(&config.Verbosity{})
 	g.Add(&config.DeployFilterFlags{Cluster: "cluster-1"})
 	g.Add(graph.DryrunBoth)

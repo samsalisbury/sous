@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"database/sql"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,11 +17,11 @@ func TestDuplexWrite(t *testing.T) {
 	clobberDir(t, "testdata/result")
 	PrepareTestGitRepo(t, s, "testdata/remote", "testdata/out")
 
-	db := setupDB(t)
-	defer db.Close()
+	db := sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
 
 	log, _ := logging.NewLogSinkSpy()
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out", logging.SilentLogSet()), logging.SilentLogSet())
 	psm := NewPostgresStateManager(db, log)
 	dupsm := NewDuplexStateManager(gsm, psm, log)
 
@@ -52,10 +50,10 @@ func TestDuplexReadState(t *testing.T) {
 	s := exampleState()
 	PrepareTestGitRepo(t, s, "testdata/remote", "testdata/out")
 
-	db := setupDB(t)
-	defer db.Close()
+	db := sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
 	log, _ := logging.NewLogSinkSpy()
-	gsm := NewGitStateManager(NewDiskStateManager("testdata/out"))
+	gsm := NewGitStateManager(NewDiskStateManager("testdata/out", logging.SilentLogSet()), logging.SilentLogSet())
 	psm := NewPostgresStateManager(db, log)
 
 	dupsm := NewDuplexStateManager(gsm, psm, log)
@@ -70,49 +68,6 @@ func TestDuplexReadState(t *testing.T) {
 	pstate, err := psm.ReadState()
 	require.NoError(t, err)
 	assertStatesEqual(t, expected, pstate)
-}
-
-func setupDB(t *testing.T) *sql.DB {
-	t.Helper()
-	db, err := setupDBErr()
-	if err != nil {
-		t.Skipf("setupDB failed: %s", err)
-	}
-	return db
-}
-
-func setupDBErr() (*sql.DB, error) {
-	port := "6543"
-	if np, set := os.LookupEnv("PGPORT"); set {
-		port = np
-	}
-	connstr := fmt.Sprintf("dbname=sous_test_template host=localhost port=%s sslmode=disable", port)
-	setupDB, err := sql.Open("postgres", connstr)
-	if err != nil {
-		return nil, fmt.Errorf("Error setting up test database Error: %v. Did you already `make postgres-test-prepare`?", err)
-	}
-	if _, err := setupDB.Exec("drop database sous_test"); err != nil && !isNoDBError(err) {
-		return nil, fmt.Errorf("Error dropping old test database: connstr %q err %v", connstr, err)
-	}
-	if _, err := setupDB.Exec("create database sous_test template sous_test_template"); err != nil {
-		return nil, fmt.Errorf("Error creating test database connstr %q err %v", connstr, err)
-	}
-	if err := setupDB.Close(); err != nil {
-		return nil, fmt.Errorf("Error closing DB manipulation connection connstr %q err %v", connstr, err)
-	}
-	db, err := PostgresConfig{
-		DBName: "sous_test",
-		//User:     "postgres",
-		Password: "",
-		Host:     "localhost",
-		Port:     port,
-		SSL:      false,
-	}.DB()
-
-	if err != nil {
-		return nil, fmt.Errorf("Creating test sql.DB, error: %v", err)
-	}
-	return db, nil
 }
 
 func assertStatesEqual(t *testing.T, oldState, newState *sous.State) {

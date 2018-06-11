@@ -2,11 +2,13 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/opentable/sous/util/logging"
 )
 
 // SousInit is the command description for `sous init`
@@ -14,16 +16,16 @@ type SousInit struct {
 	DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 	Flags             config.OTPLFlags         `inject:"optional"`
 	// DryRunFlag prints out the manifest but does not save it.
-	DryRunFlag  bool `inject:"optional"`
-	Target      graph.TargetManifest
-	WD          graph.LocalWorkDirShell
-	GDM         graph.CurrentGDM
-	State       *sous.State
-	StateWriter graph.StateWriter
-	User        sous.User
-	flags       struct {
+	DryRunFlag   bool `inject:"optional"`
+	Target       graph.TargetManifest
+	WD           graph.LocalWorkDirShell
+	StateManager *graph.ClientStateManager
+	User         sous.User
+	flags        struct {
 		Kind string
 	}
+
+	graph.LogSink
 }
 
 func init() { TopLevelCommands["init"] = &SousInit{} }
@@ -72,7 +74,7 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 
 	switch kind {
 	default:
-		return cmdr.UsageErrorf("kind not defined, pick one of %s or %s", sous.ManifestKindScheduled, sous.ManifestKindService)
+		return cmdr.UsageErrorf("kind %q not defined, pick one of %q, %q or %q", kind, sous.ManifestKindScheduled, sous.ManifestKindService, sous.ManifestKindOnDemand)
 	case sous.ManifestKindService:
 		skipHealth = false
 	case sous.ManifestKindScheduled, sous.ManifestKindOnDemand:
@@ -92,8 +94,16 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 
 	cluster := si.DeployFilterFlags.Cluster
 
-	if _, ok := si.State.Defs.Clusters[cluster]; !ok && cluster != "" {
-		return cmdr.UsageErrorf("cluster %q not defined, pick one of: %s", cluster, si.State.Defs.Clusters)
+	state, err := si.StateManager.ReadState()
+	if err != nil {
+		return cmdr.InternalErrorf("getting current state: %s", err)
+	}
+
+	logging.Deliver(si.LogSink, logging.ExtraDebug1Level, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(fmt.Sprintf("Existing base state: %#v", state)))
+
+	if _, ok := state.Defs.Clusters[cluster]; !ok && cluster != "" {
+		return cmdr.UsageErrorf("cluster %q not defined, pick one of: %s", cluster, state.Defs.Clusters)
 	}
 
 	m.Kind = kind
@@ -107,10 +117,12 @@ func (si *SousInit) Execute(args []string) cmdr.Result {
 		return SuccessYAML(m)
 	}
 
-	if ok := si.State.Manifests.Add(m); !ok {
+	if ok := state.Manifests.Add(m); !ok {
 		return cmdr.UsageErrorf("manifest %q already exists", m.ID())
 	}
-	if err := si.StateWriter.WriteState(si.State, si.User); err != nil {
+	logging.Deliver(si.LogSink, logging.ExtraDebug1Level, logging.SousGenericV1, logging.GetCallerInfo(),
+		logging.MessageField(fmt.Sprintf("Updated state: %#v", state)))
+	if err := si.StateManager.WriteState(state, si.User); err != nil {
 		return EnsureErrorResult(err)
 	}
 	return SuccessYAML(m)

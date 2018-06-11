@@ -43,9 +43,9 @@ func (sd *Deploy) Do() error {
 	q := sd.TargetDeploymentID.QueryMap()
 	q["force"] = strconv.FormatBool(sd.Force)
 
-	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, nil)
+	updater, err := sd.HTTPClient.Retrieve("./single-deployment", q, &d, sd.User.HTTPHeaders())
 	if err != nil {
-		return errors.Errorf("Failed to retrieve current deployment: %s", err)
+		return errors.Errorf("\nFailed to retrieve current deployment:\n\n\tPlease check your repo, flavor, and offset.  Items are case sensitive.  Use the following command to verify values sous expects.\n\n\tsous query gdm\n\nError returned: %s", err)
 	}
 	messages.ReportLogFieldsMessage("SousNewDeploy.Execute Retrieved Deployment",
 		logging.ExtraDebug1Level, sd.LogSink, d)

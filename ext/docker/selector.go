@@ -29,14 +29,14 @@ func (s *selector) SelectBuildpack(ctx *sous.BuildContext) (sous.Buildpack, erro
 		return rmbp, nil
 	}
 
-	sbp := NewSplitBuildpack(s.regClient)
-	dr, err = sbp.Detect(ctx)
+	sbp := NewSplitBuildpack(s.regClient, s.log)
+	dr, err := sbp.Detect(ctx)
 	if err == nil && dr.Compatible {
 		reportStrategyChoice("split container", s.log)
 		return sbp, nil
 	}
 
-	dfbp := NewDockerfileBuildpack()
+	dfbp := NewDockerfileBuildpack(s.log)
 	dr, err = dfbp.Detect(ctx)
 	if err == nil && dr.Compatible {
 		reportStrategyChoice("simple dockerfile", s.log)

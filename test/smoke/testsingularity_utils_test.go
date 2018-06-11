@@ -92,7 +92,7 @@ func (s *Singularity) GetRequestForDeployment(t *testing.T, did sous.DeploymentI
 func (s *Singularity) GetLatestDeployForDeployment(t *testing.T, did sous.DeploymentID) *dtos.SingularityDeployHistory {
 	t.Helper()
 	reqID := s.mustGetReqID(t, did)
-	deps, err := s.client.GetDeploys(reqID, 100, 0)
+	deps, err := s.client.GetDeploys(reqID, 100, 1)
 	if err != nil {
 		t.Fatalf("getting deployments for request: %s", err)
 	}

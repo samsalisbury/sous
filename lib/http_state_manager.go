@@ -16,9 +16,11 @@ type (
 		cached   *State
 		gdmState restful.Updater
 		restful.HTTPClient
+		tid             TraceID
 		clusterClients  map[string]restful.HTTPClient
 		clusterUpdaters map[string]restful.UpdateDeleter
 		User            User
+		log             logging.LogSink
 	}
 
 	gdmWrapper struct {
@@ -27,11 +29,12 @@ type (
 )
 
 // NewHTTPStateManager creates a new HTTPStateManager.
-func NewHTTPStateManager(client restful.HTTPClient, clusterClients map[string]restful.HTTPClient) *HTTPStateManager {
+func NewHTTPStateManager(client restful.HTTPClient, tid TraceID, ls logging.LogSink) *HTTPStateManager {
 	return &HTTPStateManager{
 		HTTPClient:      client,
-		clusterClients:  clusterClients,
+		tid:             tid,
 		clusterUpdaters: map[string]restful.UpdateDeleter{},
+		log:             ls,
 	}
 }
 
@@ -60,7 +63,7 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 	if len(flaws) > 0 {
 		return errors.Errorf("Invalid update to state: %v", flaws)
 	}
-	messages.ReportLogFieldsMessage("Writing state via HTTP", logging.DebugLevel, logging.Log)
+	messages.ReportLogFieldsMessage("Writing state via HTTP", logging.DebugLevel, hsm.log)
 	if hsm.gdmState == nil {
 		_, err := hsm.ReadState()
 		if err != nil {
@@ -78,9 +81,9 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 
 // ReadCluster implements ClusterManager on HTTPStateManager.
 func (hsm *HTTPStateManager) ReadCluster(clusterName string) (Deployments, error) {
-	client, ok := hsm.clusterClients[clusterName]
-	if !ok {
-		return Deployments{}, errors.Errorf("no cluster known by name %s", clusterName)
+	client, err := hsm.getClusterClient(clusterName)
+	if err != nil {
+		return Deployments{}, err
 	}
 	data := gdmWrapper{Deployments: []*Deployment{}}
 	up, err := client.Retrieve("./state/deployments", nil, &data, nil)
@@ -90,6 +93,39 @@ func (hsm *HTTPStateManager) ReadCluster(clusterName string) (Deployments, error
 	hsm.clusterUpdaters[clusterName] = up
 
 	return NewDeployments(data.Deployments...), nil
+}
+
+func (hsm *HTTPStateManager) buildClientBundle() error {
+	if hsm.clusterClients != nil {
+		return nil
+	}
+	serverList := serverListData{}
+	_, err := hsm.Retrieve("./servers", nil, &serverList, nil)
+	if err != nil {
+		return err
+	}
+	bundle := map[string]restful.HTTPClient{}
+	for _, s := range serverList.Servers {
+		client, err := restful.NewClient(s.URL, hsm.log.Child(s.ClusterName+".http-client"), map[string]string{"OT-RequestId": string(hsm.tid)})
+		if err != nil {
+			return err
+		}
+
+		bundle[s.ClusterName] = client
+	}
+	hsm.clusterClients = bundle
+	return nil
+}
+
+func (hsm *HTTPStateManager) getClusterClient(clusterName string) (restful.HTTPClient, error) {
+	if err := hsm.buildClientBundle(); err != nil {
+		return nil, err
+	}
+	client, ok := hsm.clusterClients[clusterName]
+	if !ok {
+		return nil, errors.Errorf("no cluster known by name %s", clusterName)
+	}
+	return client, nil
 }
 
 // WriteCluster implements ClusterManager on HTTPStateManager.
@@ -126,7 +162,7 @@ func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {
 		return Manifests{}, errors.Wrapf(err, "getting manifests")
 	}
 	hsm.gdmState = state
-	return gdm.manifests(defs)
+	return gdm.manifests(defs, hsm.log)
 }
 
 func (hsm *HTTPStateManager) putDeployments(new Deployments) error {
@@ -179,10 +215,10 @@ func (g *gdmWrapper) unwrap() *Deployments {
 	return &ds
 }
 
-func (g *gdmWrapper) manifests(defs Defs) (Manifests, error) {
+func (g *gdmWrapper) manifests(defs Defs, log logging.LogSink) (Manifests, error) {
 	ds := NewDeployments()
 	for _, d := range g.Deployments {
 		ds.Add(d)
 	}
-	return ds.RawManifests(defs)
+	return ds.RawManifests(defs, log)
 }

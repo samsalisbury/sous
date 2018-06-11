@@ -12,6 +12,7 @@ import (
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/storage"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 )
 
@@ -22,10 +23,12 @@ type TestBunchOfSousServers struct {
 	Instances    []*Instance
 }
 
-func newBunchOfSousServers(t *testing.T, state *sous.State, baseDir string, nextFreeAddr func() string) (*TestBunchOfSousServers, error) {
+func newBunchOfSousServers(t *testing.T, baseDir string, nextFreeAddr func() string, fcfg fixtureConfig) (*TestBunchOfSousServers, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
+
+	state := fcfg.startState
 
 	gdmDir := path.Join(baseDir, "remote-gdm")
 	if err := createRemoteGDM(gdmDir, state); err != nil {
@@ -59,7 +62,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 		return err
 	}
 
-	dsm := storage.NewDiskStateManager(gdmDir)
+	dsm := storage.NewDiskStateManager(gdmDir, logging.SilentLogSet())
 	if err := dsm.WriteState(state, sous.User{}); err != nil {
 		return err
 	}
@@ -86,26 +89,46 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 	return nil
 }
 
-func (c *TestBunchOfSousServers) Configure(envDesc desc.EnvDesc) error {
+func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr
 	}
-	for _, i := range c.Instances {
+
+	dbport := "6543"
+	if np, set := os.LookupEnv("PGPORT"); set {
+		dbport = np
+	}
+
+	host := "localhost"
+	if h, set := os.LookupEnv("PGHOST"); set {
+		host = h
+	}
+
+	for n, i := range c.Instances {
+		sous.SetupDB(t, n)
+		dbname := sous.DBNameForTest(t, n)
 		config := &config.Config{
 			StateLocation: i.StateDir,
 			SiblingURLs:   siblingURLs,
+			Database: storage.PostgresConfig{
+				User:   "postgres",
+				DBName: dbname,
+				Host:   host,
+				Port:   dbport,
+			},
+			DatabasePrimary: fcfg.dbPrimary,
 			Docker: docker.Config{
-				RegistryHost:       envDesc.RegistryName(),
-				DatabaseDriver:     "sqlite3_sous" + i.ClusterName,
-				DatabaseConnection: "file:dummy_" + i.ClusterName + ".db?mode=memory&cache=shared",
+				RegistryHost: envDesc.RegistryName(),
+				//DatabaseConnection: "file:dummy_" + i.ClusterName + ".db?mode=memory&cache=shared",
 			},
 			User: sous.User{
 				Name:  "Sous Server " + i.ClusterName,
 				Email: "sous-" + i.ClusterName + "@example.com",
 			},
 		}
-		if err := i.Configure(config, c.RemoteGDMDir); err != nil {
+		config.Logging.Basic.Level = "debug"
+		if err := i.Configure(config, c.RemoteGDMDir, fcfg); err != nil {
 			return errors.Wrapf(err, "configuring instance %d", i)
 		}
 	}
@@ -123,4 +146,7 @@ func (c *TestBunchOfSousServers) Start(t *testing.T, sousBin string) error {
 func (c *TestBunchOfSousServers) Stop(t *testing.T) {
 	t.Helper()
 	stopPIDs(t)
+	for n := range c.Instances {
+		sous.ReleaseDB(t, n)
+	}
 }

@@ -4,6 +4,7 @@ package smoke
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -13,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
@@ -30,6 +32,41 @@ type TestClient struct {
 	ClusterSuffix string
 }
 
+type sousFlags struct {
+	kind    string
+	flavor  string
+	cluster string
+	repo    string
+	offset  string
+	tag     string
+}
+
+func (f *sousFlags) Args() []string {
+	if f == nil {
+		return nil
+	}
+	var out []string
+	if f.kind != "" {
+		out = append(out, "-kind", f.kind)
+	}
+	if f.flavor != "" {
+		out = append(out, "-flavor", f.flavor)
+	}
+	if f.cluster != "" {
+		out = append(out, "-cluster", f.cluster)
+	}
+	if f.repo != "" {
+		out = append(out, "-repo", f.repo)
+	}
+	if f.offset != "" {
+		out = append(out, "-offset", f.offset)
+	}
+	if f.tag != "" {
+		out = append(out, "-tag", f.tag)
+	}
+	return out
+}
+
 func makeClient(baseDir, sousBin string) *TestClient {
 	baseDir = path.Join(baseDir, "client1")
 	return &TestClient{
@@ -40,21 +77,22 @@ func makeClient(baseDir, sousBin string) *TestClient {
 	}
 }
 
-func (c *TestClient) Configure(server, dockerReg string) error {
+func (c *TestClient) Configure(server, dockerReg, userEmail string) error {
 	if err := os.MkdirAll(c.ConfigDir, 0777); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(c.LogDir, 0777); err != nil {
 		return err
 	}
+	user := strings.Split(userEmail, "@")
 	conf := config.Config{
 		Server: server,
 		Docker: docker.Config{
 			RegistryHost: dockerReg,
 		},
 		User: sous.User{
-			Name:  "Sous Client1",
-			Email: "sous-client1@example.com",
+			Name:  user[0],
+			Email: userEmail,
 		},
 	}
 	conf.PollIntervalForClient = 600
@@ -98,27 +136,60 @@ func insertClusterSuffix(args []string, suffix string) []string {
 	return args
 }
 
-func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) *exec.Cmd {
+func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) (*exec.Cmd, context.CancelFunc) {
 	t.Helper()
 	args = insertClusterSuffix(args, c.ClusterSuffix)
-	cmd := mkCMD(c.Dir, c.BinPath, allArgs(subcmd, f, args)...)
+	cmd, cancel := mkCMD(c.Dir, c.BinPath, allArgs(subcmd, f, args)...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", c.ConfigDir))
-	return cmd
+	return cmd, cancel
 }
 
-func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...string) (string, error) {
-	t.Helper()
-	cmd := c.Cmd(t, subcmd, f, args...)
-	stdout, stderr := prefixWithTestName(t)
-	fmt.Fprintf(stderr, "SOUS_CONFIG_DIR = %q\n", c.ConfigDir)
-	fmt.Fprintf(stdout, "running sous in %q: %s\n", c.Dir, args)
-	// Add quotes to args with spaces for printing.
+// Add quotes to args with spaces for printing.
+func quotedArgs(args []string) []string {
+	out := make([]string, len(args))
 	for i, a := range args {
 		if strings.Contains(a, " ") {
-			args[i] = `"` + a + `"`
+			out[i] = `"` + a + `"`
+		} else {
+			out[i] = a
 		}
 	}
+	return out
+}
 
+func quotedArgsString(args []string) string {
+	return strings.Join(quotedArgs(args), " ")
+}
+
+type ExecutedCMD struct {
+	Subcmd                   string
+	Args                     []string
+	Stdout, Stderr, Combined *bytes.Buffer
+}
+
+// String returns something looking like a shell invocation of this command.
+func (e *ExecutedCMD) String() string {
+	return fmt.Sprintf("sous %s %s", e.Subcmd, quotedArgsString(e.Args))
+}
+
+func newExecutedCMD(subcmd string, args []string) *ExecutedCMD {
+	return &ExecutedCMD{
+		Subcmd:   subcmd,
+		Args:     args,
+		Stdout:   &bytes.Buffer{},
+		Stderr:   &bytes.Buffer{},
+		Combined: &bytes.Buffer{},
+	}
+}
+
+func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...string) (*ExecutedCMD, error) {
+	t.Helper()
+	cmd, cancel := c.Cmd(t, subcmd, f, args...)
+	defer cancel()
+	stdout, stderr := prefixWithTestName(t, "client1")
+	fmt.Fprintf(stderr, "SOUS_CONFIG_DIR = %q\n", c.ConfigDir)
+	fmt.Fprintf(stdout, "running sous in %q: %s\n", c.Dir, args)
+	args = quotedArgs(args)
 	outFile, errFile, combinedFile :=
 		openFileAppendOnly(t, c.LogDir, "stdout"),
 		openFileAppendOnly(t, c.LogDir, "stderr"),
@@ -128,30 +199,53 @@ func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...stri
 
 	allFiles := io.MultiWriter(outFile, errFile, combinedFile)
 
-	out := &bytes.Buffer{}
-	cmd.Stdout = io.MultiWriter(stdout, outFile, combinedFile, out)
-	cmd.Stderr = io.MultiWriter(stderr, errFile, combinedFile)
+	executed := newExecutedCMD(subcmd, args)
+
+	cmd.Stdout = io.MultiWriter(stdout, outFile, combinedFile, executed.Stdout, executed.Combined)
+	cmd.Stderr = io.MultiWriter(stderr, errFile, combinedFile, executed.Stderr, executed.Combined)
 	prettyCmd := fmt.Sprintf("$ sous %s\n", strings.Join(allArgs(subcmd, f, args), " "))
 	fmt.Fprintf(os.Stderr, "==> %s", prettyCmd)
-	relPath, err := filepath.Rel(c.BaseDir, cmd.Dir)
-	if err != nil {
-		t.Fatalf("getting relative dir: %s", err)
-	}
+	relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
 	fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
-	err = cmd.Run()
+	err := runWithTimeout(cmd, cancel, 3*time.Minute)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
-	return out.String(), err
+	return executed, err
 }
 
+func runWithTimeout(cmd *exec.Cmd, cancel context.CancelFunc, timeout time.Duration) error {
+	defer cancel()
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- cmd.Run()
+	}()
+	go func() {
+		<-time.After(timeout)
+		errCh <- fmt.Errorf("command timed out after %s:\nsous %s", timeout,
+			quotedArgsString(cmd.Args[1:]))
+	}()
+	return <-errCh
+}
+
+func mustGetRelPath(t *testing.T, base, target string) string {
+	t.Helper()
+	relPath, err := filepath.Rel(base, target)
+	if err != nil {
+		t.Fatalf("getting relative dir: %s", err)
+	}
+	return relPath
+}
+
+// MustRun fails the test if the command fails; else returns the stdout from the command.
 func (c *TestClient) MustRun(t *testing.T, subcmd string, f *sousFlags, args ...string) string {
 	t.Helper()
-	out, err := c.Run(t, subcmd, f, args...)
+	executed, err := c.Run(t, subcmd, f, args...)
 	if err != nil {
+		t.Logf("Command failed: %s; output:\n%s", executed, executed.Combined)
 		t.Fatal(err)
 	}
-	return out
+	return executed.Stdout.String()
 }
 
 func (c *TestClient) MustFail(t *testing.T, subcmd string, f *sousFlags, args ...string) {
@@ -169,7 +263,8 @@ func (c *TestClient) MustFail(t *testing.T, subcmd string, f *sousFlags, args ..
 func (c *TestClient) TransformManifestAsString(t *testing.T, getSetFlags *sousFlags, f func(manifest string) string) {
 	manifest := c.MustRun(t, "manifest get", getSetFlags)
 	manifest = f(manifest)
-	manifestSetCmd := c.Cmd(t, "manifest set", getSetFlags)
+	manifestSetCmd, cancel := c.Cmd(t, "manifest set", getSetFlags)
+	defer cancel()
 	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
 	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
 		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
@@ -188,7 +283,8 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f f
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
-	manifestSetCmd := c.Cmd(t, "manifest set", getSetFlags)
+	manifestSetCmd, cancel := c.Cmd(t, "manifest set", getSetFlags)
+	defer cancel()
 	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
 	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
 		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)

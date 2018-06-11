@@ -118,7 +118,7 @@ func NewResolveRecorder(intended Deployments, ls logging.LogSink, f func(*Resolv
 				rr.status.Log = append(rr.status.Log, rez)
 				if rez.Error != nil {
 					rr.status.Errs.Causes = append(rr.status.Errs.Causes, ErrorWrapper{error: rez.Error})
-					messages.ReportLogFieldsMessage("resolve error", logging.DebugLevel, logging.Log, rez.Error)
+					messages.ReportLogFieldsMessage("resolve error", logging.DebugLevel, ls, rez.Error)
 				}
 			})
 		}
@@ -192,10 +192,11 @@ func (rr *ResolveRecorder) earlyExit() (yes bool) {
 // performPhase performs the requested phase, only if nothing has cancelled the
 // resolve.
 func (rr *ResolveRecorder) performPhase(name string, f func() error) {
-	messages.ReportLogFieldsMessage("Performing phase", logging.ExtraDebug1Level, rr.logSink, name)
 	if rr.earlyExit() {
+		messages.ReportLogFieldsMessage("Skipping phase", logging.DebugLevel, rr.logSink, name, rr.err)
 		return
 	}
+	messages.ReportLogFieldsMessage("Performing phase", logging.DebugLevel, rr.logSink, name)
 	rr.setPhase(name)
 	if err := f(); err != nil {
 		rr.doneWithError(err)

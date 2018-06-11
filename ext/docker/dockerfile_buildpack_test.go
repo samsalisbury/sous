@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 )
 
@@ -96,7 +97,7 @@ func TestDetect(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		dr, err := (&DockerfileBuildpack{}).Detect(c)
+		dr, err := (&DockerfileBuildpack{log: logging.SilentLogSet()}).Detect(c)
 		if err := assertError(test.Error, err); err != nil {
 			t.Error(err)
 		}

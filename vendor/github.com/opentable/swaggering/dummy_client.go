@@ -20,8 +20,8 @@ type (
 
 	// DummyClient stands in for the generic part of a swaggering client for testing
 	DummyClient struct {
-		NextDTO    func(method, path string, pathParams, queryParams urlParams, body ...DTO) (DTO, error)
-		NextSimple func(method, path string, pathParams, queryParams urlParams, body ...DTO) (string, error)
+		NextDTO    func(method, path string, pathParams, queryParams UrlParams, body ...DTO) (DTO, error)
+		NextSimple func(method, path string, pathParams, queryParams UrlParams, body ...DTO) (string, error)
 	}
 
 	// DummyControl is a tool for controlling a particular kind of DummyClient
@@ -33,11 +33,11 @@ type (
 	// StarvedChannelError means that a channel needed a value but didn't have one
 	StarvedChannelError struct {
 		m, p, kind, bodyT string
-		pp, qp            urlParams
+		pp, qp            UrlParams
 	}
 )
 
-func makeStarvedChannelError(kind, m, p string, pp, qp urlParams, b ...DTO) *StarvedChannelError {
+func makeStarvedChannelError(kind, m, p string, pp, qp UrlParams, b ...DTO) *StarvedChannelError {
 	bodyT := "<empty>"
 	if len(b) > 0 {
 		bodyT = fmt.Sprintf("%T", b[0])
@@ -62,7 +62,7 @@ func NewChannelDummy() (DummyClient, DummyControl) {
 	}
 
 	clnt := DummyClient{
-		NextDTO: func(m, p string, pp, qp urlParams, b ...DTO) (DTO, error) {
+		NextDTO: func(m, p string, pp, qp UrlParams, b ...DTO) (DTO, error) {
 			select {
 			case dr := <-ctrl.dtos:
 				return dr.dto, dr.err
@@ -70,7 +70,7 @@ func NewChannelDummy() (DummyClient, DummyControl) {
 				return nil, makeStarvedChannelError("dto", m, p, pp, qp, b...)
 			}
 		},
-		NextSimple: func(m, p string, pp, qp urlParams, b ...DTO) (string, error) {
+		NextSimple: func(m, p string, pp, qp UrlParams, b ...DTO) (string, error) {
 			select {
 			case sr := <-ctrl.simples:
 				return sr.body, sr.err
@@ -96,7 +96,7 @@ func (c DummyControl) FeedSimple(body string, err error) {
 }
 
 // DTORequest performs an HTTP request and populates a DTO based on the response
-func (dc *DummyClient) DTORequest(rn string, pop DTO, m, p string, pp, qp urlParams, b ...DTO) error {
+func (dc *DummyClient) DTORequest(rn string, pop DTO, m, p string, pp, qp UrlParams, b ...DTO) error {
 	dto, err := dc.NextDTO(m, p, pp, qp, b...)
 	if err != nil {
 		return err
@@ -109,7 +109,7 @@ func (dc *DummyClient) DTORequest(rn string, pop DTO, m, p string, pp, qp urlPar
 }
 
 // Request performs an HTTP request and returns the body of the response
-func (dc *DummyClient) Request(rn, m, p string, pp, qp urlParams, b ...DTO) (io.ReadCloser, error) {
+func (dc *DummyClient) Request(rn, m, p string, pp, qp UrlParams, b ...DTO) (io.ReadCloser, error) {
 	body, err := dc.NextSimple(m, p, pp, qp, b...)
 	if err != nil {
 		return nil, err

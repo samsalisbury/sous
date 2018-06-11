@@ -11,9 +11,10 @@ import (
 
 func TestHandlesGDMGet(t *testing.T) {
 	assert := assert.New(t)
+	ls, _ := logging.NewLogSinkSpy()
 
 	th := &GETGDMHandler{
-		LogSink: logging.Log,
+		LogSink: ls,
 		GDM:     sous.NewState(),
 	}
 

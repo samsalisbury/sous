@@ -1,15 +1,13 @@
 package cli
 
 import (
-	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/graph"
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
 // SousPlumbingNormalizeGDM is the description of the `sous plumbing normalizegdm` command
 type SousPlumbingNormalizeGDM struct {
-	graph.LocalSousConfig
+	SousGraph *graph.SousGraph
 }
 
 func init() { PlumbingSubcommands["normalizegdm"] = &SousPlumbingNormalizeGDM{} }
@@ -26,14 +24,15 @@ formatting changes won't be considered real, conflicting updates.
 
 // Execute defines the behavior of `sous plumbing normalizegdm`
 func (sqa *SousPlumbingNormalizeGDM) Execute(args []string) cmdr.Result {
-	dsm := storage.NewDiskStateManager(sqa.LocalSousConfig.StateLocation)
 
-	state, err := dsm.ReadState()
+	plumbing, err := sqa.SousGraph.GetPlumbingNormalizeGDM()
 	if err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
+
+	if err := plumbing.Do(); err != nil {
 		return EnsureErrorResult(err)
 	}
-	if err := dsm.WriteState(state, sous.User{}); err != nil {
-		return EnsureErrorResult(err)
-	}
+
 	return cmdr.Success("Normalized.")
 }

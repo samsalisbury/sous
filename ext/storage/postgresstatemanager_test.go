@@ -10,7 +10,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	// it's a SQL db driver. This is how you do that.
+	// It's a SQL db driver. This is how you do that.
 	_ "github.com/lib/pq"
 )
 
@@ -23,7 +23,20 @@ type PostgresStateManagerSuite struct {
 	logs    logging.LogSinkController
 }
 
-func SetupTest(t *testing.T) *PostgresStateManagerSuite {
+func connstrForDBNamedf(nameFormat string, a ...interface{}) string {
+	port := os.Getenv("PGPORT")
+	if port == "" {
+		port = "6543"
+	}
+	host := os.Getenv("PGHOST")
+	if host == "" {
+		host = "localhost"
+	}
+	name := fmt.Sprintf(nameFormat, a...)
+	return fmt.Sprintf("host=%s port=%s dbname=%s user=postgres sslmode=disable", host, port, name)
+}
+
+func SetupTest(t *testing.T, name string) *PostgresStateManagerSuite {
 	var err error
 
 	t.Helper()
@@ -34,26 +47,26 @@ func SetupTest(t *testing.T) *PostgresStateManagerSuite {
 		require:    require.New(t),
 	}
 
-	db := setupDB(t)
+	db := sous.SetupDB(t)
 
 	sink, ctrl := logging.NewLogSinkSpy()
 	suite.manager = NewPostgresStateManager(db, sink)
 
 	suite.logs = ctrl
 
-	port := "6543"
-	if np, set := os.LookupEnv("PGPORT"); set {
-		port = np
-	}
-	connstr := fmt.Sprintf("dbname=sous_test host=localhost port=%s sslmode=disable", port)
+	connstr := connstrForDBNamedf("test%s", name)
 	if suite.db, err = sql.Open("postgres", connstr); err != nil {
-		suite.FailNow("Error establishing test-assertion DB connection.", "Error: %v", err)
+		suite.FailNow("Error establishing test-assertion DB connection at %q.", "Error: %v", connstr, err)
+	}
+	if err := suite.db.Ping(); err != nil {
+		suite.FailNow("Error checking test-assertion DB connection to %q.", "Error: %v", connstr, err)
 	}
 	return suite
 }
 
 func TestPostgresStateManagerWriteState_success(t *testing.T) {
-	suite := SetupTest(t)
+	suite := SetupTest(t, "postgresstatemanagerwritestate_success") // because s/test//g
+	defer sous.ReleaseDB(t)
 
 	s := exampleState()
 
@@ -64,7 +77,7 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	}
 	suite.Equal(int64(4), suite.pluckSQL("select count(*) from deployments"))
 
-	assert.Len(t, suite.logs.CallsTo("Fields"), 13)
+	assert.Len(t, suite.logs.CallsTo("Fields"), 15)
 	message := suite.logs.CallsTo("Fields")[0].PassedArgs().Get(0).([]logging.EachFielder)
 	// XXX This message deserves its own test
 	logging.AssertMessageFieldlist(t, message, append(
@@ -98,6 +111,8 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	ns, err := suite.manager.ReadState()
 	suite.require.NoError(err)
 
+	assertSameClusters(t, s, ns)
+
 	oldD, err := s.Deployments()
 	suite.require.NoError(err)
 	newD, err := ns.Deployments()
@@ -112,6 +127,25 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 
 		case sous.SameKind:
 		}
+	}
+}
+
+func assertSameClusters(t *testing.T, old *sous.State, new *sous.State) {
+	ocs := old.Defs.Clusters
+	ncs := new.Defs.Clusters
+
+	onames := ocs.Names()
+	nnames := ncs.Names()
+
+	assert.ElementsMatch(t, onames, nnames)
+
+	t.Logf("Cluster names: %q", onames)
+
+	for _, n := range onames {
+		oc, nc := ocs[n], ncs[n]
+
+		assert.ElementsMatch(t, oc.AllowedAdvisories, nc.AllowedAdvisories)
+		t.Logf("Cluster advisories: %q: %q", n, oc.AllowedAdvisories)
 	}
 }
 

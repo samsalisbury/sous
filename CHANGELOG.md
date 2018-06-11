@@ -6,6 +6,51 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
+## [0.5.102](//github.com/opentable/sous/compare/0.5.101...0.5.102)
+### Added
+* Server: Send user to singularity for Deployment
+### Fixed
+* Server: the database storage engine wasn't recording the advisory whitelists.
+
+## [0.5.101](//github.com/opentable/sous/compare/0.5.100...0.5.101)
+### Fixed
+* CLI: 'sous manifest edit' was sometimes silently failing to apply changes on macOS,
+  changes to how we re-read the temp file resolve this.
+
+### Changed
+* CLI: 'sous manifest edit' now uses a temp file with a .yaml extension so text
+  editors are more likely to apply the right highlighting and auto formatting.
+* CLI: Clearer -kind not recognised message.
+
+
+## [0.5.100](//github.com/opentable/sous/compare/0.5.93...0.5.100)
+### Added
+* Server: state storage toggle behind a feature flag - servers can be
+  configured to use the database as the source of truth.
+
+### Changed
+* Client: Slack add additional channels to send via config
+* Client: Now returns error/message when sous newdeploy is used to inform no longer valid.
+
+## [0.5.93](//github.com/opentable/sous/compare/0.5.92...0.5.93)
+### Changed
+* Server: Postgres is now required for the server to operate.
+* Both: SQLite is removed as a dependency of Sous.
+* Both: Remove global logging.Log and refactor for the removal
+* Server: Removed dependency on SQLite. PostgreSQL connection is now required by the server.
+* Client: Refactor plumbing normalize gdm to action
+* Client: sous deploy can now send a slack notification if you specify SlackHookURL and
+  SlackChannel configuration in config.yaml or via environment variables
+* All: when tags do not parse correctly, the error message is much clearer about why
+  it was invalid, including invalid characters and their positions in the semver
+  portion of the tag.
+
+## [0.5.92](//github.com/opentable/sous/compare/0.5.91...0.5.92)
+### Added
+* Client: Deploy with zero instances will give a specific error message that you have zero instances
+* Client: add -dev flag, at the moment just affects checking for local images
+* Client: return a better message if manifestid wasn't found
+
 ## [0.5.91](//github.com/opentable/sous/compare/0.5.88...0.5.91)
 ### Added
 * Client: Added a footer after command execution that if present, will display the request id that
@@ -22,9 +67,6 @@ with respect to its command line interface and HTTP interface
 * All: don't log when status poller hasn't changed
 
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.86...HEAD)
-### Added
-* Client: add -dev flag, at the moment just affects checking for local images
 
 ## [0.5.86](//github.com/opentable/sous/compare/0.5.85...0.5.86)
 ### Added

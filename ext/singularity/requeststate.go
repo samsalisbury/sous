@@ -43,7 +43,7 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 
 	tgt, err := BuildDeployment(reg, clusters, singReq, r.log)
 
-	tgt.SchedulerURL = fmt.Sprintf("http://%s/request/%s", url, reqID)
+	tgt.SchedulerURL = fmt.Sprintf("%s/request/%s", url, reqID)
 	return &tgt, errors.Wrapf(err, "getting request state")
 }
 

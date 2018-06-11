@@ -68,22 +68,26 @@ func TestWriteState(t *testing.T) {
 		t.Fatal("State manager double is empty")
 	}
 
+	db := sous.SetupDB(t)
+	defer sous.ReleaseDB(t)
+
 	di := graph.BuildBaseGraph(semv.Version{}, &bytes.Buffer{}, os.Stderr, os.Stderr)
 	graph.AddNetwork(di)
 
+	logger, _ := logging.NewLogSinkSpy()
 	di.Add(
 		func() *config.DeployFilterFlags { return &config.DeployFilterFlags{} },
 		func() graph.DryrunOption { return graph.DryrunBoth },
 
 		func() graph.StateReader { return graph.StateReader{StateReader: &sm} },
 		func() graph.StateWriter { return graph.StateWriter{StateWriter: &sm} },
-		func() *graph.StateManager { return &graph.StateManager{StateManager: &sm} },
-		func(sm *graph.StateManager) graph.ClusterManager {
-			return graph.ClusterManager{ClusterManager: sous.MakeClusterManager(sm)}
+		func() *graph.ServerClusterManager {
+			return &graph.ServerClusterManager{ClusterManager: sous.MakeClusterManager(&sm, logger)}
 		},
 
 		func() *graph.ServerStateManager { return &graph.ServerStateManager{StateManager: &sm} },
 		func() *graph.ConfigLoader { return graph.NewTestConfigLoader("") },
+		graph.MaybeDatabase{Db: db, Err: nil},
 	)
 
 	serverScoop := struct{ Handler graph.ServerHandler }{}
@@ -95,13 +99,11 @@ func TestWriteState(t *testing.T) {
 	testServer := httptest.NewServer(serverScoop.Handler.Handler)
 	defer testServer.Close()
 
-	logger, _ := logging.NewLogSinkSpy()
-
 	cl, err := restful.NewClient(testServer.URL, logger, map[string]string{"X-Gatelatch": "please"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	hsm := sous.NewHTTPStateManager(cl, map[string]restful.HTTPClient{"test": cl})
+	hsm := sous.NewHTTPStateManager(cl, sous.TraceID("test-trace"), logger)
 
 	originalState, err := hsm.ReadState()
 	if err != nil {

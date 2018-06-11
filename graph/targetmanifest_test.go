@@ -6,6 +6,7 @@ import (
 
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -28,8 +29,10 @@ func TestNewUserSelectedOTPLDeploySpecs(t *testing.T) {
 			} else {
 				detected.Manifests = sous.NewManifests()
 			}
-
-			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state)
+			ls, _ := logging.NewLogSinkSpy()
+			graphWrapper := LogSink{ls}
+			sm, _ := sous.NewStateManagerSpyFor(state)
+			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, &ClientStateManager{StateManager: sm}, graphWrapper)
 			assert.NoError(t, err)
 			assert.Equal(t, ExpectedManifest, ds.Manifest)
 		})
@@ -110,8 +113,10 @@ func TestNewUserSelectedOTPLDeploySpecs_Errors(t *testing.T) {
 			} else {
 				detected.Manifests = sous.NewManifests()
 			}
-
-			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, state)
+			ls, _ := logging.NewLogSinkSpy()
+			graphWrapper := LogSink{ls}
+			sc, _ := sous.NewStateManagerSpyFor(state)
+			ds, err := newUserSelectedOTPLDeploySpecs(detected, TargetManifestID{}, &Flags, &ClientStateManager{StateManager: sc}, graphWrapper)
 			assert.Nil(t, ds.Manifest)
 			require.Error(t, err)
 			assert.Equal(t, err.Error(), ExpectedErr)
@@ -166,7 +171,10 @@ func TestNewTargetManifest_Existing(t *testing.T) {
 	m := &sous.Manifest{Source: sl, Flavor: flavor, Kind: sous.ManifestKindService}
 	s := sous.NewState()
 	s.Manifests.Add(m)
-	tm := newTargetManifest(detected, tmid, s)
+	sm, _ := sous.NewStateManagerSpyFor(s)
+	tm, err := newTargetManifest(detected, tmid, &ClientStateManager{StateManager: sm})
+	require.NoError(t, err)
+
 	if tm.Source != sl {
 		t.Errorf("unexpected manifest %q", m)
 	}
@@ -188,7 +196,9 @@ func TestNewTargetManifest_Existing_withOffset(t *testing.T) {
 	m := &sous.Manifest{Source: sl, Flavor: flavor, Kind: sous.ManifestKindService}
 	s := sous.NewState()
 	s.Manifests.Add(m)
-	tm := newTargetManifest(detected, tmid, s)
+	sm, _ := sous.NewStateManagerSpyFor(s)
+	tm, err := newTargetManifest(detected, tmid, &ClientStateManager{StateManager: sm})
+	require.NoError(t, err)
 	if tm.Source != sl {
 		t.Errorf("unexpected manifest %q", m)
 	}
@@ -222,7 +232,9 @@ func TestNewTargetManifest(t *testing.T) {
 		BaseURL: "http://singularity.example.com/",
 	}
 	s.Defs.Clusters = cls
-	tm := newTargetManifest(detected, tmid, s)
+	sm, _ := sous.NewStateManagerSpyFor(s)
+	tm, err := newTargetManifest(detected, tmid, &ClientStateManager{StateManager: sm})
+	require.NoError(t, err)
 
 	s.Manifests.Add(tm.Manifest)
 

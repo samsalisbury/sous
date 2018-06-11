@@ -20,6 +20,7 @@ func (ati *artifactTestInserter) Insert(sid sous.SourceID, in, etag string, qs [
 }
 
 func TestPUTArtifact(t *testing.T) {
+	t.Skipf("Disabled until we revise the search index data model")
 	art := sous.NewBuildArtifact("test.reg.com/repo/test", sous.Strpairs{})
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)

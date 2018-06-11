@@ -1,11 +1,18 @@
 package singularity
 
 import (
+	"bytes"
+	"io"
+	"io/ioutil"
 	"testing"
 
+	singularity "github.com/opentable/go-singularity"
 	"github.com/opentable/go-singularity/dtos"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/swaggering"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestStripMetadata(t *testing.T) {
@@ -91,7 +98,8 @@ func TestDetermineRequestType(t *testing.T) {
 func TestFailOnNilBuildArtifact(t *testing.T) {
 	r := sous.NewDummyRegistry()
 	d := sous.Deployable{}
-	ra := NewRectiAgent(r)
+	ls, _ := logging.NewLogSinkSpy()
+	ra := NewRectiAgent(r, ls)
 	err := ra.Deploy(d, "testReq", "testDep")
 	if err != nil {
 		t.Logf("Correctly returned an error upon encountering: %#v", err)
@@ -163,7 +171,9 @@ func TestContainerStartupOptions(t *testing.T) {
 	d.Startup.CheckReadyURIPath = checkReadyPath
 	d.Startup.Timeout = checkReadyTimeout
 
-	dr, err := buildDeployRequest(d, "fake-request-id", "fake-deploy-id", map[string]string{})
+	ls, _ := logging.NewLogSinkSpy()
+
+	dr, err := buildDeployRequest(d, "fake-request-id", "fake-deploy-id", map[string]string{}, ls)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -176,4 +186,109 @@ func TestContainerStartupOptions(t *testing.T) {
 		t.Errorf("expected:%d got:%d", checkReadyTimeout, dr.Deploy.Healthcheck.StartupTimeoutSeconds)
 	}
 
+}
+
+func TestDeploy_MockedSingularity(t *testing.T) {
+
+	checkReadyPath := "/use-this-route"
+	checkReadyTimeout := 45
+
+	mockStatus := sous.DeployStatus(sous.DeployStatusPending)
+	d := sous.Deployable{
+		Status:        mockStatus,
+		Deployment:    &sous.Deployment{},
+		BuildArtifact: &sous.BuildArtifact{},
+	}
+
+	d.ClusterName = "TestContainerStartupOptionsCluster"
+	d.Startup.CheckReadyURIPath = checkReadyPath
+	d.Startup.Timeout = checkReadyTimeout
+	d.Deployment.Cluster = &sous.Cluster{
+		BaseURL: "http://testcluster.com",
+	}
+	d.Deployment.User.Email = "testuser@example.com"
+
+	ls, _ := logging.NewLogSinkSpy()
+
+	reqID := "fake-request-id"
+	depID := "fake-deploy-id"
+
+	r := sous.NewDummyRegistry()
+	ra := NewRectiAgent(r, ls)
+
+	dummyClient, ctrl := singularity.NewDummyClient(d.Deployment.Cluster.BaseURL)
+	ra.singClients[d.Deployment.Cluster.BaseURL] = dummyClient
+
+	response := new(dtos.SingularityRequestParent)
+
+	ctrl.FeedDTO(response, nil)
+	err := ra.Deploy(d, reqID, depID)
+
+	if err != nil {
+		t.Errorf("Should complete without failure")
+	}
+}
+
+func TestDeploy_User(t *testing.T) {
+
+	checkReadyPath := "/use-this-route"
+	checkReadyTimeout := 45
+
+	mockStatus := sous.DeployStatus(sous.DeployStatusPending)
+	d := sous.Deployable{
+		Status:        mockStatus,
+		Deployment:    &sous.Deployment{},
+		BuildArtifact: &sous.BuildArtifact{},
+	}
+
+	d.ClusterName = "TestContainerStartupOptionsCluster"
+	d.Startup.CheckReadyURIPath = checkReadyPath
+	d.Startup.Timeout = checkReadyTimeout
+	d.Deployment.Cluster = &sous.Cluster{
+		BaseURL: "http://testcluster.com",
+	}
+	d.Deployment.User.Email = "testuser@example.com"
+
+	ls, _ := logging.NewLogSinkSpy()
+
+	reqID := "fake-request-id"
+	depID := "fake-deploy-id"
+
+	r := sous.NewDummyRegistry()
+	ra := NewRectiAgent(r, ls)
+
+	myClient := new(MySingularityClient)
+
+	user := "sous"
+	if d.Deployment != nil && len(d.Deployment.User.Email) > 1 {
+		user = "sous_" + d.Deployment.User.Email
+	}
+	qMap := make(swaggering.UrlParams)
+	qMap["user"] = user
+
+	myClient.On("DTORequest", qMap).Return(nil)
+
+	ra.singClients[d.Deployment.Cluster.BaseURL] = myClient
+
+	err := ra.Deploy(d, reqID, depID)
+
+	if err != nil {
+		t.Errorf("Should complete without failure")
+	}
+
+	myClient.AssertExpectations(t)
+}
+
+type MySingularityClient struct {
+	mock.Mock
+}
+
+func (m *MySingularityClient) DTORequest(resourceName string, dto swaggering.DTO, method string, path string, pathParams swaggering.UrlParams, queryParams swaggering.UrlParams, body ...swaggering.DTO) error {
+	args := m.Called(queryParams)
+	return args.Error(0)
+}
+
+func (m *MySingularityClient) Request(resourceName string, method string, path string, pathParams swaggering.UrlParams, queryParams swaggering.UrlParams, body ...swaggering.DTO) (io.ReadCloser, error) {
+	args := m.Called(queryParams)
+	return ioutil.NopCloser(bytes.NewBufferString("")), args.Error(1)
 }

@@ -90,10 +90,13 @@ func NewDeployer(c rectificationClient, ls logging.LogSink, options ...DeployerO
 func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 	postID := ""
 	version := ""
+	var user sous.User
 	if pair.Post != nil {
 		postID = pair.Post.ID().String()
 		version = pair.Post.DeploySpec().Version.String()
+		user = pair.Post.Deployment.User
 	}
+
 	if pair.UUID == uuid.Nil {
 		pair.UUID = uuid.NewV4()
 	}
@@ -110,7 +113,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		messages.ReportLogFieldsMessage("SameKind", logging.InformationLevel, r.log, postID, version, resolution)
 		return resolution
 	case sous.AddedKind:
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an AddedKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an AddedKind %s:%s by user %s", postID, version, user), logging.ExtraDebug1Level, r.log, pair)
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
 		if err := r.RectifySingleCreate(pair); err != nil {
 			result.Desc = "not created"
@@ -131,7 +134,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		reportDiffResolutionMessage("Result of create", result, logging.InformationLevel, r.log)
 		return result
 	case sous.RemovedKind:
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an RemoveKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting an RemoveKind %s:%s by user %s", postID, version, user), logging.ExtraDebug1Level, r.log, pair)
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
 		if err := r.RectifySingleDelete(pair); err != nil {
 			result.Error = sous.WrapResolveError(&sous.DeleteError{Deployment: pair.Prior.Deployment.Clone(), Err: err})
@@ -144,7 +147,7 @@ func (r *deployer) Rectify(pair *sous.DeployablePair) sous.DiffResolution {
 		return result
 	case sous.ModifiedKind:
 		result := sous.DiffResolution{DeploymentID: pair.ID()}
-		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting a ModifiedKind %s:%s", postID, version), logging.ExtraDebug1Level, r.log, pair)
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Starting a ModifiedKind %s:%s by user %s", postID, version, user), logging.ExtraDebug1Level, r.log, pair)
 		if err := r.RectifySingleModification(pair); err != nil {
 			dp := &sous.DeploymentPair{
 				Prior: pair.Prior.Deployment.Clone(),
@@ -175,17 +178,18 @@ func (r *deployer) buildSingClient(url string) singClient {
 	return r.singFac(url)
 }
 
-func rectifyRecover(d interface{}, f string, err *error) {
+func rectifyRecover(d interface{}, f string, err *error, log logging.LogSink) {
+
 	if r := recover(); r != nil {
 		stack := string(debug.Stack())
-		messages.ReportLogFieldsMessage("Panic", logging.WarningLevel, logging.Log, d, f, err, r, stack)
+		messages.ReportLogFieldsMessage("Panic", logging.WarningLevel, log, d, f, err, r, stack)
 		*err = errors.Errorf("Panicked: %s; stack trace:\n%s", r, stack)
 	}
 }
 
 func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 	reportDeployerMessage("Rectifying creation", d, nil, nil, nil, logging.InformationLevel, r.log)
-	defer rectifyRecover(d, "RectifySingleCreate", &err)
+	defer rectifyRecover(d, "RectifySingleCreate", &err, r.log)
 	if err != nil {
 		return err
 	}
@@ -202,7 +206,7 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 }
 
 func (r *deployer) RectifySingleDelete(d *sous.DeployablePair) (err error) {
-	defer rectifyRecover(d, "RectifySingleDelete", &err)
+	defer rectifyRecover(d, "RectifySingleDelete", &err, r.log)
 	data, ok := d.ExecutorData.(*singularityTaskData)
 	if !ok {
 		return errors.Errorf("Delete record %#v doesn't contain Singularity compatible data: was %T\n\t%#v", d.ID(), data, d)
@@ -226,7 +230,7 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 		reportDeployerMessage("Attempting to rectify empty diff", pair, diffs, nil, nil, logging.WarningLevel, r.log)
 	}
 
-	defer rectifyRecover(pair, "RectifySingleModification", &err)
+	defer rectifyRecover(pair, "RectifySingleModification", &err, r.log)
 
 	data, ok := pair.ExecutorData.(*singularityTaskData)
 	if !ok {

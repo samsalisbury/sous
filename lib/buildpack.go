@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/opentable/sous/util/logging"
 )
 
 type (
@@ -80,6 +82,8 @@ type (
 		Source SourceID
 		Kind   string
 
+		RevID string
+
 		// ID is the artifact identifier - specific to product kind; e.g. docker
 		// products have image ids.
 		// Advisories contain the QA advisories determined on the build, and convey
@@ -112,6 +116,7 @@ func (br *BuildResult) Contextualize(c *BuildContext) {
 			prdt.Advisories = make([]string, 0, len(advs))
 		}
 		prdt.Advisories = append(prdt.Advisories, advs...)
+		prdt.RevID = c.RevID()
 	}
 }
 
@@ -140,4 +145,16 @@ func NewBuildArtifact(imageName string, qstrs Strpairs) *BuildArtifact {
 	}
 
 	return &BuildArtifact{Name: imageName, Type: "docker", Qualities: qs}
+}
+
+// EachField implements EachFielder on BuildArtifact
+func (ba BuildArtifact) EachField(f logging.FieldReportFn) {
+	f(logging.FieldName("artifact-name"), ba.Name)
+	f(logging.FieldName("artifact-type"), ba.Type)
+	ba.Qualities.EachField(f)
+}
+
+// EachField implements EachFielder on BuildArtifact
+func (qs Qualities) EachField(f logging.FieldReportFn) {
+	f(logging.FieldName("artifact-qualities"), qs.String())
 }

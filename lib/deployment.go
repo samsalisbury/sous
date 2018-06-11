@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 )
 
 type (
@@ -37,6 +36,8 @@ type (
 		Owners OwnerSet
 		// Kind is the kind of software that SourceRepo represents.
 		Kind ManifestKind
+		// User
+		User User
 	}
 )
 
@@ -57,6 +58,12 @@ func (vs Volumes) Clone() Volumes {
 	vols := make(Volumes, len(vs))
 	copy(vols, vs)
 	return vols
+}
+
+//EachField implements EachFielder
+func (d Deployment) EachField(f logging.FieldReportFn) {
+	sm := NewDeploymentSubmessage("", &d)
+	sm.EachField(f)
 }
 
 func (d *Deployment) String() string {
@@ -226,10 +233,5 @@ func (d *Deployment) Diff(o *Deployment) (bool, Differences) {
 	_, configDiffs := d.DeployConfig.Diff(o.DeployConfig)
 	diffs = append(diffs, configDiffs...)
 
-	messages.ReportLogFieldsMessage("Differences", logging.DebugLevel, logging.Log,
-		NewDeploymentSubmessage("sous-prior", d),
-		NewDeploymentSubmessage("sous-post", o),
-		diffs,
-	)
 	return len(diffs) != 0, diffs
 }

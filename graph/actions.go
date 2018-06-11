@@ -71,6 +71,23 @@ func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Up
 	}, nil
 }
 
+// GetPlumbingNormalizeGDM returns an update Action.
+func (di *SousGraph) GetPlumbingNormalizeGDM() (actions.Action, error) {
+	scoop := struct {
+		LS     LogSink
+		User   sous.User
+		Config LocalSousConfig
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+	return &actions.PlumbNormalizeGDM{
+		User:          scoop.User,
+		StateLocation: scoop.Config.StateLocation,
+		Log:           scoop.LS.LogSink.Child("plumbing-normalize-gdm"),
+	}, nil
+}
+
 // GetUpdate returns an update Action.
 func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFlags) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
@@ -138,16 +155,22 @@ func (di *SousGraph) GetRectify(dryrun string, dff config.DeployFilterFlags) (ac
 	scoop := struct {
 		LogSink  LogSink
 		Resolver *sous.Resolver
-		State    *sous.State
+		SM       *ServerStateManager
 	}{}
 
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
+
+	state, err := scoop.SM.ReadState()
+	if err != nil {
+		return nil, err
+	}
+
 	return &actions.Rectify{
 		Log:      scoop.LogSink.LogSink,
 		Resolver: scoop.Resolver,
-		State:    scoop.State,
+		State:    state,
 	}, nil
 }
 
@@ -204,7 +227,7 @@ func (di *SousGraph) GetServer(
 	}
 
 	return &actions.Server{
-		DeployFilterFlags: dff,
+		DeployFilterFlags: dff, // XXX Should be resolve filter
 		GDMRepo:           gdmRepo,
 		ListenAddr:        laddr,
 		Version:           scoop.Version,

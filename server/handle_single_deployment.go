@@ -108,6 +108,10 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(404, "Manifest %q has no deployment for cluster %q.", m.ID(), did.Cluster)
 	}
 
+	if dep.NumInstances == 0 {
+		return h.err(400, "Cannot deploy, current num instances set to zero, please update manifest.")
+	}
+
 	h.Body.Deployment = &dep
 
 	return h.ok(200, nil)
@@ -153,6 +157,10 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 
 	messages.ReportLogFieldsMessageToConsole("Exchange PutSingleDeplymentHandler", logging.ExtraDebug1Level, psd.log, did, psd.Body)
 
+	if _, clusterOK := psd.GDM.Defs.Clusters[did.Cluster]; !clusterOK {
+		return psd.err(404, "Cluster %q not defined.", did.Cluster)
+	}
+
 	m, ok := psd.GDM.Manifests.Get(did.ManifestID)
 	if !ok {
 		return psd.err(404, "No manifest with ID %q.", did.ManifestID)
@@ -161,6 +169,10 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	if !ok {
 		return psd.err(404, "Manifest %q has no deployment for cluster %q.",
 			did.ManifestID, did.Cluster)
+	}
+
+	if psd.Body.Deployment.NumInstances == 0 {
+		return psd.err(400, "Cannot deploy: NumInstances is 0 for this deployment. Please update your manifest to NumInstances > 0 to enable deploying.")
 	}
 
 	different, _ := psd.Body.Deployment.Diff(original)
@@ -189,6 +201,8 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 	if flaws := newDeployment.Validate(); len(flaws) != 0 {
 		return psd.err(400, "Deployment invalid after round-trip to GDM: %v", flaws)
 	}
+
+	newDeployment.User = user
 
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
 		Deployment: newDeployment,

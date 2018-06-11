@@ -14,6 +14,7 @@ import (
 	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/server"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/suite"
@@ -49,18 +50,17 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 		"../ext/storage/testdata/remote",
 		"../ext/storage/testdata/out"
 
-	dsm := storage.NewDiskStateManager(sourcepath)
+	dsm := storage.NewDiskStateManager(sourcepath, logging.SilentLogSet())
 	s, err := dsm.ReadState()
 	suite.Require().NoError(err)
 
 	storage.PrepareTestGitRepo(suite.T(), s, remotepath, outpath)
 
-	g := graph.TestGraphWithConfig(semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout,
-		"StateLocation: '"+outpath+"'\n")
+	g := graph.TestGraphWithConfig(suite.T(), semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '"+outpath+"'\n")
 	g.Add(extras...)
 
 	g.Add(&config.Verbosity{})
-	g.Add(&config.DeployFilterFlags{})
+	g.Add(&config.DeployFilterFlags{Cluster: "test"})
 	g.Add(graph.DryrunBoth)
 
 	serverScoop := struct {
@@ -98,7 +98,11 @@ func (suite serverTests) TearDownTest() {
 }
 
 func (suite serverTests) TestOverallRouter() {
-	res, err := http.Get(suite.url + "/gdm")
+	client := http.Client{}
+	req, err := http.NewRequest("GET", suite.url+"/gdm", nil)
+	suite.Require().NoError(err)
+	req.Header.Set("X-Gatelatch", "yes")
+	res, err := client.Do(req)
 	suite.NoError(err)
 	gdm, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()

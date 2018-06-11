@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 	"github.com/pkg/errors"
 )
 
@@ -152,7 +150,6 @@ func IsTransientResolveError(err error) bool {
 		}
 
 		// If not, then we need to rely on the strings.
-		messages.ReportLogFieldsMessage("Checking err string type", logging.ExtraDebug1Level, logging.Log, terr.Type)
 		switch terr.Type {
 		default:
 			return false

@@ -28,6 +28,12 @@ type (
 		Server string `env:"SOUS_SERVER"`
 		// Database contains configuration for the local Postgresql DB.
 		Database storage.PostgresConfig
+		// DatabasePrimary controls whether the PostgreSQL database is the primary
+		// datastore, or the git repo at StateLocation is.
+		// As of May 30, 2018, this is being added as a temporary feature flag. The
+		// idea is to use it to transition to DB only and then change the behavior
+		// to be (unconditionally) DatabasePrimary=true.
+		DatabasePrimary bool `env:"SOUS_DATABASE_IS_PRIMARY"`
 		// SiblingURLs is a temporary measure for setting up a distributed cluster
 		// of sous servers. Each server must be configured with accessible URLs for
 		// all the servers in production, as named by cluster.
@@ -47,6 +53,12 @@ type (
 		MaxHTTPConcurrencySingularity int `env:"MAX_HTTP_CONCURRENCY_SINGULARITY"`
 		// PollIntervalForClient is the maximum number of checks for client on SOUS Deploy
 		PollIntervalForClient int `env:"SOUS_POLL_INTERVAL_FOR_CLIENT"`
+		// SlackHookURL when set with SlackChannel will send messages to specified web hook
+		SlackHookURL string `env:"SOUS_SLACK_HOOK_URL"`
+		// SlackChannel that should receive messages
+		SlackChannel string `env:"SOUS_SLACK_CHANNEL"`
+		// AdditionalSlackChannels that should receive messages
+		AdditionalSlackChannels map[string]string `env:"SOUS_ADDITIONAL_SLACK_CHANNELS"`
 	}
 )
 
