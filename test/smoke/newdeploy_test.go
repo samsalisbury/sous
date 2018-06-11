@@ -90,6 +90,7 @@ func TestSousDeploy(t *testing.T) {
 					assertActiveStatus(t, f, did)
 					assertSingularityRequestTypeService(t, f, did)
 					assertNonNilHealthCheckOnLatestDeploy(t, f, did)
+					assertUserOnLatestDeploy(t, f, did)
 				})
 
 				t.Run("zero-instances", func(t *testing.T) {

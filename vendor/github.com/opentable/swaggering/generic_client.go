@@ -20,10 +20,10 @@ type (
 	// make actual HTTP requests of the API server
 	Requester interface {
 		// DTORequest performs an HTTP request and populates a DTO based on the response
-		DTORequest(resourceName string, dto DTO, method, path string, pathParams, queryParams urlParams, body ...DTO) error
+		DTORequest(resourceName string, dto DTO, method, path string, pathParams, queryParams UrlParams, body ...DTO) error
 
 		// Request performs an HTTP request and returns the body of the response
-		Request(resourceName string, method string, path string, pathParams urlParams, queryParams urlParams, body ...DTO) (io.ReadCloser, error)
+		Request(resourceName string, method string, path string, pathParams UrlParams, queryParams UrlParams, body ...DTO) (io.ReadCloser, error)
 	}
 
 	// GenericClient is a generic client for Swagger described services
@@ -41,7 +41,7 @@ type (
 		Body         bytes.Buffer
 	}
 
-	urlParams map[string]interface{}
+	UrlParams map[string]interface{}
 )
 
 func (e *ReqError) Error() string {
@@ -49,7 +49,7 @@ func (e *ReqError) Error() string {
 }
 
 // DTORequest performs an HTTP request and populates a DTO based on the response
-func (gc *GenericClient) DTORequest(resourceName string, pop DTO, method, path string, pathParams, queryParams urlParams, body ...DTO) (err error) {
+func (gc *GenericClient) DTORequest(resourceName string, pop DTO, method, path string, pathParams, queryParams UrlParams, body ...DTO) (err error) {
 	resBody, err := gc.Request(resourceName, method, path, pathParams, queryParams, body...)
 	if err != nil {
 		return
@@ -59,7 +59,7 @@ func (gc *GenericClient) DTORequest(resourceName string, pop DTO, method, path s
 }
 
 // Request performs an HTTP request and returns the body of the response
-func (gc *GenericClient) Request(resourceName, method, path string, pathParams, queryParams urlParams, body ...DTO) (resBody io.ReadCloser, err error) {
+func (gc *GenericClient) Request(resourceName, method, path string, pathParams, queryParams UrlParams, body ...DTO) (resBody io.ReadCloser, err error) {
 	req, err := gc.buildRequest(method, path, pathParams, queryParams, body...)
 	if err != nil {
 		return
@@ -70,7 +70,7 @@ func (gc *GenericClient) Request(resourceName, method, path string, pathParams, 
 		return
 	}
 
-	messages.ReportClientHTTPResponse(gc.Logger, "singularity request", res, resourceName, time.Now().Sub(start))
+	messages.ReportClientHTTPResponse(gc.Logger, "GenericClient", res, resourceName, time.Now().Sub(start))
 
 	if res.StatusCode > 299 {
 		rerr := &ReqError{
@@ -88,7 +88,7 @@ func (gc *GenericClient) Request(resourceName, method, path string, pathParams, 
 	return res.Body, nil
 }
 
-func (gc *GenericClient) buildRequest(method, path string, pathParams, queryParams urlParams, bodies ...DTO) (req *http.Request, err error) {
+func (gc *GenericClient) buildRequest(method, path string, pathParams, queryParams UrlParams, bodies ...DTO) (req *http.Request, err error) {
 	url, err := url.Parse(gc.BaseURL)
 	if err != nil {
 		return
@@ -99,6 +99,12 @@ func (gc *GenericClient) buildRequest(method, path string, pathParams, queryPara
 		return
 	}
 	url.Path = strings.Join([]string{strings.TrimRight(url.Path, "/"), strings.TrimLeft(path, "/")}, "/")
+
+	q := url.Query()
+	for k, v := range queryParams {
+		q.Set(k, fmt.Sprintf("%v", v))
+	}
+	url.RawQuery = q.Encode()
 
 	if len(bodies) > 0 {
 		req, err = gc.buildBodyRequest(method, url.String(), bodies[0])
@@ -122,7 +128,7 @@ func (gc *GenericClient) buildBodyRequest(method, path string, bodyObj DTO) (req
 	return
 }
 
-func pathRender(path string, params urlParams) (res string, err error) {
+func pathRender(path string, params UrlParams) (res string, err error) {
 	parmRE := regexp.MustCompile(`{([^}]+)}`)
 	building := make([]byte, 0, 150)
 	pathBytes := []byte(path)

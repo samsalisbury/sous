@@ -32,6 +32,7 @@ PGPORT ?= 6543
 USER_ID ?= $(shell id -u)
 GROUP_ID ?= $(shell id -g)
 
+LOCAL_SERVER_LISTEN ?= localhost:7771
 
 DOCKER_HOST_IP_PARSED ?= $(shell echo "$(DOCKER_HOST)" | grep -E -o '(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)')
 DOCKER_HOST_LOCALHOST := localhost
@@ -383,8 +384,8 @@ $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
 test-smoke-compiles: ## Checks that the smoke tests compile.
 	@go test -c -o /dev/null -tags smoke ./test/smoke && echo Smoke tests compiled.
 
-.PHONY: test-smoke
-test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
+.PHONY: test-smoke-all
+test-smoke-all: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
 	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
 	ulimit -n 2048 && \
 	PGHOST=$(PGHOST) \
@@ -398,9 +399,9 @@ test-smoke: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) s
 	SOUS_TERSE_LOGGING=$(SOUS_TERSE_LOGGING) \
 	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
-.PHONY: test-smoke-nofail
-test-smoke-nofail:
-	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke
+.PHONY: test-smoke
+test-smoke:
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
 
 .PHONY: docker-is-working
 docker-is-working:
@@ -483,6 +484,22 @@ postgres-update-schema: postgres-start
 
 postgres-clean: postgres-stop
 	$(DELETE_POSTGRES_DATA)
+
+.PHONY: local-server
+local-server:
+	@if [ -z "$(EMULATE_CLUSTER)" ]; then echo "Please set EMULATE_CLUSTER=<cluster-name>"; exit 1; fi
+	@if [ -z "$(SOUS_GDM_REPO)"]; then echo Please set SOUS_GDM_REPO e.g. git@github.com:my-org/my-gdm.git; exit 1; fi
+	@echo
+	@echo "WARNING WARNING WARNING WARNING WARNING WARNING WARNING"
+	@echo "WARNING => Starting local sous server emulating $(EMULATE_CLUSTER)"
+	@echo "WARNING => This server can only deploy to $(EMULATE_CLUSTER)"
+	@echo "WARNING => This server can read and write to $(SOUS_GDM_REPO)"
+	@echo "WARNING => This may cause inconsistent data."
+	@echo "WARNING => If you still want to proceed, set SOUS_SERVER=http://$(LOCAL_SERVER_LISTEN)"
+	@echo "WARNING => Then your local sous client will run against this server."
+	@echo "WARNING WARNING WARNING WARNING WARNING WARNING WARNING"
+	@echo
+	@export DIR=$(PWD)/.sous-gdm-temp && rm -rf "$$DIR" && git clone $(SOUS_GDM_REPO) $$DIR && SOUS_SIBLING_URLS='{"$(EMULATE_CLUSTER)": "http://$(LOCAL_SERVER_LISTEN)"}' SOUS_STATE_LOCATION=$$DIR SOUS_PG_HOST=$(PGHOST) SOUS_PG_PORT=$(PGPORT) SOUS_PG_USER=postgres sous server -listen $(LOCAL_SERVER_LISTEN) -autoresolver=false -d -v
 
 .PHONY: artifactory clean clean-containers clean-container-certs \
 	clean-running-containers clean-container-images coverage deb-build \

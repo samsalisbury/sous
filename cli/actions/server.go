@@ -45,6 +45,8 @@ func (ss *Server) Do() error {
 
 	reportServerMessage("Sous Server Running", ss.DeployFilterFlags, ss.ListenAddr, ss.Log)
 
+	fmt.Printf("Listening on http://%s", ss.ListenAddr)
+
 	return server.Run(ss.ListenAddr, ss.ServerHandler)
 }
 

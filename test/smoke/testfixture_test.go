@@ -23,6 +23,7 @@ type TestFixture struct {
 	ClusterSuffix string
 	Parent        *ParallelTestFixture
 	TestName      string
+	UserEmail     string
 }
 
 func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) TestFixture {
@@ -66,7 +67,8 @@ func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() s
 
 	client := makeClient(baseDir, sousBin)
 	primaryServer := "http://" + c.Instances[0].Addr
-	if err := client.Configure(primaryServer, envDesc.RegistryName()); err != nil {
+	userEmail := "sous_client1@example.com"
+	if err := client.Configure(primaryServer, envDesc.RegistryName(), userEmail); err != nil {
 		t.Fatal(err)
 	}
 
@@ -78,6 +80,7 @@ func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() s
 		ClusterSuffix: clusterSuffix,
 		Parent:        parent,
 		TestName:      t.Name(),
+		UserEmail:     userEmail,
 	}
 }
 

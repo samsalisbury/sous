@@ -202,6 +202,8 @@ func (psd *PUTSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return psd.err(400, "Deployment invalid after round-trip to GDM: %v", flaws)
 	}
 
+	newDeployment.User = user
+
 	r := sous.NewRectification(sous.DeployablePair{Post: &sous.Deployable{
 		Deployment: newDeployment,
 	}}, psd.log.Child("r11n"))
