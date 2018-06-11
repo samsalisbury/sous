@@ -136,13 +136,8 @@ func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
 // recordName inserts metadata about the newly built image into our local name cache
 func (b *Builder) recordName(bp *sous.BuildProduct) error {
 	sv := bp.Source
-	in := bp.VersionName
-	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
-	var qs []sous.Quality
-	for _, adv := range bp.Advisories {
-		qs = append(qs, sous.Quality{Name: adv, Kind: "advisory"})
-	}
-	return b.ImageMapper.Insert(sv, in, "", qs)
+	logging.DebugConsole(b.log, fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", bp.VersionName, sv.String()))
+	return b.ImageMapper.Insert(sv, bp.BuildArtifact())
 }
 
 // VersionTag computes an image tag from a SourceVersion's version

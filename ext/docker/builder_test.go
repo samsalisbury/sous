@@ -61,7 +61,7 @@ func TestBuilderApplyMetadata(t *testing.T) {
 
 	scratchSh, _ := shell.NewTestShell()
 
-	nc := sous.NewInserterSpy()
+	nc, _ := sous.NewInserterSpy()
 
 	b, err := NewBuilder(nc, "docker.example.com", srcSh, scratchSh, logging.SilentLogSet())
 	require.NoError(t, err)

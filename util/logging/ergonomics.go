@@ -31,3 +31,18 @@ func InfoMsg(l LogSink, msg string, fs ...interface{}) {
 func WarnMsg(l LogSink, msg string, fs ...interface{}) {
 	Deliver(l, append([]interface{}{SousGenericV1, WarningLevel, GetCallerInfo(NotHere()), MessageField(msg)}, fs...)...)
 }
+
+// DebugConsole sends a generic-otl Debug log message, and echoes it to the console, wrapping a string message.
+func DebugConsole(l LogSink, msg string, fs ...interface{}) {
+	Deliver(l, append([]interface{}{SousGenericV1, DebugLevel, GetCallerInfo(NotHere()), ConsoleAndMessage(msg)}, fs...)...)
+}
+
+// InfoConsole sends a generic-otl Info log message, and echoes it to the console, wrapping a string message.
+func InfoConsole(l LogSink, msg string, fs ...interface{}) {
+	Deliver(l, append([]interface{}{SousGenericV1, InformationLevel, GetCallerInfo(NotHere()), ConsoleAndMessage(msg)}, fs...)...)
+}
+
+// WarnConsole sends a generic-otl Warn log message, and echoes it to the console, wrapping a string message.
+func WarnConsole(l LogSink, msg string, fs ...interface{}) {
+	Deliver(l, append([]interface{}{SousGenericV1, WarningLevel, GetCallerInfo(NotHere()), ConsoleAndMessage(msg)}, fs...)...)
+}

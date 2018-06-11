@@ -67,9 +67,11 @@ func TestHTTPNameInserter(t *testing.T) {
 	}
 	err = hni.Insert(
 		SourceID{Location: SourceLocation{Repo: "a-repo", Dir: "offset"}, Version: semv.MustParse("5.5.5")},
-		"dockerthin.com/repo/latest",
-		"",
-		[]Quality{},
+		BuildArtifact{
+			Name:      "dockerthin.com/repo/latest",
+			Type:      "docker",
+			Qualities: []Quality{},
+		},
 	)
 	if err != nil {
 		t.Error(err)

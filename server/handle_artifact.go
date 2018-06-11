@@ -57,7 +57,7 @@ func (pah *PUTArtifactHandler) Exchange() (interface{}, int) {
 	/*
 		XXX: This can't actually work, because ba.Name here is a "tag" name, not a digest name.
 		We'll need to figure out how to handle that properly.
-		err = pah.Inserter.Insert(sid, ba.Name, "", ba.Qualities)
+		err = pah.Inserter.Insert(sid, ba)
 		if err != nil {
 			return err, http.StatusNotAcceptable
 		}

@@ -11,14 +11,6 @@ import (
 	"github.com/opentable/sous/util/restful"
 )
 
-type artifactTestInserter struct {
-	insFunc func(sous.SourceID, string, string, []sous.Quality) error
-}
-
-func (ati *artifactTestInserter) Insert(sid sous.SourceID, in, etag string, qs []sous.Quality) error {
-	return ati.insFunc(sid, in, etag, qs)
-}
-
 func TestPUTArtifact(t *testing.T) {
 	t.Skipf("Disabled until we revise the search index data model")
 	art := sous.NewBuildArtifact("test.reg.com/repo/test", sous.Strpairs{})
@@ -38,16 +30,21 @@ func TestPUTArtifact(t *testing.T) {
 	var inSid sous.SourceID
 	var inName string
 
+	ins, _ := sous.NewInserterSpy()
+
 	pah := &PUTArtifactHandler{
 		Request:     req,
 		QueryValues: restful.QueryValues{Values: q},
-		Inserter: &artifactTestInserter{
-			insFunc: func(s sous.SourceID, in, et string, qz []sous.Quality) error {
-				inSid = s
-				inName = in
-				return nil
+		Inserter:    ins,
+		/*
+			&artifactTestInserter{
+				insFunc: func(s sous.SourceID, in, et string, qz []sous.Quality) error {
+					inSid = s
+					inName = in
+					return nil
+				},
 			},
-		},
+		*/
 	}
 
 	_, status := pah.Exchange()

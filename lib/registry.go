@@ -32,9 +32,8 @@ type (
 
 	// An Inserter puts data into a registry.
 	Inserter interface {
-		// Insert pairs a SourceID with an imagename, and tags the pairing with Qualities
-		// The etag can be (usually will be) the empty string
-		Insert(sid SourceID, in, etag string, qs []Quality) error
+		// Insert pairs a SourceID with a build artifact.
+		Insert(sid SourceID, ba BuildArtifact) error
 	}
 
 	// An InserterSpy is a spy implementation of the Inserter interface
@@ -49,13 +48,14 @@ type (
 )
 
 // NewInserterSpy returns a spy inserter for testing
-func NewInserterSpy() InserterSpy {
-	return InserterSpy{spies.NewSpy()}
+func NewInserterSpy() (InserterSpy, *spies.Spy) {
+	ctrl := spies.NewSpy()
+	return InserterSpy{ctrl}, ctrl
 }
 
 // Insert implements Inserter on InserterSpy
-func (is InserterSpy) Insert(sid SourceID, in, etag string, qs []Quality) error {
-	return is.Called(sid, in, etag, qs).Error(0)
+func (is InserterSpy) Insert(sid SourceID, ba BuildArtifact) error {
+	return is.Called(sid, ba).Error(0)
 }
 
 // NewRegistrySpy returns a spy Registry for testing.

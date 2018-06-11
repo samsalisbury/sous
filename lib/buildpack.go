@@ -33,12 +33,6 @@ type (
 	// Strpair is a pair of strings.
 	Strpair [2]string
 
-	// BuildArtifact describes the actual built binary Sous will deploy
-	BuildArtifact struct {
-		Name, Type string
-		Qualities  Qualities
-	}
-
 	// A Quality represents a characteristic of a BuildArtifact that needs to be recorded.
 	Quality struct {
 		Name string
@@ -76,7 +70,14 @@ type (
 		Products []*BuildProduct
 	}
 
+	// BuildArtifact describes the actual built binary Sous will deploy
+	BuildArtifact struct {
+		Name, Type string
+		Qualities  Qualities
+	}
+
 	// A BuildProduct is one of the individual outputs of a buildpack.
+	// XXX why are there BuildArtifacts and BuildProducts instead of a single type?
 	BuildProduct struct {
 		// Source and Kind identify the build - the source inputs and the kind of build product
 		Source SourceID
@@ -134,6 +135,19 @@ func (bp *BuildProduct) String() string {
 		str = str + "\nAdvisories:\n  " + strings.Join(bp.Advisories, "  \n")
 	}
 	return str
+}
+
+// BuildArtifact produces an equivalent BuildArtifact
+func (bp BuildProduct) BuildArtifact() BuildArtifact {
+	ba := BuildArtifact{
+		Name:      bp.VersionName,
+		Type:      bp.Kind,
+		Qualities: make(Qualities, 0, len(bp.Advisories)),
+	}
+	for _, adv := range bp.Advisories {
+		ba.Qualities = append(ba.Qualities, Quality{Name: adv, Kind: "advisory"})
+	}
+	return ba
 }
 
 // NewBuildArtifact creates a new BuildArtifact representing a Docker

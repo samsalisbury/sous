@@ -56,11 +56,11 @@ func TestRoundTrip(t *testing.T) {
 
 			sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", versionIn)
 			in := base + "@" + digest
-			err = nc.Insert(sv, in, digest, []sous.Quality{})
+			err = nc.Insert(sv, sous.BuildArtifact{Name: in, Qualities: []sous.Quality{}})
 			assert.NoError(err)
 
 			// inserts should be idempotent
-			err = nc.Insert(sv, in, digest, []sous.Quality{})
+			err = nc.Insert(sv, sous.BuildArtifact{Name: in, Qualities: []sous.Quality{}})
 			assert.NoError(err)
 
 			/*
@@ -398,7 +398,7 @@ func TestRecordAdvisories(t *testing.T) {
 
 	qs := []sous.Quality{{Name: "ephemeral_tag", Kind: "advisory"}}
 
-	err = nc.Insert(sv, cn, digest, qs)
+	err = nc.Insert(sv, sous.BuildArtifact{Name: cn, Qualities: qs})
 	assert.NoError(err)
 
 	arty, err := nc.GetArtifact(sv)
