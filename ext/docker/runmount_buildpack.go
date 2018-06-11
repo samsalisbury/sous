@@ -57,43 +57,64 @@ func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult,
 	buildResult := &sous.BuildResult{}
 
 	buildID, err := build(*ctx)
-	fmt.Println("buildID :", buildID)
+	if err != nil {
+		return nil, err
+	}
 
 	err = run(*ctx, buildID)
+	if err != nil {
+		return nil, err
+	}
 
 	tempDir, err := setupTempDir()
-	fmt.Println("tempDir : ", tempDir)
+	if err != nil {
+		return nil, err
+	}
 
 	buildContainerID, err := createMountContainer(*ctx, buildID)
-	fmt.Println("buildContainerID : ", buildContainerID)
+	if err != nil {
+		return nil, err
+	}
 
 	runspec, err := extractRunSpec(*ctx, tempDir, buildContainerID)
-	fmt.Println("runspec : ", runspec)
+	if err != nil {
+		return nil, err
+	}
 
 	err = validateRunSpec(runspec)
-	fmt.Println("err : ", err)
+	if err != nil {
+		return nil, err
+	}
 
-	subBuilders, err := constructImageBuilders(runspec)
-	fmt.Println("err : ", err)
-	fmt.Println("subBuilders : ", *subBuilders[0])
+	imageBuilders, err := constructImageBuilders(runspec)
+	if err != nil {
+		return nil, err
+	}
 
-	err = extractFiles(*ctx, buildContainerID, tempDir, subBuilders)
-	fmt.Println("err : ", err)
+	err = extractFiles(*ctx, buildContainerID, tempDir, imageBuilders)
+	if err != nil {
+		return nil, err
+	}
 
 	err = teardownBuildContainer(*ctx, buildContainerID)
-	fmt.Println("err : ", err)
+	if err != nil {
+		return nil, err
+	}
 
-	err = templateDockerfile(*ctx, tempDir, subBuilders)
-	fmt.Println("templateDockerfile err : ", err)
+	err = templateDockerfile(*ctx, tempDir, imageBuilders)
+	if err != nil {
+		return nil, err
+	}
 
-	err = buildRunnables(*ctx, tempDir, subBuilders)
-	fmt.Println("err : ", err)
-	//fmt.Println("runnables : ", runnables)
-	// TODO LH need these runnables to go to products.
-	// TODO LH need to fix the naming of the runnables/subbuilders in here
+	err = buildRunnables(*ctx, tempDir, imageBuilders)
+	if err != nil {
+		return nil, err
+	}
 
-	products := products(*ctx, subBuilders)
-	fmt.Println("products : ", products)
+	products := products(*ctx, imageBuilders)
+	if err != nil {
+		return nil, err
+	}
 
 	buildResult.Elapsed = time.Since(start)
 	buildResult.Products = products
