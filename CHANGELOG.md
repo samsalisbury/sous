@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.101...HEAD)
+## [0.5.102](//github.com/opentable/sous/compare/0.5.101...0.5.102)
 ### Added
 * Server: Send user to singularity for Deployment
 ### Fixed
