@@ -10,7 +10,7 @@ with respect to its command line interface and HTTP interface
 ### Added
 * Client: Added a footer after command execution that if present, will display the request id that
   was passed in the header.
-
+* Client: Runmount strategy, will cache maven builds using a volume mount at docker run time.
 
 ## [0.5.88](//github.com/opentable/sous/compare/0.5.87...0.5.88)
 ### Added
