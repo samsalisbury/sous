@@ -283,17 +283,6 @@ func (c *TestClient) MustFail(t *testing.T, subcmd string, f *sousFlags, args ..
 	}
 }
 
-func (c *TestClient) TransformManifestAsString(t *testing.T, getSetFlags *sousFlags, f func(manifest string) string) {
-	manifest := c.MustRun(t, "manifest get", getSetFlags)
-	manifest = f(manifest)
-	manifestSetCmd, cancel := c.Cmd(t, "manifest set", getSetFlags)
-	defer cancel()
-	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader([]byte(manifest)))
-	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
-		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
-	}
-}
-
 func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f func(m sous.Manifest) sous.Manifest) {
 	t.Helper()
 	manifest := c.MustRun(t, "manifest get", getSetFlags)
@@ -312,4 +301,6 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f f
 	if err := manifestSetCmd.runWithTimeout(3 * time.Minute); err != nil {
 		t.Fatalf("manifest set failed: %s; output:\n%s", err, manifestSetCmd.executed.Combined)
 	}
+	// This prints the updated manifest in the logs.
+	c.MustRun(t, "manifest get", getSetFlags)
 }
