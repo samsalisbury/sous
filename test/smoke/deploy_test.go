@@ -242,6 +242,7 @@ func TestSousDeploy(t *testing.T) {
 							m.Deployments = setMemAndCPUForAll(m.Deployments)
 							return m
 						})
+
 						client.MustRun(t, "build", nil, "-tag", "1.2.3")
 						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
 

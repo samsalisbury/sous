@@ -182,48 +182,71 @@ func newExecutedCMD(subcmd string, args []string) *ExecutedCMD {
 	}
 }
 
+type CmdWithHooks struct {
+	Cmd      *exec.Cmd
+	Cancel   func()
+	PreRun   func()
+	PostRun  func()
+	executed *ExecutedCMD
+}
+
 func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...string) (*ExecutedCMD, error) {
+	cmd := c.ConfigureCommand(t, subcmd, f, args...)
+	err := cmd.runWithTimeout(3 * time.Minute)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+	}
+	return cmd.executed, err
+}
+
+func (c *TestClient) ConfigureCommand(t *testing.T, subcmd string, f *sousFlags, args ...string) *CmdWithHooks {
 	t.Helper()
 	cmd, cancel := c.Cmd(t, subcmd, f, args...)
-	defer cancel()
 	stdout, stderr := prefixWithTestName(t, "client1")
-	fmt.Fprintf(stderr, "SOUS_CONFIG_DIR = %q\n", c.ConfigDir)
-	fmt.Fprintf(stdout, "running sous in %q: %s\n", c.Dir, args)
-	args = quotedArgs(args)
+
+	qArgs := quotedArgs(args)
 	outFile, errFile, combinedFile :=
 		openFileAppendOnly(t, c.LogDir, "stdout"),
 		openFileAppendOnly(t, c.LogDir, "stderr"),
 		openFileAppendOnly(t, c.LogDir, "combined")
-
-	defer closeFiles(t, outFile, errFile, combinedFile)
-
 	allFiles := io.MultiWriter(outFile, errFile, combinedFile)
 
-	executed := newExecutedCMD(subcmd, args)
+	executed := newExecutedCMD(subcmd, qArgs)
 
 	cmd.Stdout = io.MultiWriter(stdout, outFile, combinedFile, executed.Stdout, executed.Combined)
 	cmd.Stderr = io.MultiWriter(stderr, errFile, combinedFile, executed.Stderr, executed.Combined)
-	prettyCmd := fmt.Sprintf("$ sous %s\n", strings.Join(allArgs(subcmd, f, args), " "))
-	fmt.Fprintf(os.Stderr, "==> %s", prettyCmd)
-	relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
-	fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
-	err := runWithTimeout(cmd, cancel, 3*time.Minute)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+
+	preRun := func() {
+		prettyCmd := fmt.Sprintf("$ sous %s\n", strings.Join(allArgs(subcmd, f, qArgs), " "))
+		fmt.Fprintf(os.Stderr, "==> %s", prettyCmd)
+		relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
+		fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
 	}
-	return executed, err
+	postRun := func() {
+		cancel()
+		closeFiles(t, outFile, errFile, combinedFile)
+	}
+
+	return &CmdWithHooks{
+		Cmd:      cmd,
+		Cancel:   cancel,
+		PreRun:   preRun,
+		PostRun:  postRun,
+		executed: executed,
+	}
 }
 
-func runWithTimeout(cmd *exec.Cmd, cancel context.CancelFunc, timeout time.Duration) error {
-	defer cancel()
+func (c *CmdWithHooks) runWithTimeout(timeout time.Duration) error {
+	defer c.PostRun()
+	c.PreRun()
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- cmd.Run()
+		errCh <- c.Cmd.Run()
 	}()
 	go func() {
 		<-time.After(timeout)
 		errCh <- fmt.Errorf("command timed out after %s:\nsous %s", timeout,
-			quotedArgsString(cmd.Args[1:]))
+			quotedArgsString(c.Cmd.Args[1:]))
 	}()
 	return <-errCh
 }
@@ -283,10 +306,10 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f f
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
-	manifestSetCmd, cancel := c.Cmd(t, "manifest set", getSetFlags)
-	defer cancel()
-	manifestSetCmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
-	if out, err := manifestSetCmd.CombinedOutput(); err != nil {
-		t.Fatalf("manifest set failed: %s; output:\n%s", err, out)
+	manifestSetCmd := c.ConfigureCommand(t, "manifest set", getSetFlags)
+	defer manifestSetCmd.Cancel()
+	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
+	if err := manifestSetCmd.runWithTimeout(3 * time.Minute); err != nil {
+		t.Fatalf("manifest set failed: %s; output:\n%s", err, manifestSetCmd.executed.Combined)
 	}
 }
