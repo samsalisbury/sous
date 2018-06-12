@@ -43,7 +43,7 @@ func (dc *DummyRegistry) GetArtifact(sid SourceID) (*BuildArtifact, error) {
 	case ar := <-dc.ars:
 		return ar.BuildArtifact, ar.error
 	default:
-		return &BuildArtifact{Name: sid.String(), Type: "dummy"}, nil
+		return &BuildArtifact{DigestReference: sid.String(), Type: "dummy"}, nil
 	}
 }
 

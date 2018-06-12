@@ -58,7 +58,7 @@ func NewBuildArtifact(imageName string, qstrs strpairs) *sous.BuildArtifact {
 		qs = append(qs, sous.Quality{Name: qstr[0], Kind: qstr[1]})
 	}
 
-	return &sous.BuildArtifact{Name: imageName, Type: "docker", Qualities: qs}
+	return &sous.BuildArtifact{DigestReference: imageName, Type: "docker", Qualities: qs}
 }
 
 func (e NoImageNameFound) Error() string {
@@ -159,7 +159,7 @@ func meansBodyUnchanged(err error) bool {
 // GetSourceID looks up the source ID for a given image name.
 //  xxx consider un-exporting
 func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
-	in := a.Name
+	in := a.DigestReference
 	var sid sous.SourceID
 
 	messages.ReportLogFieldsMessage("Getting source ID for", logging.ExtraDebug1Level, nc.log, in)
@@ -293,7 +293,7 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 // Insert puts a given SourceID/image name pair into the name cache
 // used by Builder at the moment to register after a build
 func (nc *NameCache) Insert(sid sous.SourceID, ba sous.BuildArtifact) error {
-	in := ba.Name
+	in := ba.DigestReference
 	qs := ba.Qualities
 	err := nc.dbInsert(sid, in, "", qs)
 	reportTableMetrics(nc.log, nc.DB)

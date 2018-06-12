@@ -56,11 +56,11 @@ func TestRoundTrip(t *testing.T) {
 
 			sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", versionIn)
 			in := base + "@" + digest
-			err = nc.Insert(sv, sous.BuildArtifact{Name: in, Qualities: []sous.Quality{}})
+			err = nc.Insert(sv, sous.BuildArtifact{DigestReference: in, Qualities: []sous.Quality{}})
 			assert.NoError(err)
 
 			// inserts should be idempotent
-			err = nc.Insert(sv, sous.BuildArtifact{Name: in, Qualities: []sous.Quality{}})
+			err = nc.Insert(sv, sous.BuildArtifact{DigestReference: in, Qualities: []sous.Quality{}})
 			assert.NoError(err)
 
 			/*
@@ -80,6 +80,17 @@ func TestRoundTrip(t *testing.T) {
 	testInsertRetreive("same", "1.2.3", "1.2.3", "1.2.3", "1.2.3")
 	testInsertRetreive("metadata", "1.2.3+1234", "1.2.3+1234", "1.2.3", "1.2.3")
 	testInsertRetreive("prefixed", "1.2.3", "version-1.2.3", "1.2.3", "version-1.2.3")
+}
+
+func TestRejectNonDigestedNames(t *testing.T) {
+	host := "docker.example.com"
+	dc := docker_registry.NewDummyClient()
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	require.NoError(t, err)
+	sid := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", "1.2.3")
+
+	assert.Error(t, nc.Insert(sid, sous.BuildArtifact{DigestReference: "ot/wackadoo:latest"}))
+	assert.Error(t, nc.Insert(sid, sous.BuildArtifact{DigestReference: "ot/wackadoo:1.2.3"}))
 }
 
 func TestCacheLookup(t *testing.T) {
@@ -162,7 +173,7 @@ func TestCanonicalizesToConfiguredRegistry(t *testing.T) {
 
 	art, err := nc.GetArtifact(sv)
 	if assert.NoError(err) {
-		assert.Equal(cacheDigestName, art.Name)
+		assert.Equal(cacheDigestName, art.DigestReference)
 	}
 
 	// once for primary, once to check mirror
@@ -219,7 +230,7 @@ func TestLeavesRegistryUnchangedWhenUnknown(t *testing.T) {
 
 	art, err := nc.GetArtifact(sv)
 	if assert.NoError(err) {
-		assert.Equal(primaryDigestName, art.Name)
+		assert.Equal(primaryDigestName, art.DigestReference)
 	}
 }
 
@@ -239,8 +250,8 @@ func TestHarvestAlso(t *testing.T) {
 
 	stuffBA := func(n, v string) sous.SourceID {
 		ba := &sous.BuildArtifact{
-			Name: n,
-			Type: "docker",
+			DigestReference: n,
+			Type:            "docker",
 		}
 
 		sv := sous.MustNewSourceID(repo, "", v)
@@ -292,8 +303,8 @@ func TestSecondCanonicalName(t *testing.T) {
 		n := "test-service"
 		v := `0.1.2-ci1234`
 		ba := &sous.BuildArtifact{
-			Name: n,
-			Type: "docker",
+			DigestReference: n,
+			Type:            "docker",
 		}
 
 		sv := sous.MustNewSourceID(repo, "", v)
@@ -376,7 +387,7 @@ func TestHarvesting(t *testing.T) {
 	dc.MatchMethod("GetImageMetadata", spies.AnyArgs, docker_registry.Metadata{}, errors.Errorf("no such MD"))
 	nin, err := nc.GetArtifact(sisterSV)
 	if assert.NoError(err) {
-		assert.Equal(host+"/"+cn, nin.Name)
+		assert.Equal(host+"/"+cn, nin.DigestReference)
 	} else {
 		t.Log(dc)
 	}
@@ -398,7 +409,7 @@ func TestRecordAdvisories(t *testing.T) {
 
 	qs := []sous.Quality{{Name: "ephemeral_tag", Kind: "advisory"}}
 
-	err = nc.Insert(sv, sous.BuildArtifact{Name: cn, Qualities: qs})
+	err = nc.Insert(sv, sous.BuildArtifact{DigestReference: cn, Qualities: qs})
 	assert.NoError(err)
 
 	arty, err := nc.GetArtifact(sv)

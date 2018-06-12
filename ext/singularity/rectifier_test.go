@@ -22,8 +22,8 @@ func TestBuildDeployRequest(t *testing.T) {
 	ls, _ := logging.NewLogSinkSpy()
 	dr, err := buildDeployRequest(sous.Deployable{
 		BuildArtifact: &sous.BuildArtifact{
-			Name: "an-image",
-			Type: "docker",
+			DigestReference: "an-image",
+			Type:            "docker",
 		},
 		Deployment: &sous.Deployment{
 			SourceID: sous.SourceID{
@@ -60,8 +60,8 @@ func TestDockerMetadataSet(t *testing.T) {
 	ls, _ := logging.NewLogSinkSpy()
 	dr, err := buildDeployRequest(sous.Deployable{
 		BuildArtifact: &sous.BuildArtifact{
-			Name: "an-image",
-			Type: "docker",
+			DigestReference: "an-image",
+			Type:            "docker",
 		},
 		Deployment: &sous.Deployment{
 			SourceID: sous.SourceID{
@@ -95,8 +95,8 @@ func baseDeployablePair() *sous.DeployablePair {
 		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Prior: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
-				Name: "the-prior-image",
-				Type: "docker",
+				DigestReference: "the-prior-image",
+				Type:            "docker",
 			},
 			Deployment: &sous.Deployment{
 				SourceID: sous.SourceID{
@@ -116,8 +116,8 @@ func baseDeployablePair() *sous.DeployablePair {
 		},
 		Post: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
-				Name: "the-post-image",
-				Type: "docker",
+				DigestReference: "the-post-image",
+				Type:            "docker",
 			},
 			Deployment: &sous.Deployment{
 				SourceID: sous.SourceID{
@@ -182,7 +182,7 @@ func TestModifyImage(t *testing.T) {
 	pair := baseDeployablePair()
 	pair.Prior.Deployment.SourceID.Version = semv.MustParse(before)
 	pair.Post.Deployment.SourceID.Version = semv.MustParse(after)
-	pair.Post.BuildArtifact.Name = "2.3.4"
+	pair.Post.BuildArtifact.DigestReference = "2.3.4"
 
 	mods := make(chan *sous.DeployablePair, 1)
 	log := make(chan sous.DiffResolution, 10)
@@ -208,7 +208,7 @@ func TestModifyImage(t *testing.T) {
 	assert.Len(client.Created, 0)
 
 	if assert.Len(client.Deployed, 1) {
-		assert.Regexp("2.3.4", client.Deployed[0].BuildArtifact.Name)
+		assert.Regexp("2.3.4", client.Deployed[0].BuildArtifact.DigestReference)
 	}
 }
 
@@ -223,7 +223,7 @@ func TestModifyResources(t *testing.T) {
 
 	pair.Post.Deployment.SourceID.Version = semv.MustParse(version)
 	pair.Post.Deployment.Resources["memory"] = "500"
-	pair.Post.BuildArtifact.Name = "1.2.3"
+	pair.Post.BuildArtifact.DigestReference = "1.2.3"
 
 	mods := make(chan *sous.DeployablePair, 1)
 	log := make(chan sous.DiffResolution, 10)
@@ -249,7 +249,7 @@ func TestModifyResources(t *testing.T) {
 	assert.Len(client.Created, 0)
 
 	if assert.Len(client.Deployed, 1) {
-		assert.Regexp("1.2.3", client.Deployed[0].BuildArtifact.Name)
+		assert.Regexp("1.2.3", client.Deployed[0].BuildArtifact.DigestReference)
 		assert.Regexp("500", client.Deployed[0].Deployment.DeployConfig.Resources["memory"])
 	}
 }
@@ -268,7 +268,7 @@ func TestModify(t *testing.T) {
 	pair.Post.Deployment.SourceID.Version = semv.MustParse(after)
 	pair.Post.Deployment.DeployConfig.NumInstances = 24
 	pair.Post.Deployment.DeployConfig.Volumes = sous.Volumes{{"host", "container", "RW"}}
-	pair.Post.BuildArtifact.Name = "2.3.4"
+	pair.Post.BuildArtifact.DigestReference = "2.3.4"
 
 	mods := make(chan *sous.DeployablePair, 1)
 	results := make(chan sous.DiffResolution, 10)
@@ -296,7 +296,7 @@ func TestModify(t *testing.T) {
 	}
 
 	if assert.Len(client.Deployed, 1) {
-		assert.Regexp("2.3.4", client.Deployed[0].BuildArtifact.Name)
+		assert.Regexp("2.3.4", client.Deployed[0].BuildArtifact.DigestReference)
 		t.Logf("VOLUMES:%#v", client.Deployed[0].Deployment.DeployConfig.Volumes)
 		assert.Equal("RW", string(client.Deployed[0].Deployment.DeployConfig.Volumes[0].Mode))
 	}
@@ -369,8 +369,8 @@ func TestCreates(t *testing.T) {
 	created := &sous.DeployablePair{
 		Post: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
-				Type: "docker",
-				Name: "reqid,0.0.0",
+				Type:            "docker",
+				DigestReference: "reqid,0.0.0",
 			},
 			Deployment: &sous.Deployment{
 				SourceID: sous.SourceID{
@@ -411,7 +411,7 @@ func TestCreates(t *testing.T) {
 	if assert.Len(client.Deployed, 1) {
 		dep := client.Deployed[0]
 		assert.Equal("cluster", dep.Deployment.Cluster.BaseURL)
-		assert.Equal("reqid,0.0.0", dep.BuildArtifact.Name)
+		assert.Equal("reqid,0.0.0", dep.BuildArtifact.DigestReference)
 	}
 
 	if assert.Len(client.Created, 1) {

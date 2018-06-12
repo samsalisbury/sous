@@ -72,8 +72,9 @@ type (
 
 	// BuildArtifact describes the actual built binary Sous will deploy
 	BuildArtifact struct {
-		Name, Type string
-		Qualities  Qualities
+		Type            string
+		DigestReference string
+		Qualities       Qualities
 	}
 
 	// A BuildProduct is one of the individual outputs of a buildpack.
@@ -140,7 +141,7 @@ func (bp *BuildProduct) String() string {
 // BuildArtifact produces an equivalent BuildArtifact
 func (bp BuildProduct) BuildArtifact() BuildArtifact {
 	ba := BuildArtifact{
-		Name:      bp.VersionName,
+		//Name:      bp.VersionName,
 		Type:      bp.Kind,
 		Qualities: make(Qualities, 0, len(bp.Advisories)),
 	}
@@ -158,12 +159,12 @@ func NewBuildArtifact(imageName string, qstrs Strpairs) *BuildArtifact {
 		qs = append(qs, Quality{Name: qstr[0], Kind: qstr[1]})
 	}
 
-	return &BuildArtifact{Name: imageName, Type: "docker", Qualities: qs}
+	return &BuildArtifact{DigestReference: imageName, Type: "docker", Qualities: qs}
 }
 
 // EachField implements EachFielder on BuildArtifact
 func (ba BuildArtifact) EachField(f logging.FieldReportFn) {
-	f(logging.FieldName("artifact-name"), ba.Name)
+	f(logging.FieldName("artifact-name"), ba.DigestReference)
 	f(logging.FieldName("artifact-type"), ba.Type)
 	ba.Qualities.EachField(f)
 }

@@ -56,9 +56,9 @@ func (msg *deployableSubmessage) buildArtifactFields(f logging.FieldReportFn) {
 		return
 	}
 
-	f(msg.fields["artifact-name"], ba.Name)
-	f(msg.fields["artifact-type"], ba.Type)
-	f(msg.fields["artifact-qualities"], ba.Qualities.String())
+	ba.EachField(func(n logging.FieldName, v interface{}) {
+		f(msg.fields[string(n)], v)
+	})
 }
 
 // EachField implements EachFielder on deployableSubmessage.

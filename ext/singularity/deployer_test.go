@@ -270,7 +270,7 @@ func matchedPair(t *testing.T, startDep *sous.Deployment) *sous.DeployablePair {
 	deployable := sous.Deployable{
 		Deployment: startDep,
 		BuildArtifact: &sous.BuildArtifact{
-			Name: dockerName,
+			DigestReference: dockerName,
 		},
 	}
 
@@ -573,16 +573,16 @@ func TestPendingModification(t *testing.T) {
 		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Post: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
-				Name: "build-artifact",
-				Type: "docker",
+				DigestReference: "build-artifact",
+				Type:            "docker",
 			},
 			Deployment: dpl.Clone(),
 			Status:     sous.DeployStatusPending,
 		},
 		Prior: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
-				Name: "build-artifact",
-				Type: "docker",
+				DigestReference: "build-artifact",
+				Type:            "docker",
 			},
 			Deployment: dpl.Clone(),
 			Status:     sous.DeployStatusActive,
@@ -635,16 +635,16 @@ func TestModificationOfFailed(t *testing.T) {
 		ExecutorData: &singularityTaskData{requestID: "reqid"},
 		Prior: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
-				Name: "build-artifact",
-				Type: "docker",
+				DigestReference: "build-artifact",
+				Type:            "docker",
 			},
 			Deployment: dpl.Clone(),
 			Status:     sous.DeployStatusActive,
 		},
 		Post: &sous.Deployable{
 			BuildArtifact: &sous.BuildArtifact{
-				Name: "build-artifact",
-				Type: "docker",
+				DigestReference: "build-artifact",
+				Type:            "docker",
 			},
 			Deployment: dpl.Clone(),
 			Status:     sous.DeployStatusFailed,
