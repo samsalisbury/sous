@@ -96,6 +96,7 @@ type (
 		// VersionName and RevisionName cache computations about how to refer to the image.
 		VersionName  string
 		RevisionName string
+		DigestName   string
 	}
 )
 

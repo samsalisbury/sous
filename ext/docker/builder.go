@@ -126,6 +126,8 @@ func (b *Builder) metadataDockerfile(bp *sous.BuildProduct) io.Reader {
 func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
 	verr := b.SourceShell.Run("docker", "push", bp.VersionName)
 	rerr := b.SourceShell.Run("docker", "push", bp.RevisionName)
+	// hilariously, Docker 18.03 returns <none> for the digest if you just say `docker images <tagged-ref>`
+	derr := b.SourceShell.Run("docker", "inspect", "--format='{{index .RepoDigests 0}}'", bp.VersionName)
 
 	if verr == nil {
 		return rerr
