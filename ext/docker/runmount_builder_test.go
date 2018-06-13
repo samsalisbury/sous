@@ -92,9 +92,7 @@ func TestRunmountBuild_validateRunSpec(t *testing.T) {
 
 func TestRunmountBuild_constructImageBuilders(t *testing.T) {
 	testRunSpec := getTestRunSpec()
-	builders, err := constructImageBuilders(testRunSpec)
-
-	assert.NoError(t, err)
+	builders := constructImageBuilders(testRunSpec)
 	builder := *builders[0]
 	assert.Equal(t, "docker.otenv.com/sous-otj-run", builder.RunSpec.Image.From)
 }
@@ -107,7 +105,7 @@ func TestRunmountBuild_extractFiles(t *testing.T) {
 	ctx := sous.BuildContext{
 		Sh: sh,
 	}
-	builders, _ := constructImageBuilders(testRunSpec)
+	builders := constructImageBuilders(testRunSpec)
 	err := extractFiles(ctx, testContainerBuildID, "/tmp", builders)
 	assert.NoError(t, err)
 }
@@ -115,7 +113,7 @@ func TestRunmountBuild_extractFiles(t *testing.T) {
 func TestRunmountBuild_templateDockerfile(t *testing.T) {
 	testRunSpec := getTestRunSpec()
 	buildDir := "/tmp"
-	builders, _ := constructImageBuilders(testRunSpec) //could abstract this for testing
+	builders := constructImageBuilders(testRunSpec) //could abstract this for testing
 
 	err := templateDockerfile(sous.BuildContext{}, buildDir, builders)
 	assert.NoError(t, err)
@@ -128,14 +126,14 @@ func TestRunmountBuild_buildRunnables(t *testing.T) {
 	ctx := sous.BuildContext{
 		Sh: sh,
 	}
-	builders, _ := constructImageBuilders(getTestRunSpec())
+	builders := constructImageBuilders(getTestRunSpec())
 	err := buildRunnables(ctx, "/tmp", builders)
 	fmt.Println("err : ", err)
 	assert.NoError(t, err)
 }
 
 func TestRunmountBuild_products(t *testing.T) {
-	builders, _ := constructImageBuilders(getTestRunSpec())
+	builders := constructImageBuilders(getTestRunSpec())
 	products := products(sous.BuildContext{}, builders)
 	assert.Equal(t, 1, len(products))
 }

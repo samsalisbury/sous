@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/shell"
 	"github.com/stretchr/testify/assert"
 )
@@ -35,7 +36,7 @@ func TestRunmountBuildpack_DetectRunmount(t *testing.T) {
 	createDockerfile("FROM docker.otenv.com/sous-otj-autobuild-runmount:local")
 	defer removeDockerfile()
 
-	rmbp := NewRunmountBuildpack()
+	rmbp := NewRunmountBuildpack(logging.SilentLogSet())
 
 	result, _ := rmbp.Detect(getContext())
 
@@ -46,7 +47,7 @@ func TestRunmountBuildpack_DetectNotRunmount(t *testing.T) {
 	createDockerfile("FROM docker.otenv.com/sous-otj-autobuild:local")
 	defer removeDockerfile()
 
-	rmbp := NewRunmountBuildpack()
+	rmbp := NewRunmountBuildpack(logging.SilentLogSet())
 
 	result, _ := rmbp.Detect(getContext())
 

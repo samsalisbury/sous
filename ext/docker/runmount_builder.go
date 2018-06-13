@@ -115,7 +115,7 @@ func validateRunSpec(runSpec MultiImageRunSpec) error {
 	return nil
 }
 
-func constructImageBuilders(runSpec MultiImageRunSpec) ([]*runnableBuilder, error) {
+func constructImageBuilders(runSpec MultiImageRunSpec) []*runnableBuilder {
 	rs := runSpec.Normalized()
 	subBuilders := []*runnableBuilder{}
 
@@ -126,7 +126,7 @@ func constructImageBuilders(runSpec MultiImageRunSpec) ([]*runnableBuilder, erro
 		})
 	}
 
-	return subBuilders, nil
+	return subBuilders
 }
 
 func extractFiles(ctx sous.BuildContext, buildContainerID string, buildDir string, runnableBuilders []*runnableBuilder) error {

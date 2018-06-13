@@ -45,7 +45,10 @@ func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResul
 
 	messages.ReportLogFieldsMessage("Runmount dockerfile detection", logging.DebugLevel, rmbp.log, dfPath)
 
-	dockerContent, _ := readDockerfile()
+	dockerContent, err := readDockerfile()
+	if err != nil {
+		return nil, err
+	}
 
 	// TODO LH simplest check so far, scan docker content for runmount
 	result := sous.DetectResult{
@@ -91,10 +94,7 @@ func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult,
 		return nil, err
 	}
 
-	imageBuilders, err := constructImageBuilders(runspec)
-	if err != nil {
-		return nil, err
-	}
+	imageBuilders := constructImageBuilders(runspec)
 
 	err = extractFiles(*ctx, buildContainerID, tempDir, imageBuilders)
 	if err != nil {
