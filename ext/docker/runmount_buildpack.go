@@ -28,8 +28,8 @@ func NewRunmountBuildpack(ls logging.LogSink) *RunmountBuildpack {
 	}
 }
 
-func readDockerfile() (string, error) {
-	b, err := ioutil.ReadFile("Dockerfile")
+func readDockerfile(dfPath string) (string, error) {
+	b, err := ioutil.ReadFile(dfPath)
 	if err != nil {
 		return "", err
 	}
@@ -45,7 +45,7 @@ func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResul
 
 	messages.ReportLogFieldsMessage("Runmount dockerfile detection", logging.DebugLevel, rmbp.log, dfPath)
 
-	dockerContent, err := readDockerfile()
+	dockerContent, err := readDockerfile(dfPath)
 	if err != nil {
 		return nil, err
 	}

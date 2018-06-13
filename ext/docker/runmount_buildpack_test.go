@@ -2,7 +2,9 @@ package docker
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
@@ -11,45 +13,52 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func createDockerfile(content string) {
-	f, err := os.Create("Dockerfile")
+// return the directory for cleanup
+func createDockerfile(content string) string {
+	dir, err := ioutil.TempDir("", "sous-test")
+	dockerfile := filepath.Join(dir, "Dockerfile")
+	f, err := os.Create(dockerfile)
 	if err != nil {
 		fmt.Println("error creating file")
 	}
 	defer f.Close()
 	f.WriteString(content)
+	return dir
 }
 
-func removeDockerfile() {
-	os.Remove("Dockerfile")
+func removeDockerfile(dir string) {
+	os.RemoveAll(dir)
 }
 
-func getContext() *sous.BuildContext {
+func getContext(dir string) *sous.BuildContext {
 	sh, _ := shell.Default()
 	ctx := &sous.BuildContext{
 		Sh: sh,
+		Source: sous.SourceContext{
+			OffsetDir: dir,
+		},
 	}
 	return ctx
 }
 
 func TestRunmountBuildpack_DetectRunmount(t *testing.T) {
-	createDockerfile("FROM docker.otenv.com/sous-otj-autobuild-runmount:local")
-	defer removeDockerfile()
+	dir := createDockerfile("FROM docker.otenv.com/sous-otj-autobuild-runmount:local")
+	defer removeDockerfile(dir)
 
 	rmbp := NewRunmountBuildpack(logging.SilentLogSet())
 
-	result, _ := rmbp.Detect(getContext())
+	result, _ := rmbp.Detect(getContext(dir))
 
 	assert.True(t, result.Compatible)
 }
 
 func TestRunmountBuildpack_DetectNotRunmount(t *testing.T) {
-	createDockerfile("FROM docker.otenv.com/sous-otj-autobuild:local")
-	defer removeDockerfile()
+	dir := createDockerfile("FROM docker.otenv.com/sous-otj-autobuild:local")
+	defer removeDockerfile(dir)
 
 	rmbp := NewRunmountBuildpack(logging.SilentLogSet())
 
-	result, _ := rmbp.Detect(getContext())
+	result, _ := rmbp.Detect(getContext(dir))
 
 	assert.True(t, !result.Compatible)
 }
