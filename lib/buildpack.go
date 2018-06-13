@@ -143,8 +143,9 @@ func (bp *BuildProduct) String() string {
 func (bp BuildProduct) BuildArtifact() BuildArtifact {
 	ba := BuildArtifact{
 		//Name:      bp.VersionName,
-		Type:      bp.Kind,
-		Qualities: make(Qualities, 0, len(bp.Advisories)),
+		DigestReference: bp.DigestName,
+		Type:            bp.Kind,
+		Qualities:       make(Qualities, 0, len(bp.Advisories)),
 	}
 	for _, adv := range bp.Advisories {
 		ba.Qualities = append(ba.Qualities, Quality{Name: adv, Kind: "advisory"})
@@ -160,7 +161,11 @@ func NewBuildArtifact(imageName string, qstrs Strpairs) *BuildArtifact {
 		qs = append(qs, Quality{Name: qstr[0], Kind: qstr[1]})
 	}
 
-	return &BuildArtifact{DigestReference: imageName, Type: "docker", Qualities: qs}
+	return &BuildArtifact{
+		Type:            "docker",
+		DigestReference: imageName,
+		Qualities:       qs,
+	}
 }
 
 // EachField implements EachFielder on BuildArtifact
