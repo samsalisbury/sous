@@ -13,8 +13,6 @@ import (
 	"strings"
 
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/logging"
-	"github.com/opentable/sous/util/logging/messages"
 )
 
 func build(ctx sous.BuildContext) (string, error) {
@@ -189,7 +187,6 @@ type builder struct {
 }
 
 func templateDockerfileBytes(dockerfile io.Writer, builder builder) error {
-	messages.ReportLogFieldsMessage("Templating Dockerfile from", logging.DebugLevel, logging.Log, builder, builder.RunSpec)
 
 	tmpl, err := template.New("Dockerfile").Parse(`
 	FROM {{.RunSpec.Image.From}}
@@ -206,7 +203,7 @@ func templateDockerfileBytes(dockerfile io.Writer, builder builder) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("builder : %v", builder)
+
 	return tmpl.Execute(dockerfile, builder)
 }
 
@@ -229,7 +226,7 @@ func versionNameLocal(ctx sous.BuildContext) string {
 }
 
 func revisionNameLocal(ctx sous.BuildContext) string {
-	return ctx.Version().RevID()
+	return ctx.RevID()
 }
 
 func versionConfigLocal(ctx sous.BuildContext) string {

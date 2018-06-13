@@ -22,7 +22,7 @@ func NewBuildStrategySelector(ls logging.LogSink, rc docker_registry.Client) sou
 
 // SelectBuildpack tries to select a buildpack for this BuildContext.
 func (s *selector) SelectBuildpack(ctx *sous.BuildContext) (sous.Buildpack, error) {
-	rmbp := NewRunmountBuildpack()
+	rmbp := NewRunmountBuildpack(s.log)
 	dr, err := rmbp.Detect(ctx)
 	if err == nil && dr.Compatible {
 		reportStrategyChoice("runmount container", s.log)
@@ -30,7 +30,7 @@ func (s *selector) SelectBuildpack(ctx *sous.BuildContext) (sous.Buildpack, erro
 	}
 
 	sbp := NewSplitBuildpack(s.regClient, s.log)
-	dr, err := sbp.Detect(ctx)
+	dr, err = sbp.Detect(ctx)
 	if err == nil && dr.Compatible {
 		reportStrategyChoice("split container", s.log)
 		return sbp, nil

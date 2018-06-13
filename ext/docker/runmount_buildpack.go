@@ -17,12 +17,15 @@ type (
 	// and builds final deploy container
 	RunmountBuildpack struct {
 		detected *sous.DetectResult
+		log      logging.LogSink
 	}
 )
 
 // NewRunmountBuildpack returns a new RunmountBuildpack
-func NewRunmountBuildpack() *RunmountBuildpack {
-	return &RunmountBuildpack{}
+func NewRunmountBuildpack(ls logging.LogSink) *RunmountBuildpack {
+	return &RunmountBuildpack{
+		log: ls,
+	}
 }
 
 func readDockerfile() (string, error) {
@@ -40,7 +43,7 @@ func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResul
 		return nil, fmt.Errorf("%s does not exist", dfPath)
 	}
 
-	messages.ReportLogFieldsMessage("Runmount dockerfile detection", logging.DebugLevel, logging.Log, dfPath)
+	messages.ReportLogFieldsMessage("Runmount dockerfile detection", logging.DebugLevel, rmbp.log, dfPath)
 
 	dockerContent, _ := readDockerfile()
 
