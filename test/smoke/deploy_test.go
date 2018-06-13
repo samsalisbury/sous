@@ -234,10 +234,18 @@ func TestSousDeploy(t *testing.T) {
 						defer f.ReportStatus(t)
 						client := setupProject(t, f, simpleServer)
 						client.MustRun(t, "init", nil, "-kind", "http-service")
+
+						const customID = "some-custom-req-id"
+
 						client.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
 							clusterName := "cluster1" + f.ClusterSuffix
-							d := m.Deployments[clusterName]
-							d.DeployConfig.SingularityRequestID = "some-custom-req-id"
+							d, ok := m.Deployments[clusterName]
+							if !ok {
+								t.Fatalf("no deployment for %q", clusterName)
+							}
+							c := d.DeployConfig
+							c.SingularityRequestID = customID
+							d.DeployConfig = c
 							m.Deployments[clusterName] = d
 							m.Deployments = setMemAndCPUForAll(m.Deployments)
 							return m
@@ -246,9 +254,9 @@ func TestSousDeploy(t *testing.T) {
 						client.MustRun(t, "build", nil, "-tag", "1.2.3")
 						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
-						assertSingularityRequestTypeService(t, f, "some-custom-req-id")
-						assertActiveStatus(t, f, "some-custom-req-id")
-						assertNonNilHealthCheckOnLatestDeploy(t, f, "some-custom-req-id")
+						assertSingularityRequestTypeService(t, f, customID)
+						assertActiveStatus(t, f, customID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
 
 					})
 				})
