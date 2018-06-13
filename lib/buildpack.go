@@ -73,6 +73,7 @@ type (
 	// BuildArtifact describes the actual built binary Sous will deploy
 	BuildArtifact struct {
 		Type            string
+		VersionName     string
 		DigestReference string
 		Qualities       Qualities
 	}
@@ -142,7 +143,7 @@ func (bp *BuildProduct) String() string {
 // BuildArtifact produces an equivalent BuildArtifact
 func (bp BuildProduct) BuildArtifact() BuildArtifact {
 	ba := BuildArtifact{
-		//Name:      bp.VersionName,
+		VersionName:     bp.VersionName,
 		DigestReference: bp.DigestName,
 		Type:            bp.Kind,
 		Qualities:       make(Qualities, 0, len(bp.Advisories)),
@@ -151,21 +152,6 @@ func (bp BuildProduct) BuildArtifact() BuildArtifact {
 		ba.Qualities = append(ba.Qualities, Quality{Name: adv, Kind: "advisory"})
 	}
 	return ba
-}
-
-// NewBuildArtifact creates a new BuildArtifact representing a Docker
-// image.
-func NewBuildArtifact(imageName string, qstrs Strpairs) *BuildArtifact {
-	var qs []Quality
-	for _, qstr := range qstrs {
-		qs = append(qs, Quality{Name: qstr[0], Kind: qstr[1]})
-	}
-
-	return &BuildArtifact{
-		Type:            "docker",
-		DigestReference: imageName,
-		Qualities:       qs,
-	}
 }
 
 // EachField implements EachFielder on BuildArtifact

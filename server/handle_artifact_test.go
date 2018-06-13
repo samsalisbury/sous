@@ -14,7 +14,11 @@ import (
 )
 
 func TestPUTArtifact(t *testing.T) {
-	art := sous.NewBuildArtifact("test.reg.com/repo/test", sous.Strpairs{})
+	art := sous.BuildArtifact{
+		VersionName:     "test.reg.com/repo/test:2.2",
+		DigestReference: "test.reg.com/repo/test@sha256:123123123123123123123123123123123",
+		Qualities:       sous.Qualities{},
+	}
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
 	enc.Encode(art)
@@ -46,5 +50,6 @@ func TestPUTArtifact(t *testing.T) {
 	inBA := ic.PassedArgs().Get(1).(sous.BuildArtifact)
 
 	assert.Equal(t, "github.com/opentable/test", inSid.Location.Repo, "source id repo")
-	assert.Equal(t, "test.reg.com/repo/test", inBA.DigestReference, "build artifact digest name")
+	assert.Equal(t, art.DigestReference, inBA.DigestReference, "build artifact digest name")
+	assert.Equal(t, art.VersionName, inBA.VersionName, "build artifact version name")
 }

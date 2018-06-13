@@ -33,7 +33,11 @@ func TestGuardImageRejected(t *testing.T) {
 	clusterX := &Cluster{Name: "x"}
 	rejected := Deployment{ClusterName: `x`, SourceID: svTwo, DeployConfig: config, Cluster: clusterX}
 
-	dr.FeedArtifact(&BuildArtifact{"ot-docker/one", "docker", []Quality{{"ephemeral_tag", "advisory"}}}, nil)
+	dr.FeedArtifact(&BuildArtifact{
+		VersionName: "ot-docker/one:0.1",
+		Type:        "docker",
+		Qualities:   []Quality{{"ephemeral_tag", "advisory"}},
+	}, nil)
 
 	ls, _ := logging.NewLogSinkSpy()
 	_, err := guardImage(dr, &rejected, ls)
@@ -64,7 +68,11 @@ func TestAllowsWhitelistedAdvisories(t *testing.T) {
 	config := DeployConfig{NumInstances: 1}
 	intoCI := Deployment{ClusterName: `ci`, Cluster: &Cluster{AllowedAdvisories: []string{"ephemeral_tag"}}, SourceID: svOne, DeployConfig: config}
 
-	dr.FeedArtifact(&BuildArtifact{"ot-docker/one", "docker", []Quality{{"ephemeral_tag", "advisory"}}}, nil)
+	dr.FeedArtifact(&BuildArtifact{
+		VersionName: "ot-docker/one:0.1",
+		Type:        "docker",
+		Qualities:   []Quality{{"ephemeral_tag", "advisory"}},
+	}, nil)
 
 	ls, _ := logging.NewLogSinkSpy()
 	art, err := guardImage(dr, &intoCI, ls)
