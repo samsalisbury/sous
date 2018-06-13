@@ -15,7 +15,7 @@ import (
 
 // return the directory for cleanup
 func createDockerfile(content string) string {
-	dir, err := ioutil.TempDir("", "sous-test")
+	dir, _ := ioutil.TempDir("", "sous-test")
 	dockerfile := filepath.Join(dir, "Dockerfile")
 	f, err := os.Create(dockerfile)
 	if err != nil {
