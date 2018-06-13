@@ -44,6 +44,7 @@ func TestQueryValuesToManifestIDHappyPath(t *testing.T) {
 		mid(manifestIDFromValues(pq("repo=gh1&offset=o1&flavor=f1"))),
 		sous.ManifestID{Source: sous.SourceLocation{Repo: "gh1", Dir: "o1"}, Flavor: "f1"})
 }
+
 func TestQueryValuesToManifestIDSadPath(t *testing.T) {
 	assert := assert.New(t)
 
@@ -143,6 +144,7 @@ func TestHandlesManifestPut(t *testing.T) {
 						CheckReadyProtocol: "HTTP",
 						CheckReadyURIPath:  uripath,
 					},
+					SingularityRequestID: "custom-sing-req-id",
 				},
 			},
 		},
@@ -174,5 +176,6 @@ func TestHandlesManifestPut(t *testing.T) {
 	require.True(found)
 	assert.Len(changed.Owners, 2)
 	assert.Equal(changed.Owners[1], "judson")
+	assert.Equal(changed.Deployments["ci"].SingularityRequestID, "custom-sing-req-id")
 
 }
