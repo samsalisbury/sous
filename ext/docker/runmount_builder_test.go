@@ -22,7 +22,8 @@ func TestRunmountBuilder_build(t *testing.T) {
 	ctx := sous.BuildContext{
 		Sh: sh,
 	}
-	buildID, _ := build(ctx)
+	buildID, err := build(ctx)
+	assert.NoError(t, err)
 	assert.Equal(t, testBuildID, buildID)
 }
 
@@ -59,9 +60,10 @@ func TestRunmountBuild_createMountContainer(t *testing.T) {
 	assert.Equal(t, testContainerBuildID, containerID)
 }
 
-func getTestRunSpec() MultiImageRunSpec {
+func getTestRunSpec(t *testing.T) MultiImageRunSpec {
 	testRunSpec := MultiImageRunSpec{}
-	specF, _ := os.Open("./testdata/runmountbuilder/run_spec.json")
+	specF, err := os.Open("./testdata/runmountbuilder/run_spec.json")
+	assert.NoError(t, err) //fail the test if can't open run_spec.json
 	dec := json.NewDecoder(specF)
 	dec.Decode(&testRunSpec)
 
@@ -70,7 +72,7 @@ func getTestRunSpec() MultiImageRunSpec {
 
 func TestRunmountBuild_extractRunspec(t *testing.T) {
 	tempDir := "./testdata/runmountbuilder"
-	testRunSpec := getTestRunSpec()
+	testRunSpec := getTestRunSpec(t)
 	sh, ctl := shell.NewTestShell()
 	_, cctl := ctl.CmdFor("docker", "cp")
 	cctl.ResultSuccess("", "")
@@ -78,27 +80,27 @@ func TestRunmountBuild_extractRunspec(t *testing.T) {
 		Sh: sh,
 	}
 
-	runSpec, _ := extractRunSpec(ctx, tempDir, testContainerBuildID)
-	fmt.Println("runspec : ", runSpec)
+	runSpec, err := extractRunSpec(ctx, tempDir, testContainerBuildID)
+	assert.NoError(t, err)
 
 	assert.Equal(t, testRunSpec, runSpec)
 }
 
 func TestRunmountBuild_validateRunSpec(t *testing.T) {
-	testRunSpec := getTestRunSpec()
+	testRunSpec := getTestRunSpec(t)
 	err := validateRunSpec(testRunSpec)
 	assert.NoError(t, err)
 }
 
 func TestRunmountBuild_constructImageBuilders(t *testing.T) {
-	testRunSpec := getTestRunSpec()
+	testRunSpec := getTestRunSpec(t)
 	builders := constructImageBuilders(testRunSpec)
 	builder := *builders[0]
 	assert.Equal(t, "docker.otenv.com/sous-otj-run", builder.RunSpec.Image.From)
 }
 
 func TestRunmountBuild_extractFiles(t *testing.T) {
-	testRunSpec := getTestRunSpec()
+	testRunSpec := getTestRunSpec(t)
 	sh, ctl := shell.NewTestShell()
 	_, cctl := ctl.CmdFor("docker", "cp")
 	cctl.ResultSuccess("", "")
@@ -111,7 +113,7 @@ func TestRunmountBuild_extractFiles(t *testing.T) {
 }
 
 func TestRunmountBuild_templateDockerfile(t *testing.T) {
-	testRunSpec := getTestRunSpec()
+	testRunSpec := getTestRunSpec(t)
 	buildDir := "/tmp"
 	builders := constructImageBuilders(testRunSpec) //could abstract this for testing
 
@@ -126,14 +128,14 @@ func TestRunmountBuild_buildRunnables(t *testing.T) {
 	ctx := sous.BuildContext{
 		Sh: sh,
 	}
-	builders := constructImageBuilders(getTestRunSpec())
+	builders := constructImageBuilders(getTestRunSpec(t))
 	err := buildRunnables(ctx, "/tmp", builders)
 	fmt.Println("err : ", err)
 	assert.NoError(t, err)
 }
 
 func TestRunmountBuild_products(t *testing.T) {
-	builders := constructImageBuilders(getTestRunSpec())
+	builders := constructImageBuilders(getTestRunSpec(t))
 	products := products(sous.BuildContext{}, builders)
 	assert.Equal(t, 1, len(products))
 }

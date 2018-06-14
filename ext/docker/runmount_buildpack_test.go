@@ -47,7 +47,8 @@ func TestRunmountBuildpack_DetectRunmount(t *testing.T) {
 
 	rmbp := NewRunmountBuildpack(logging.SilentLogSet())
 
-	result, _ := rmbp.Detect(getContext(dir))
+	result, err := rmbp.Detect(getContext(dir))
+	assert.NoError(t, err)
 
 	assert.True(t, result.Compatible)
 }
@@ -58,7 +59,8 @@ func TestRunmountBuildpack_DetectNotRunmount(t *testing.T) {
 
 	rmbp := NewRunmountBuildpack(logging.SilentLogSet())
 
-	result, _ := rmbp.Detect(getContext(dir))
+	result, err := rmbp.Detect(getContext(dir))
+	assert.NoError(t, err)
 
 	assert.True(t, !result.Compatible)
 }
