@@ -211,7 +211,7 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		}
 	}
 
-	if err := nc.dbInsert(newSID, fullCanon, md.Etag, qualities); err != nil {
+	if err := nc.dbInsert(newSID, fullCanon, md.Etag, md.AllNames, qualities); err != nil {
 		logging.InfoMsg(nc.log, "Err recording", fullCanon, err)
 		return sid, err
 	}
@@ -294,8 +294,9 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 // used by Builder at the moment to register after a build
 func (nc *NameCache) Insert(sid sous.SourceID, ba sous.BuildArtifact) error {
 	in := ba.DigestReference
+	vn := ba.VersionName
 	qs := ba.Qualities
-	err := nc.dbInsert(sid, in, "", qs)
+	err := nc.dbInsert(sid, in, "", []string{vn}, qs)
 	reportTableMetrics(nc.log, nc.DB)
 	return err
 }

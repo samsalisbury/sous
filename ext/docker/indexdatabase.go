@@ -62,7 +62,7 @@ func canonicalizeDockerReference(in string) (reference.Canonical, error) {
 
 }
 
-func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Quality) error {
+func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, extraNames []string, quals []sous.Quality) error {
 	ref, err := canonicalizeDockerReference(in)
 	if err != nil {
 		return err
@@ -125,7 +125,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		return err
 	}
 
-	if err := addSearchNames(ins, in, []string{in}); err != nil {
+	if err := addSearchNames(ins, in, append(extraNames, in)); err != nil {
 		return err
 	}
 
