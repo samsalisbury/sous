@@ -158,6 +158,7 @@ func (db *deploymentBuilder) basics() error {
 	messages.ReportLogFieldsMessage("Recording as requestID for instance.", logging.ExtraDebug1Level, db.log, db.Target.ExecutorData)
 	db.request = db.req.ReqParent.Request
 	db.reqID = reqID(db.req.ReqParent)
+	db.Target.SingularityRequestID = db.req.ReqParent.Request.Id
 	return nil
 }
 

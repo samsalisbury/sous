@@ -185,6 +185,9 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 
 	if err := ins.Exec("singularity_deployment_bindings", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			if dep.DeployConfig.SingularityRequestID == "" {
+				//panic("SingularityRequestID EMPTY")
+			}
 			fields.Row(func(r sqlgen.RowDef) {
 				compID(r, dep)
 				clusterID(r, dep)
