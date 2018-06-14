@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -14,8 +15,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+var dbBreakpoint = getBreakpoint("DB", 2)
+
 // WriteState implements StateWriter on PostgresStateManager
 func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) error {
+	//if err := dbBreakpoint(state); err != nil {
+	//	//return err
+	//	panic(err)
+	//}
+
 	start := time.Now()
 	context := context.TODO()
 	tx, err := m.db.BeginTx(context, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
@@ -41,39 +49,52 @@ func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) erro
 	return nil
 }
 
-var breakpointHit int64
-var singReqIDs = [2]string{}
+func quotedList(s []string) string {
+	quoted := make([]string, len(s))
+	for i, str := range s {
+		quoted[i] = fmt.Sprintf("%q", str)
+	}
+	return strings.Join(quoted, ", ")
+}
+
+func getBreakpoint(label string, breakAfterCount int64) func(state *sous.State) error {
+
+	var breakpointHit int64
+	var singReqIDs = make([]string, breakAfterCount)
+
+	return func(state *sous.State) error {
+		// TODO SS: Remove this debugging code.
+		for mid, m := range state.Manifests.Snapshot() {
+			for clusterName, d := range m.Deployments {
+				if d.Env["SMOKE_TEST_BREAK"] == "" {
+					continue
+				}
+				bph := atomic.AddInt64(&breakpointHit, 1)
+				singReqIDs[bph-1] = d.SingularityRequestID
+				if bph == breakAfterCount {
+					return fmt.Errorf("%s.WriteState %d times for one SET: %s (%s:%s)", label, bph, quotedList(singReqIDs), mid, clusterName)
+				}
+				//if d.SingularityRequestID == "" {
+				//	panic(fmt.Errorf("MANIFEST ERR: %s (%s); SingularityRequestID = %q", mid, clusterName, d.SingularityRequestID))
+				//}
+			}
+		}
+		//for did, d := range newDeps.Snapshot() {
+		//	if d.Env["SMOKE_TEST_BREAK"] == "" {
+		//		continue
+		//	}
+		//	if d.SingularityRequestID == "" {
+		//		panic(fmt.Errorf("DEPLOYMENT ERR: %s; SingularityRequestID = %q", did, d.SingularityRequestID))
+		//	}
+		//}
+		// TODO: end
+		return nil
+	}
+}
 
 func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State, tx *sql.Tx) error {
 
 	newDeps, err := state.Deployments()
-
-	// TODO SS: Remove this debugging code.
-	for mid, m := range state.Manifests.Snapshot() {
-		for clusterName, d := range m.Deployments {
-			if d.Env["SMOKE_TEST_BREAK"] == "" {
-				continue
-			}
-			bph := atomic.AddInt64(&breakpointHit, 1)
-			singReqIDs[bph-1] = d.SingularityRequestID
-			if bph > 1 {
-				panic(fmt.Errorf("storeManifests twice for one SET, FIRST: %q; SECOND: %q; %s:%s", singReqIDs[0], singReqIDs[1], mid, clusterName))
-			}
-			//if d.SingularityRequestID == "" {
-			//	panic(fmt.Errorf("MANIFEST ERR: %s (%s); SingularityRequestID = %q", mid, clusterName, d.SingularityRequestID))
-			//}
-		}
-	}
-	//for did, d := range newDeps.Snapshot() {
-	//	if d.Env["SMOKE_TEST_BREAK"] == "" {
-	//		continue
-	//	}
-	//	if d.SingularityRequestID == "" {
-	//		panic(fmt.Errorf("DEPLOYMENT ERR: %s; SingularityRequestID = %q", did, d.SingularityRequestID))
-	//	}
-	//}
-	// TODO: end
-
 	if err != nil {
 		return err
 	}
