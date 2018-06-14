@@ -24,7 +24,7 @@ type TestServerControl struct {
 // dummy server, as well as a TestServerControl struct to control and inspect
 // the test server.
 func TestingInMemoryClient() (restful.HTTPClient, TestServerControl, error) {
-	inserter := sous.NewInserterSpy()
+	inserter, _ := sous.NewInserterSpy()
 
 	state := sous.NewState()
 	state.Defs = sous.Defs{

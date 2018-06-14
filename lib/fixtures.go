@@ -99,9 +99,10 @@ func DeployableFixture(name string) *Deployable {
 			Status:     DeployStatusActive,
 			Deployment: DeploymentFixture(""),
 			BuildArtifact: &BuildArtifact{
-				Type:      "docker",
-				Name:      "dockerhub.io/example:0.0.1",
-				Qualities: []Quality{},
+				Type: "docker",
+				//Name:      "dockerhub.io/example:0.0.1",
+				DigestReference: "dockerhub.io/example@sha256:012345678901234567890123456789AB012345678901234567890123456789AB",
+				Qualities:       []Quality{},
 			},
 		}
 	}

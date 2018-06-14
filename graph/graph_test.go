@@ -128,7 +128,9 @@ func TestComponentLocatorInjection(t *testing.T) {
 
 	tg.Replace(rawConfig)
 	tg.Replace(func() serverInserter {
-		return serverInserter{sous.NewInserterSpy()}
+		ins, _ := sous.NewInserterSpy()
+
+		return serverInserter{ins}
 	})
 
 	scoop := struct{ server.ComponentLocator }{}

@@ -73,5 +73,5 @@ func (rd *RegistryDumper) Entries() (de []DumperEntry, err error) {
 
 // Tabbed emits a tab-delimited string representing the entry
 func (de *DumperEntry) Tabbed() string {
-	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", de.Location.Repo, de.Location.Dir, de.Version.Format(semv.MajorMinorPatch), de.Name, de.Type)
+	return fmt.Sprintf("%s\t%s\t%s\t%s\t%s", de.Location.Repo, de.Location.Dir, de.Version.Format(semv.MajorMinorPatch), de.DigestReference, de.Type)
 }
