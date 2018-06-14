@@ -3,6 +3,8 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/lib/pq"
@@ -39,8 +41,39 @@ func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) erro
 	return nil
 }
 
+var breakpointHit int64
+var singReqIDs = [2]string{}
+
 func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State, tx *sql.Tx) error {
+
 	newDeps, err := state.Deployments()
+
+	// TODO SS: Remove this debugging code.
+	for mid, m := range state.Manifests.Snapshot() {
+		for clusterName, d := range m.Deployments {
+			if d.Env["SMOKE_TEST_BREAK"] == "" {
+				continue
+			}
+			bph := atomic.AddInt64(&breakpointHit, 1)
+			singReqIDs[bph-1] = d.SingularityRequestID
+			if bph > 1 {
+				panic(fmt.Errorf("storeManifests twice for one SET, FIRST: %q; SECOND: %q; %s:%s", singReqIDs[0], singReqIDs[1], mid, clusterName))
+			}
+			//if d.SingularityRequestID == "" {
+			//	panic(fmt.Errorf("MANIFEST ERR: %s (%s); SingularityRequestID = %q", mid, clusterName, d.SingularityRequestID))
+			//}
+		}
+	}
+	//for did, d := range newDeps.Snapshot() {
+	//	if d.Env["SMOKE_TEST_BREAK"] == "" {
+	//		continue
+	//	}
+	//	if d.SingularityRequestID == "" {
+	//		panic(fmt.Errorf("DEPLOYMENT ERR: %s; SingularityRequestID = %q", did, d.SingularityRequestID))
+	//	}
+	//}
+	// TODO: end
+
 	if err != nil {
 		return err
 	}
@@ -185,9 +218,6 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 
 	if err := ins.Exec("singularity_deployment_bindings", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
-			if dep.DeployConfig.SingularityRequestID == "" {
-				//panic("SingularityRequestID EMPTY")
-			}
 			fields.Row(func(r sqlgen.RowDef) {
 				compID(r, dep)
 				clusterID(r, dep)

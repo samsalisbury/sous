@@ -244,7 +244,7 @@ func TestSousDeploy(t *testing.T) {
 								t.Fatalf("no deployment for %q", clusterName)
 							}
 							c := d.DeployConfig
-							c.Env = sous.Env{"NEW_VALUE1": "SingReqIDsBroke"}
+							c.Env = sous.Env{"SMOKE_TEST_BREAK": "Aaaaargh"}
 							c.SingularityRequestID = customID
 							d.DeployConfig = c
 							m.Deployments[clusterName] = d
