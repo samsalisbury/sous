@@ -295,6 +295,7 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f f
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
+	fmt.Fprintf(os.Stdout, "\n\n\nUPDATED MANIFEST...\n\n\n%s\n\n\n\nEND UPDATED MANIFEST.", manifestBytes)
 	manifestSetCmd := c.ConfigureCommand(t, "manifest set", getSetFlags)
 	defer manifestSetCmd.Cancel()
 	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
