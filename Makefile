@@ -385,7 +385,7 @@ test-smoke-compiles: ## Checks that the smoke tests compile.
 	@go test -c -o /dev/null -tags smoke ./test/smoke && echo Smoke tests compiled.
 
 .PHONY: test-smoke-all
-test-smoke-all: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
+test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) postgres-clean-restart
 	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
 	ulimit -n 2048 && \
 	PGHOST=$(PGHOST) \

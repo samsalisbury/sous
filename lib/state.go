@@ -102,6 +102,44 @@ func NewState() *State {
 	}
 }
 
+//// Diff reports differences between s and o.
+//func (s State) Diff(o State) (bool, []string) {
+//	_, diffs := s.Defs.Diff(o.Defs)
+//	return len(diffs) != 0, diffs
+//}
+//
+//// Diff returns differences between d and o.
+//func (d Defs) Diff(o Defs) (bool, []string) {
+//	_, diffs := d.Clusters.Diff(o.Clusters)
+//	_, mdiffs := d.Metadata.Diff(o.Metadata)
+//	diffs = append(diffs, mdiffs...)
+//	return len(diffs) != 0, diffs
+//}
+//
+//// Diff returns diffs between cs and os.
+//func (cs Clusters) Diff(os Clusters) (bool, []string) {
+//	var diffs []string
+//	diff := func(what string, this, other interface{}) {
+//		diffs = append(diffs, fmt.Sprintf("%s: this: %v; other: %v"))
+//	}
+//	for name, c := range cs {
+//		o, ok := os[name]
+//		if !ok {
+//			diff("missing cluster", name, "")
+//			continue
+//		}
+//		_, cdiffs := c.Diff(o)
+//		diffs = append(diffs, cdiffs)
+//	}
+//	for name, o := range os {
+//		c, ok := cs[name]
+//		if !ok {
+//			diff("additional cluster", "", name)
+//		}
+//	}
+//	return len(diffs) != 0, diffs
+//}
+
 // CheckEtag checks that the etag matches the etag on the state (if present).
 func (s State) CheckEtag(etag string) error {
 	if s.etag != nil {

@@ -17,6 +17,8 @@ import (
 
 var dbBreakpoint = getBreakpoint("DB", 2)
 
+var dbBreakpoint1 = getBreakpoint("DB1", 1)
+
 // WriteState implements StateWriter on PostgresStateManager
 func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) error {
 	//if err := dbBreakpoint(state); err != nil {
@@ -46,6 +48,9 @@ func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) erro
 		return err
 	}
 	reportWriting(m.log, start, state, nil)
+	if err := dbBreakpoint1(state); err != nil {
+		panic(err)
+	}
 	return nil
 }
 

@@ -75,9 +75,32 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 		suite.logs.DumpLogs(t)
 		t.FailNow()
 	}
+
 	suite.Equal(int64(4), suite.pluckSQL("select count(*) from deployments"))
 
-	assert.Len(t, suite.logs.CallsTo("Fields"), 16)
+	written, err := s.Deployments()
+	suite.require.NoError(err)
+	readState, err := suite.manager.ReadState()
+	suite.require.NoError(err)
+	read, err := readState.Deployments()
+	suite.require.NoError(err)
+
+	for did, d := range read.Snapshot() {
+		if d.SingularityRequestID == "" {
+			t.Fatalf("SingularityRequestID empty for %q", did)
+		}
+		t.Logf("SingularityRequestID == %q", d.SingularityRequestID)
+	}
+
+	deployableChans := written.Diff(read)
+	pairs := deployableChans.Collect()
+	for _, p := range pairs {
+		if p.Kind() != sous.SameKind {
+			t.Fatalf("read and written states not equal")
+		}
+	}
+
+	assert.Len(t, suite.logs.CallsTo("Fields"), 22)
 	message := suite.logs.CallsTo("Fields")[0].PassedArgs().Get(0).([]logging.EachFielder)
 	// XXX This message deserves its own test
 	logging.AssertMessageFieldlist(t, message, append(
@@ -139,6 +162,7 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 }
 
 func assertSameClusters(t *testing.T, old *sous.State, new *sous.State) {
+	t.Helper()
 	ocs := old.Defs.Clusters
 	ncs := new.Defs.Clusters
 
