@@ -190,6 +190,9 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 		where deployment_id in (
 			select max(deployment_id) from deployments group by cluster_id, component_id
 		)
+		and singularity_deployment_bindings_id in (
+			select max(singularity_deployment_bindings_id) from singularity_deployment_bindings group by cluster_id, component_id
+		)
 		and deployments.lifecycle != 'decommissioned'
 		`,
 		func(rows *sql.Rows) error {

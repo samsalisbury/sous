@@ -48,9 +48,6 @@ func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) erro
 		return err
 	}
 	reportWriting(m.log, start, state, nil)
-	if err := dbBreakpoint1(state); err != nil {
-		panic(err)
-	}
 	return nil
 }
 
@@ -245,8 +242,10 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 	if err := ins.Exec("singularity_deployment_bindings", sqlgen.DoNothing,
 		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
 			fields.Row(func(r sqlgen.RowDef) {
-				compIDFunc(r.CF, dep)
-				clusterIDFunc(r.CF, dep)
+				compID(r, dep)
+				clusterID(r, dep)
+				//compIDFunc(r.CF, dep)
+				//clusterIDFunc(r.CF, dep)
 				r.FD("?", "singularity_request_id", dep.DeployConfig.SingularityRequestID)
 			})
 		})); err != nil {
