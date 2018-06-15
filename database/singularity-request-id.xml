@@ -2,6 +2,9 @@
 <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
   <changeSet author="sam" id="8">
 	<createTable tableName="singularity_deployment_bindings">
+	  <column name="singularity_deployment_bindings_id" type="SERIAL" autoIncrement="true">
+	    <constraints primaryKey="true" />
+	  </column>
 	  <column name="component_id" type="INT">
 	    <constraints foreignKeyName="component_id" />
 	  </column>
@@ -20,7 +23,9 @@
 		baseTableName="singularity_deployment_bindings"
 		constraintName="singularity_deployment_bindings_cluster_id_fkey"
 	    referencedColumnNames="cluster_id" referencedTableName="clusters" />
-	<addPrimaryKey columnNames="component_id, cluster_id"
-		constraintName="pk_singularity_deployment_bindings" tableName="singularity_deployment_bindings" />
+	<!--
+    <addUniqueConstraint columnNames="cluster_id, singularity_request_id" tableName="singularity_deployment_bindings" />
+    <addUniqueConstraint columnNames="cluster_id, component_id" tableName="singularity_deployment_bindings" />
+	-->
   </changeSet>
 </databaseChangeLog>
