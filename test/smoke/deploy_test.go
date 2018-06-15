@@ -252,12 +252,12 @@ func TestSousDeploy(t *testing.T) {
 							return m
 						})
 
-						//client.MustRun(t, "build", nil, "-tag", "1.2.3")
-						//client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
+						client.MustRun(t, "build", nil, "-tag", "1.2.3")
+						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
-						//assertSingularityRequestTypeService(t, f, customID)
-						//assertActiveStatus(t, f, customID)
-						//assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
+						assertSingularityRequestTypeService(t, f, customID)
+						assertActiveStatus(t, f, customID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
 
 					})
 				})
