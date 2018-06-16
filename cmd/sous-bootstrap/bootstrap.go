@@ -1,15 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"net"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/spf13/cobra"
 )
 
 type bootstrapCfg struct {
 	repo, offset, flavor, tag string
+	cluster                   string
 	serverCfgPath             string
 	localListen               string
 }
@@ -25,13 +29,14 @@ var bootstrap = &cobra.Command{
 		Almost all users should not care this tool exists.
 		If you're asking "what's Sous," you're not in the right place, yet.`,
 	PreRun: verifyConfig,
-	Run:    runBootstrap,
+	Run:    wrappedBootstrap,
 }
 
 var bcfg = bootstrapCfg{}
 
 func init() {
-	bootstrap.Flags().StringVarP(&bcfg.serverCfgPath, "server-config", "c", "", "the path to the ephemeral server's config directory")
+	bootstrap.Flags().StringVarP(&bcfg.cluster, "cluster", "c", "", "the Sous logical cluster to bootstrap too")
+	bootstrap.Flags().StringVarP(&bcfg.serverCfgPath, "server-config", "C", "", "the path to the ephemeral server's config directory")
 	bootstrap.Flags().StringVarP(&bcfg.repo, "repo", "r", "", "the repo of the bootstrapped service")
 	bootstrap.Flags().StringVarP(&bcfg.offset, "offset", "o", "", "the offset of the bootstrapped service")
 	bootstrap.Flags().StringVarP(&bcfg.flavor, "flavor", "f", "", "the flavor of the bootstrapped service")
@@ -41,6 +46,7 @@ func init() {
 
 func verifyConfig(*cobra.Command, []string) {
 	for _, pair := range []struct{ f, v string }{
+		{"cluster", bcfg.cluster},
 		{"server-config", bcfg.serverCfgPath},
 		{"repo", bcfg.repo},
 		{"tag", bcfg.tag},
@@ -56,60 +62,81 @@ func verifyConfig(*cobra.Command, []string) {
 	}
 }
 
-func runBootstrap(cmd *cobra.Command, args []string) {
+func wrappedBootstrap(cmd *cobra.Command, args []string) {
+	if err := runBootstrap(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func runBootstrap() error {
 	server, err := runServer()
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	log.Printf("Server pid: %d", server.Process.Pid)
 	defer func(server *exec.Cmd) {
 		server.Process.Kill()
-		if err := server.Wait(); err != nil {
-			log.Fatal(err)
-		}
+		log.Printf("Waiting for server: %v", server.Wait())
 	}(server)
 
-	if err := runDeploy(); err != nil {
-		log.Fatal(err)
+	if err := awaitServer(server); err != nil {
+		return err
 	}
+
+	return runDeploy()
 }
 
 /*
-SOUS_SIBLING_URLS='{"$(EMULATE_CLUSTER)": "http://$(LOCAL_SERVER_LISTEN)"}'
-SOUS_STATE_LOCATION=$$DIR
-SOUS_PG_HOST=$(PGHOST)
-SOUS_PG_PORT=$(PGPORT)
-SOUS_PG_USER=postgres
+From the Makefile local-server
+DIR=$(PWD)/.sous-gdm-temp
+rm -rf "$$DIR"
+git clone $(SOUS_GDM_REPO) $$DIR
+sous server -listen $(LOCAL_SERVER_LISTEN) -autoresolver=false
 */
 
-func runDeploy() error {
-	extraArgs := []string{}
-	if bcfg.offset != "" {
-		extraArgs = append(extraArgs, "-offset", bcfg.offset)
-	}
-	if bcfg.flavor != "" {
-		extraArgs = append(extraArgs, "-flavor", bcfg.flavor)
-	}
-	deploy := exec.Command("sous", append([]string{"deploy", "-repo", bcfg.repo, "-tag", bcfg.tag}, extraArgs...)...)
-	deploy.Env = os.Environ()
-	deploy.Env = append(deploy.Env, "SOUS_SERVER=http://"+bcfg.localListen)
-	deploy.Stdout = os.Stdout
-	deploy.Stderr = os.Stderr
-	return deploy.Run()
-}
-
 func runServer() (*exec.Cmd, error) {
-	/*
-		From the Makefile local-server
-		DIR=$(PWD)/.sous-gdm-temp
-		rm -rf "$$DIR"
-		git clone $(SOUS_GDM_REPO) $$DIR
-		sous server -listen $(LOCAL_SERVER_LISTEN) -autoresolver=false
-	*/
-	server := exec.Command("sous", "server", "-autoresolver=false", "-listen="+bcfg.localListen)
+	server := exec.Command("sous", "server", "-autoresolver=false", "-listen="+bcfg.localListen, "-cluster="+bcfg.cluster)
 	server.Stdout = os.Stdout
 	server.Stderr = os.Stderr
 	server.Env = os.Environ()
 	server.Env = append(server.Env, "SOUS_CONFIG_DIR="+bcfg.serverCfgPath)
+	server.Env = append(server.Env, fmt.Sprintf("SOUS_SIBLING_URLS={\"%s\": \"http://%s\"}", bcfg.cluster, bcfg.localListen))
 
+	log.Printf("> sous %s", server.Args)
 	return server, server.Start()
+}
+
+func awaitServer(server *exec.Cmd) error {
+	for i := 0; i < 120; i++ { //30 seconds
+		c, err := net.Dial("tcp", bcfg.localListen)
+		if err == nil {
+			log.Printf("  %s up and running: %v", bcfg.localListen, c)
+			return nil
+		}
+		if _, ok := err.(*net.OpError); !ok {
+			log.Print(err)
+			return err
+		}
+		time.Sleep(250 * time.Millisecond)
+	}
+	err := fmt.Errorf("Server didn't start in 30 seconds.")
+	log.Print(err)
+	return err
+}
+
+func runDeploy() error {
+	extraArgs := []string{}
+	if bcfg.offset != "" {
+		extraArgs = append(extraArgs, "-offset="+bcfg.offset)
+	}
+	if bcfg.flavor != "" {
+		extraArgs = append(extraArgs, "-flavor="+bcfg.flavor)
+	}
+	deploy := exec.Command("sous", append([]string{"deploy", "-cluster=" + bcfg.cluster, "-repo=" + bcfg.repo, "-tag=" + bcfg.tag}, extraArgs...)...)
+	deploy.Env = os.Environ()
+	deploy.Env = append(deploy.Env, "SOUS_SERVER=http://"+bcfg.localListen)
+	deploy.Stdout = os.Stdout
+	deploy.Stderr = os.Stderr
+	log.Printf("> sous %s", deploy.Args)
+	return deploy.Run()
 }
