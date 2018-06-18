@@ -305,3 +305,19 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f f
 	// This prints the updated manifest in the logs.
 	c.MustRun(t, "manifest get", getSetFlags)
 }
+
+func (c *TestClient) SetSingularityRequestID(t *testing.T, getSetFlags *sousFlags, clusterName, singReqID string) {
+	c.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
+		clusterName := clusterName + c.ClusterSuffix
+		d, ok := m.Deployments[clusterName]
+		if !ok {
+			t.Fatalf("no deployment for %q", clusterName)
+		}
+		c := d.DeployConfig
+		c.SingularityRequestID = singReqID
+		d.DeployConfig = c
+		m.Deployments[clusterName] = d
+		m.Deployments = setMemAndCPUForAll(m.Deployments)
+		return m
+	})
+}
