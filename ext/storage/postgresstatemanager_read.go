@@ -142,17 +142,11 @@ func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, stat
 			); err != nil {
 				return errors.Wrapf(err, "loadClusters")
 			}
-			logging.DebugMsg(log, fmt.Sprintf("Postgres reading: CheckReadyFailureStatuses = %v", failStates))
 			for _, qs := range qnames {
 				c.AllowedAdvisories = append(c.AllowedAdvisories, qs)
 			}
 			for _, s := range failStates {
 				c.Startup.CheckReadyFailureStatuses = append(c.Startup.CheckReadyFailureStatuses, int(s))
-			}
-			logging.DebugMsg(log, fmt.Sprintf("Postgres reading: CheckReadyFailureStatuses = %v -> %v", failStates, c.Startup.CheckReadyFailureStatuses))
-			// XXX NO
-			if len(c.Startup.CheckReadyFailureStatuses) > 15 {
-				panic("failure statuses too long")
 			}
 			clusters[cid] = c
 			return nil
