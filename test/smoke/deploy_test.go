@@ -229,17 +229,38 @@ func TestSousDeploy(t *testing.T) {
 						assertNilHealthCheckOnLatestDeploy(t, f, reqID)
 					})
 
-					t.Run("custom-reqid", func(t *testing.T) {
+					t.Run("custom-reqid-first-deploy", func(t *testing.T) {
 						f := pf.NewIsolatedFixture(t, fixtureConfig)
 						defer f.ReportStatus(t)
 						client := setupProject(t, f, simpleServer)
 						client.MustRun(t, "init", nil, "-kind", "http-service")
+						client.MustRun(t, "build", nil, "-tag", "1.2.3")
 
 						const customID = "some-custom-req-id"
 						client.SetSingularityRequestID(t, nil, "cluster1", customID)
 
-						client.MustRun(t, "build", nil, "-tag", "1.2.3")
 						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+						assertSingularityRequestTypeService(t, f, customID)
+						assertActiveStatus(t, f, customID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
+
+					})
+
+					t.Run("custom-reqid-second-deploy", func(t *testing.T) {
+						f := pf.NewIsolatedFixture(t, fixtureConfig)
+						defer f.ReportStatus(t)
+						client := setupProject(t, f, simpleServer)
+						client.MustRun(t, "init", nil, "-kind", "http-service")
+						client.MustRun(t, "build", nil, "-tag", "1.2.3")
+
+						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+						const customID = "some-custom-req-id"
+						client.SetSingularityRequestID(t, nil, "cluster1", customID)
+
+						// Force to avoid having to make another build.
+						client.MustRun(t, deployCommand, nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
 
 						assertSingularityRequestTypeService(t, f, customID)
 						assertActiveStatus(t, f, customID)
