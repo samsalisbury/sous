@@ -12,6 +12,9 @@ with respect to its command line interface and HTTP interface
 * Both: The client registers the digests for built artifacts to the server.
   This enhances speed and correctness of subsequent deploys.
 
+### Fixed
+* Server: the startup failure status codes arrray was growing without bound.
+
 ## [0.5.102](//github.com/opentable/sous/compare/0.5.101...0.5.102)
 ### Added
 * Server: Send user to singularity for Deployment
