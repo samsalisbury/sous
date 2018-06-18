@@ -157,15 +157,9 @@ func (gsm *GitStateManager) assertOneChange() error {
 	return errors.Errorf("git update touches more than one file: %q", verboseDiff)
 }
 
-var gitBreakpoint = getBreakpoint("GIT", 1)
-
 // WriteState writes sous state to disk, then attempts to push it to Remote.
 // If the push fails, the state is reset and an error is returned.
 func (gsm *GitStateManager) WriteState(s *sous.State, u sous.User) error {
-	//if err := gitBreakpoint(s); err != nil {
-	//	return err
-	//	//panic(err)
-	//}
 	gsm.Lock()
 	defer gsm.Unlock()
 
