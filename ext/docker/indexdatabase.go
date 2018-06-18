@@ -18,7 +18,7 @@ import (
 func (nc *NameCache) captureRepos(db *sql.DB) (repos []string) {
 	res, err := db.Query("select name from docker_repo_name;")
 	if err != nil {
-		nc.logger("captureRepos", logging.WarningLevel, err)
+		logging.WarnMsg(nc.log, "captureRepos", err)
 		return
 	}
 	defer res.Close()
@@ -39,11 +39,35 @@ func revisionString(v semv.Version) string {
 	return v.Format("+")[1:]
 }
 
-func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Quality) error {
+func canonicalizeDockerReference(in string) (reference.Canonical, error) {
 	ref, err := reference.ParseNamed(in)
 	if err != nil {
-		return errors.Wrapf(err, "name: %q", in)
+		return nil, errors.Wrapf(err, "name: %q", in)
 	}
+	cn, hasDigest := ref.(reference.Canonical)
+	if !hasDigest {
+		return nil, errors.Errorf("docker reference lacks digest: %v", ref)
+	}
+	if _, hasTag := cn.(reference.Tagged); hasTag {
+		digest := cn.Digest()
+		if ref, err = reference.ParseNamed(ref.Name()); err != nil {
+			return nil, err
+		}
+
+		if cn, err = reference.WithDigest(ref, digest); err != nil {
+			return nil, err
+		}
+	}
+	return cn, nil
+
+}
+
+func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, extraNames []string, quals []sous.Quality) error {
+	ref, err := canonicalizeDockerReference(in)
+	if err != nil {
+		return err
+	}
+	in = ref.String()
 
 	ctx := context.TODO()
 	tx, err := nc.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
@@ -101,7 +125,7 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 		return err
 	}
 
-	if err := addSearchNames(ins, in, []string{in}); err != nil {
+	if err := addSearchNames(ins, in, append(extraNames, in)); err != nil {
 		return err
 	}
 
@@ -110,6 +134,12 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, quals []sous.Q
 }
 
 func (nc *NameCache) dbAddNames(in string, names []string) error {
+	ref, err := canonicalizeDockerReference(in)
+	if err != nil {
+		return err
+	}
+	in = ref.String()
+
 	ctx := context.TODO()
 	tx, err := nc.DB.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelRepeatableRead, ReadOnly: false})
 	if err != nil {
@@ -127,6 +157,7 @@ func (nc *NameCache) dbAddNames(in string, names []string) error {
 	return tx.Commit()
 }
 
+// n.B. this can only use `in` without canonicalization because all its callers have canonicalized it already.
 func addSearchNames(ins sqlgen.Inserter, in string, names []string) error {
 	return ins.Exec("docker_search_name", sqlgen.DoNothing, func(fs sqlgen.FieldSet) {
 		for _, n := range names {

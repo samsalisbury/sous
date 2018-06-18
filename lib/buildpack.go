@@ -33,12 +33,6 @@ type (
 	// Strpair is a pair of strings.
 	Strpair [2]string
 
-	// BuildArtifact describes the actual built binary Sous will deploy
-	BuildArtifact struct {
-		Name, Type string
-		Qualities  Qualities
-	}
-
 	// A Quality represents a characteristic of a BuildArtifact that needs to be recorded.
 	Quality struct {
 		Name string
@@ -76,7 +70,16 @@ type (
 		Products []*BuildProduct
 	}
 
+	// BuildArtifact describes the actual built binary Sous will deploy
+	BuildArtifact struct {
+		Type            string
+		VersionName     string
+		DigestReference string
+		Qualities       Qualities
+	}
+
 	// A BuildProduct is one of the individual outputs of a buildpack.
+	// XXX why are there BuildArtifacts and BuildProducts instead of a single type?
 	BuildProduct struct {
 		// Source and Kind identify the build - the source inputs and the kind of build product
 		Source SourceID
@@ -94,6 +97,7 @@ type (
 		// VersionName and RevisionName cache computations about how to refer to the image.
 		VersionName  string
 		RevisionName string
+		DigestName   string
 	}
 )
 
@@ -136,20 +140,23 @@ func (bp *BuildProduct) String() string {
 	return str
 }
 
-// NewBuildArtifact creates a new BuildArtifact representing a Docker
-// image.
-func NewBuildArtifact(imageName string, qstrs Strpairs) *BuildArtifact {
-	var qs []Quality
-	for _, qstr := range qstrs {
-		qs = append(qs, Quality{Name: qstr[0], Kind: qstr[1]})
+// BuildArtifact produces an equivalent BuildArtifact
+func (bp BuildProduct) BuildArtifact() BuildArtifact {
+	ba := BuildArtifact{
+		VersionName:     bp.VersionName,
+		DigestReference: bp.DigestName,
+		Type:            bp.Kind,
+		Qualities:       make(Qualities, 0, len(bp.Advisories)),
 	}
-
-	return &BuildArtifact{Name: imageName, Type: "docker", Qualities: qs}
+	for _, adv := range bp.Advisories {
+		ba.Qualities = append(ba.Qualities, Quality{Name: adv, Kind: "advisory"})
+	}
+	return ba
 }
 
 // EachField implements EachFielder on BuildArtifact
 func (ba BuildArtifact) EachField(f logging.FieldReportFn) {
-	f(logging.FieldName("artifact-name"), ba.Name)
+	f(logging.FieldName("artifact-name"), ba.DigestReference)
 	f(logging.FieldName("artifact-type"), ba.Type)
 	ba.Qualities.EachField(f)
 }

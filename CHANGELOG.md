@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
+
+## [Unreleased](//github.com/opentable/sous/compare/0.5.102...HEAD)
+### Added
+* Both: The client registers the digests for built artifacts to the server.
+  This enhances speed and correctness of subsequent deploys.
+
 ## [0.5.102](//github.com/opentable/sous/compare/0.5.101...0.5.102)
 ### Added
 * Server: Send user to singularity for Deployment
@@ -57,7 +63,7 @@ with respect to its command line interface and HTTP interface
 ### Added
 * Client: Added a footer after command execution that if present, will display the request id that
   was passed in the header.
-
+* Client: Runmount strategy, will cache maven builds using a volume mount at docker run time.
 
 ## [0.5.88](//github.com/opentable/sous/compare/0.5.87...0.5.88)
 ### Added

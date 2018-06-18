@@ -9,19 +9,16 @@ import (
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/restful"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-type artifactTestInserter struct {
-	insFunc func(sous.SourceID, string, string, []sous.Quality) error
-}
-
-func (ati *artifactTestInserter) Insert(sid sous.SourceID, in, etag string, qs []sous.Quality) error {
-	return ati.insFunc(sid, in, etag, qs)
-}
-
 func TestPUTArtifact(t *testing.T) {
-	t.Skipf("Disabled until we revise the search index data model")
-	art := sous.NewBuildArtifact("test.reg.com/repo/test", sous.Strpairs{})
+	art := sous.BuildArtifact{
+		VersionName:     "test.reg.com/repo/test:2.2",
+		DigestReference: "test.reg.com/repo/test@sha256:123123123123123123123123123123123",
+		Qualities:       sous.Qualities{},
+	}
 	buf := &bytes.Buffer{}
 	enc := json.NewEncoder(buf)
 	enc.Encode(art)
@@ -35,29 +32,24 @@ func TestPUTArtifact(t *testing.T) {
 		t.Fatal("error parsing query", err)
 	}
 
-	var inSid sous.SourceID
-	var inName string
+	ins, ctrl := sous.NewInserterSpy()
 
 	pah := &PUTArtifactHandler{
 		Request:     req,
 		QueryValues: restful.QueryValues{Values: q},
-		Inserter: &artifactTestInserter{
-			insFunc: func(s sous.SourceID, in, et string, qz []sous.Quality) error {
-				inSid = s
-				inName = in
-				return nil
-			},
-		},
+		Inserter:    ins,
 	}
 
 	_, status := pah.Exchange()
-	if status != 200 {
-		t.Errorf("status should be 200, was %d", status)
-	}
-	if inSid.Location.Repo != "github.com/opentable/test" {
-		t.Errorf("inserted SID repo was %s, should be github.com/opentable/test", inSid.Location.Repo)
-	}
-	if inName != "test.reg.com/repo/test" {
-		t.Errorf("inserted artifact name was %s, should be test.reg.com/repo/test", inName)
-	}
+
+	assert.Equal(t, 200, status, "status")
+
+	require.Len(t, ctrl.CallsTo("Insert"), 1)
+	ic := ctrl.CallsTo("Insert")[0]
+	inSid := ic.PassedArgs().Get(0).(sous.SourceID)
+	inBA := ic.PassedArgs().Get(1).(sous.BuildArtifact)
+
+	assert.Equal(t, "github.com/opentable/test", inSid.Location.Repo, "source id repo")
+	assert.Equal(t, art.DigestReference, inBA.DigestReference, "build artifact digest name")
+	assert.Equal(t, art.VersionName, inBA.VersionName, "build artifact version name")
 }

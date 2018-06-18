@@ -1,0 +1,24 @@
+{
+  "images": [
+    {
+      "image": {
+        "type": "Docker",
+        "from": "docker.otenv.com/sous-otj-run"
+      },
+      "files": [
+        {
+          "source": {
+            "dir": "/app/product"
+          },
+          "dest": {
+            "dir": "/srv"
+          }
+        }
+      ],
+      "exec": [
+        "/srv/bootstrap/launcher"
+      ],
+      "offset": ""
+    }
+  ]
+}

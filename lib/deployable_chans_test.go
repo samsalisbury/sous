@@ -53,9 +53,9 @@ func (nrs *NameResolveTestSuite) makeTestDepPair(prior, post *Deployable) *Deplo
 
 func (nrs *NameResolveTestSuite) makeBuildArtifact() *BuildArtifact {
 	return &BuildArtifact{
-		Type:      "docker",
-		Name:      "asdfasdf",
-		Qualities: []Quality{},
+		Type:            "docker",
+		DigestReference: "asdfasdf",
+		Qualities:       []Quality{},
 	}
 }
 

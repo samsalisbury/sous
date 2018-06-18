@@ -71,7 +71,7 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 	if d.BuildArtifact == nil {
 		return &sous.MissingImageNameError{Cause: fmt.Errorf("Missing BuildArtifact on Deployable")}
 	}
-	dockerImage := d.BuildArtifact.Name
+	dockerImage := d.BuildArtifact.DigestReference
 	clusterURI := d.Deployment.Cluster.BaseURL
 	labels, err := ra.labeller.ImageLabels(dockerImage)
 	if err != nil {
@@ -109,7 +109,7 @@ func (ra *RectiAgent) Deploy(d sous.Deployable, reqID, depID string) error {
 
 func buildDeployRequest(d sous.Deployable, reqID, depID string, metadata map[string]string, log logging.LogSink) (*dtos.SingularityDeployRequest, error) {
 	var depReq swaggering.Fielder
-	dockerImage := d.BuildArtifact.Name
+	dockerImage := d.BuildArtifact.DigestReference
 	r := d.Deployment.DeployConfig.Resources
 	e := d.Deployment.DeployConfig.Env
 	vols := d.Deployment.DeployConfig.Volumes

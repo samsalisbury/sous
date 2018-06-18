@@ -58,7 +58,7 @@ func NewBuildArtifact(imageName string, qstrs strpairs) *sous.BuildArtifact {
 		qs = append(qs, sous.Quality{Name: qstr[0], Kind: qstr[1]})
 	}
 
-	return &sous.BuildArtifact{Name: imageName, Type: "docker", Qualities: qs}
+	return &sous.BuildArtifact{DigestReference: imageName, Type: "docker", Qualities: qs}
 }
 
 func (e NoImageNameFound) Error() string {
@@ -114,7 +114,7 @@ func (nc *NameCache) Warmup(r string) error {
 }
 
 func (nc *NameCache) warmupSingle(sid sous.SourceID) error {
-	in := versionTag(nc.DockerRegistryHost, sid, "", nc.log)
+	in := versionTag(nc.DockerRegistryHost, sid, "", stripRE, nc.log)
 
 	a := NewBuildArtifact(in, strpairs{})
 	gsid, err := nc.GetSourceID(a)
@@ -159,20 +159,17 @@ func meansBodyUnchanged(err error) bool {
 // GetSourceID looks up the source ID for a given image name.
 //  xxx consider un-exporting
 func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
-	in := a.Name
+	in := a.DigestReference
 	var sid sous.SourceID
 
 	messages.ReportLogFieldsMessage("Getting source ID for", logging.ExtraDebug1Level, nc.log, in)
 
 	etag, repo, offset, version, revision, _, err := nc.dbQueryOnName(in)
-	if nif, ok := err.(NoSourceIDFound); ok {
-		nc.logger("Error: no source ID found", logging.ExtraDebug1Level, nif, a)
-	} else if err != nil {
-		nc.logger("GetSourceID error", logging.WarningLevel, err)
-		return sous.SourceID{}, err
-	} else {
-		nc.logger("Found", logging.ExtraDebug1Level, repo, offset, version, etag)
-
+	if _, is := err.(NoSourceIDFound); !is {
+		if err != nil {
+			logging.WarnMsg(nc.log, "GetSourceID error", err)
+			return sous.SourceID{}, err
+		}
 		sid, err = sous.NewSourceID(repo, offset, version)
 		sid.Version.Meta = revision
 		if err != nil {
@@ -182,25 +179,23 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		dockerRef, err := reference.Parse(in)
 
 		if r, isRef := dockerRef.(reference.Digested); err == nil && isRef {
-			nc.logger("Image name has digest: using knows source ID", logging.DebugLevel, r, sid)
+			logging.DebugMsg(nc.log, "Image name has digest: using known source ID", r, sid)
 			return sid, nil
 		}
 	}
 
 	md, err := nc.RegistryClient.GetImageMetadata(in, etag)
-	nc.logger("md and err", logging.ExtraDebug1Level, md, err)
 	if meansBodyUnchanged(err) {
-		nc.logger("Image Name and SourceID", logging.ExtraDebug1Level, in, sid)
 		return sid, nil
 	}
 	if err != nil {
-		nc.logger("No docker image found: "+err.Error(), logging.ExtraDebug1Level, in, sid, err)
+		logging.InfoMsg(nc.log, "No docker image found", err, in, sid, err)
 		return sid, err
 	}
 
 	newSID, err := SourceIDFromLabels(md.Labels)
 	if err != nil {
-		nc.logger("SourceIDFromLabels failed: "+err.Error(), logging.ExtraDebug1Level, in, sid, err)
+		logging.InfoMsg(nc.log, "SourceIDFromLabels failed", err, in, sid, err)
 		return sid, err
 	}
 
@@ -213,13 +208,11 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		_, err := nc.RegistryClient.GetImageMetadata(fullCanon, md.Etag)
 		if err != nil && !meansBodyUnchanged(err) {
 			fullCanon = md.Registry + "/" + md.CanonicalName
-			nc.logger("Docker image not found, leaving as", logging.DebugLevel, md.CanonicalName, nc.DockerRegistryHost, fullCanon)
 		}
 	}
 
-	nc.logger("Recording with etag as canonical for", logging.ExtraDebug1Level, fullCanon, md.Etag, newSID)
-	if err := nc.dbInsert(newSID, fullCanon, md.Etag, qualities); err != nil {
-		nc.logger("Err recording", logging.DebugLevel, fullCanon, err)
+	if err := nc.dbInsert(newSID, fullCanon, md.Etag, md.AllNames, qualities); err != nil {
+		logging.InfoMsg(nc.log, "Err recording", fullCanon, err)
 		return sid, err
 	}
 
@@ -228,14 +221,12 @@ func (nc *NameCache) GetSourceID(a *sous.BuildArtifact) (sous.SourceID, error) {
 		names = append(names, nc.DockerRegistryHost+"/"+n)
 	}
 	err = nc.dbAddNames(nc.DockerRegistryHost+"/"+md.CanonicalName, names)
-	nc.logger("Recorded additional names", logging.ExtraDebug1Level, md.AllNames, fullCanon, nc.DockerRegistryHost, err)
 	if err != nil && mirrored {
 		err = nc.dbAddNames(md.Registry+"/"+md.CanonicalName, names)
-		nc.logger("Recorded mirrored names", logging.ExtraDebug1Level, md.AllNames, md.Registry+"/"+md.CanonicalName, md.Registry, err)
 	}
 
 	reportTableMetrics(nc.log, nc.DB)
-	nc.logger("Images name (updated Source ID:)", logging.DebugLevel, in, newSID)
+	logging.DebugMsg(nc.log, "Images name (updated Source ID:)", in, newSID)
 	return newSID, err
 }
 
@@ -301,8 +292,11 @@ func (nc *NameCache) GetCanonicalName(in string) (string, error) {
 
 // Insert puts a given SourceID/image name pair into the name cache
 // used by Builder at the moment to register after a build
-func (nc *NameCache) Insert(sid sous.SourceID, in, etag string, qs []sous.Quality) error {
-	err := nc.dbInsert(sid, in, etag, qs)
+func (nc *NameCache) Insert(sid sous.SourceID, ba sous.BuildArtifact) error {
+	in := ba.DigestReference
+	vn := ba.VersionName
+	qs := ba.Qualities
+	err := nc.dbInsert(sid, in, "", []string{vn}, qs)
 	reportTableMetrics(nc.log, nc.DB)
 	return err
 }
@@ -321,7 +315,7 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 		messages.ReportLogFieldsMessage("Err looking up repos for location - proceeding with guessed repo", logging.WarningLevel, nc.log, sl, err)
 		repos = []string{}
 	}
-	guessed := fullRepoName(nc.DockerRegistryHost, sl, "", nc.log)
+	guessed := fullRepoName(nc.DockerRegistryHost, sl, "", stripRE, nc.log)
 	knowGuess := false
 
 	messages.ReportLogFieldsMessage("Attempting to harvest repos", logging.ExtraDebug1Level, nc.log, repos)
@@ -424,13 +418,9 @@ func (tm tableMetrics) MetricsTo(sink logging.MetricsSink) {
 	tm.rowCount("docker_image_qualities", sink)
 }
 
-func reportTableMetrics(logger logging.LogSink, db *sql.DB) {
+func reportTableMetrics(ls logging.LogSink, db *sql.DB) {
 	msg := tableMetrics{
 		DB: db,
 	}
-	logging.Deliver(logger, msg)
-}
-
-func (nc *NameCache) logger(msg string, lvl logging.Level, data ...interface{}) {
-	messages.ReportLogFieldsMessage(msg, lvl, nc.log, data...)
+	logging.Deliver(ls, msg)
 }

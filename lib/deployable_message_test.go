@@ -29,7 +29,7 @@ func TestDeployableMessage(t *testing.T) {
 		"sous-deployment-diffs": "No detailed diff because pairwise diff kind is \"same\"",
 		"sous-manifest-id":      "github.com/opentable/example",
 
-		"sous-prior-artifact-name":              "dockerhub.io/example:0.0.1",
+		"sous-prior-artifact-name":              "dockerhub.io/example@sha256:012345678901234567890123456789AB012345678901234567890123456789AB",
 		"sous-prior-artifact-qualities":         "",
 		"sous-prior-artifact-type":              "docker",
 		"sous-prior-checkready-failurestatuses": "",
@@ -57,7 +57,7 @@ func TestDeployableMessage(t *testing.T) {
 		"sous-prior-tag":                        "0.0.1",
 		"sous-prior-volumes":                    "[]",
 
-		"sous-post-artifact-name":              "dockerhub.io/example:0.0.1",
+		"sous-post-artifact-name":              "dockerhub.io/example@sha256:012345678901234567890123456789AB012345678901234567890123456789AB",
 		"sous-post-artifact-qualities":         "",
 		"sous-post-artifact-type":              "docker",
 		"sous-post-checkready-failurestatuses": "",

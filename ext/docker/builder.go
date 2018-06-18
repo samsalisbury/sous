@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/nyarly/inlinefiles/templatestore"
@@ -124,33 +125,36 @@ func (b *Builder) metadataDockerfile(bp *sous.BuildProduct) io.Reader {
 
 // pushToRegistry sends the built image to the registry
 func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
-	verr := b.SourceShell.Run("docker", "push", bp.VersionName)
-	rerr := b.SourceShell.Run("docker", "push", bp.RevisionName)
-
-	if verr == nil {
-		return rerr
+	if err := b.SourceShell.Run("docker", "push", bp.VersionName); err != nil {
+		return err
 	}
-	return verr
+	if err := b.SourceShell.Run("docker", "push", bp.RevisionName); err != nil {
+		return err
+	}
+	// hilariously, Docker 18.03 returns <none> for the digest if you just say `docker images <tagged-ref>`
+	// Thus, this arcane incantation.
+	// Oh, and the Digest is never computed until `docker push` happens.
+	output, err := b.SourceShell.Stdout("docker", "inspect", "--format='{{index .RepoDigests 0}}'", bp.VersionName)
+	if err == nil {
+		return err
+	}
+	bp.DigestName = strings.Trim(output, " \n\t\r")
+	return nil
 }
 
 // recordName inserts metadata about the newly built image into our local name cache
 func (b *Builder) recordName(bp *sous.BuildProduct) error {
 	sv := bp.Source
-	in := bp.VersionName
-	b.SourceShell.ConsoleEcho(fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", in, sv.String()))
-	var qs []sous.Quality
-	for _, adv := range bp.Advisories {
-		qs = append(qs, sous.Quality{Name: adv, Kind: "advisory"})
-	}
-	return b.ImageMapper.Insert(sv, in, "", qs)
+	logging.DebugConsole(b.log, fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", bp.DigestName, sv.String()))
+	return b.ImageMapper.Insert(sv, bp.BuildArtifact())
 }
 
 // VersionTag computes an image tag from a SourceVersion's version
 func (b *Builder) VersionTag(v sous.SourceID, kind string) string {
-	return versionTag(b.DockerRegistryHost, v, kind, b.log)
+	return versionTag(b.DockerRegistryHost, v, kind, stripRE, b.log)
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
 func (b *Builder) RevisionTag(v sous.SourceID, rev string, kind string, time time.Time) string {
-	return revisionTag(b.DockerRegistryHost, v, rev, kind, time, b.log)
+	return revisionTag(b.DockerRegistryHost, v, rev, kind, time, stripRE, b.log)
 }

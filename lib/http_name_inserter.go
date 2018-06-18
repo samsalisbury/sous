@@ -47,7 +47,7 @@ func (hni *HTTPNameInserter) getClients() error {
 }
 
 // Insert implements Inserter for HTTPNameInserter
-func (hni *HTTPNameInserter) Insert(sid SourceID, in, etag string, qs []Quality) error {
+func (hni *HTTPNameInserter) Insert(sid SourceID, ba BuildArtifact) error {
 	if err := hni.getClients(); err != nil {
 		return err
 	}
@@ -58,8 +58,7 @@ func (hni *HTTPNameInserter) Insert(sid SourceID, in, etag string, qs []Quality)
 		wg.Add(1)
 		go func(client restful.HTTPClient) {
 			defer wg.Done()
-			art := &BuildArtifact{Name: in, Type: "docker", Qualities: qs}
-			if _, err := client.Create("./artifact", simplifyQV(sid.QueryValues()), art, nil); err != nil {
+			if _, err := client.Create("./artifact", simplifyQV(sid.QueryValues()), ba, nil); err != nil {
 				errs <- err
 			}
 		}(cl)
