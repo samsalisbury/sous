@@ -279,14 +279,15 @@ func TestSousDeploy(t *testing.T) {
 						customID2 := "some-custom-req-id2" + f.ClusterSuffix
 
 						client.SetSingularityRequestID(t, nil, "cluster1", customID1)
-
 						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
 						assertSingularityRequestTypeService(t, f, customID1)
 						assertActiveStatus(t, f, customID1)
 						assertNonNilHealthCheckOnLatestDeploy(t, f, customID1)
 
 						client.SetSingularityRequestID(t, nil, "cluster1", customID2)
-						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
+						client.MustRun(t, deployCommand, nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
+
 						assertSingularityRequestTypeService(t, f, customID2)
 						assertActiveStatus(t, f, customID2)
 						assertNonNilHealthCheckOnLatestDeploy(t, f, customID2)
