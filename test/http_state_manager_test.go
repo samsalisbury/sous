@@ -13,6 +13,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
 )
 
 func buildManifest(cluster, repo, version string) *sous.Manifest {
@@ -47,11 +48,13 @@ func TestWriteState(t *testing.T) {
 	state := &sous.State{}
 	state.SetEtag("qwertybeatsdvorak")
 	state.Defs.Clusters = make(sous.Clusters)
-	state.Defs.Clusters["test-cluster"] = &sous.Cluster{Name: "test-cluster"}
+	state.Defs.Clusters["test-cluster"] = sous.ClusterFixture("test-cluster")
+	state.Defs.Clusters["test-cluster"].AllowedAdvisories = state.Defs.Clusters["test-cluster"].AllowedAdvisories[2:]
 
 	// Current issue: "incomplete" manifests never complete to get updates
 	// There aren't any deploy specs for extra, which mimics this bug
-	state.Defs.Clusters["extra-cluster"] = &sous.Cluster{Name: "cluster-cluster"}
+	state.Defs.Clusters["extra-cluster"] = sous.ClusterFixture("cluster-cluster")
+	state.Defs.Clusters["extra-cluster"].AllowedAdvisories = state.Defs.Clusters["extra-cluster"].AllowedAdvisories[4:6]
 
 	state.Manifests = sous.NewManifests()
 	state.Manifests.Add(steadyManifest)
@@ -130,6 +133,9 @@ func TestWriteState(t *testing.T) {
 	ch.Deployments["test-cluster"] = changedDeployment
 	originalState.Manifests.Set(ch.ID(), ch)
 
+	originalState.Defs.Clusters["test-cluster"].AllowedAdvisories = sous.AllAdvisoryStrings()
+	originalState.Defs.Clusters["extra-cluster"].AllowedAdvisories = sous.AllAdvisoryStrings()
+
 	t.Logf("state after update: %#v", originalState)
 
 	var testUser = sous.User{Name: "Test User"}
@@ -170,5 +176,26 @@ func TestWriteState(t *testing.T) {
 	actualVersion := c.Deployments["test-cluster"].Version.String()
 	if actualVersion != expectedVersion {
 		t.Errorf("Server's version of changed state was %q; want %q", actualVersion, expectedVersion)
+	}
+
+	assertSameClusters(t, originalState, state)
+}
+
+func assertSameClusters(t *testing.T, old *sous.State, new *sous.State) {
+	ocs := old.Defs.Clusters
+	ncs := new.Defs.Clusters
+
+	onames := ocs.Names()
+	nnames := ncs.Names()
+
+	assert.ElementsMatch(t, onames, nnames)
+
+	t.Logf("Cluster names: %q", onames)
+
+	for _, n := range onames {
+		oc, nc := ocs[n], ncs[n]
+
+		assert.ElementsMatch(t, oc.AllowedAdvisories, nc.AllowedAdvisories)
+		t.Logf("Cluster advisories: %q: %q", n, oc.AllowedAdvisories)
 	}
 }
