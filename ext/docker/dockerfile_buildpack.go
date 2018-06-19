@@ -51,7 +51,8 @@ func NewDockerfileBuildpack(ls logging.LogSink) *DockerfileBuildpack {
 	return &DockerfileBuildpack{log: ls}
 }
 
-var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
+// omnis mutatum
+// var successfulBuildRE = regexp.MustCompile(`Successfully built (\w+)`)
 
 // Detect detects if c has a Dockerfile or not.
 func (d *DockerfileBuildpack) Detect(c *sous.BuildContext) (*sous.DetectResult, error) {
@@ -97,20 +98,18 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, er
 		cmd = append(cmd, "--build-arg", fmt.Sprintf("%s=%s", AppRevisionBuildArg, c.RevID()))
 	}
 
+	itag := intermediateTag()
+	cmd = append(cmd, "-t", itag)
+
 	cmd = append(cmd, offset)
 
-	output, err := c.Sh.Stdout("docker", cmd...)
+	_, err := c.Sh.Stdout("docker", cmd...)
 	if err != nil {
 		return nil, err
 	}
 
-	match := successfulBuildRE.FindStringSubmatch(string(output))
-	if match == nil {
-		return nil, fmt.Errorf("Couldn't find container id in:\n%s", output)
-	}
-
 	return &sous.BuildResult{
 		Elapsed:  time.Since(start),
-		Products: []*sous.BuildProduct{{ID: match[1]}},
+		Products: []*sous.BuildProduct{{ID: itag}},
 	}, nil
 }

@@ -27,7 +27,7 @@ func TestSplitBuilder_BuildBuild(t *testing.T) {
 	err := builder.buildBuild()
 	assert.NoError(t, err)
 
-	assert.Equal(t, builder.buildImageID, "cabba9edeadbeef")
+	assert.Regexp(t, `^sousintermediate.*`, builder.buildImageID)
 }
 
 func TestSplitBuilder_SetupTempdir(t *testing.T) {
