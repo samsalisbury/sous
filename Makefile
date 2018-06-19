@@ -192,7 +192,7 @@ build-debug-darwin:
 	@if [[ $(SOUS_VERSION) != *"debug" ]]; then echo 'missing debug at the end of semv, please add'; exit -1; fi
 	echo "building debug version" $(SOUS_VERSION) "to" $(BIN_DIR)
 	mkdir -p $(BIN_DIR)
-	export OUTPUT_BIN=artifacts/bin/sous-darwin-amd64 GOOS=linux GOARCH=amd64; $(DOCKER_BUILD_RELEASE)
+	export OUTPUT_BIN=artifacts/bin/sous-darwin-amd64 GOOS=darwin GOARCH=amd64; $(DOCKER_BUILD_RELEASE)
 	mv ./artifacts/bin/sous-darwin-amd64 ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
 
 install-debug-linux: build-debug-linux

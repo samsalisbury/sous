@@ -269,12 +269,12 @@ func product(ctx sous.BuildContext, builder *runnableBuilder) *sous.BuildProduct
 	sid.Location.Dir = builder.RunSpec.Offset
 
 	bp := &sous.BuildProduct{
-		Source:     sid,
-		Kind:       builder.RunSpec.Kind,
-		ID:         builder.deployImageID, // was ImageID
-		Advisories: advisories,
-		// VersionName:  builder.versionName(),
-		// RevisionName: builder.revisionName(),
+		Source:       sid,
+		Kind:         builder.RunSpec.Kind,
+		ID:           builder.deployImageID, // was ImageID
+		Advisories:   advisories,
+		VersionName:  versionNameLocal(ctx),
+		RevisionName: revisionNameLocal(ctx),
 	}
 
 	return bp
