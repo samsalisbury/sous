@@ -185,8 +185,6 @@ func TestSousDeploy(t *testing.T) {
 						client.MustFail(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "2")
 						f.Singularity.UnpauseRequestForDeployment(t, did)
 
-						f.KnownToFailHere(t)
-
 						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "3")
 						assertActiveStatus(t, f, did)
 					})
