@@ -93,16 +93,14 @@ func (rb *runnableBuilder) build() error {
 	sh.LongRunning(true)
 	sh.CD(rb.buildDir())
 
-	out, err := sh.Stdout("docker", "build", ".")
+	itag := intermediateTag()
+
+	_, err := sh.Stdout("docker", "build", "-t", itag, ".")
 	if err != nil {
 		return err
 	}
 
-	match := successfulBuildRE.FindStringSubmatch(string(out))
-	if match == nil {
-		return fmt.Errorf("Couldn't find container id in:\n%s", out)
-	}
-	rb.deployImageID = match[1]
+	rb.deployImageID = itag
 
 	return nil
 }
