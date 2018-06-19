@@ -236,7 +236,7 @@ func TestSousDeploy(t *testing.T) {
 						client.MustRun(t, "init", nil, "-kind", "http-service")
 						client.MustRun(t, "build", nil, "-tag", "1.2.3")
 
-						const customID = "some-custom-req-id"
+						customID := "some-custom-req-id" + f.ClusterSuffix
 						client.SetSingularityRequestID(t, nil, "cluster1", customID)
 
 						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
@@ -256,7 +256,7 @@ func TestSousDeploy(t *testing.T) {
 
 						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
-						const customID = "some-custom-req-id"
+						customID := "some-custom-req-id" + f.ClusterSuffix
 						client.SetSingularityRequestID(t, nil, "cluster1", customID)
 
 						// Force to avoid having to make another build.
