@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.102...HEAD)
+## [0.5.104](//github.com/opentable/sous/compare/0.5.102...0.5.104)
 ### Added
 * Both: The client registers the digests for built artifacts to the server.
   This enhances speed and correctness of subsequent deploys.
