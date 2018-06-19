@@ -16,6 +16,7 @@ with respect to its command line interface and HTTP interface
 
 ### Fixed
 * Client: Builds are managed more reliably interenally, using randomized intermediate Docker tags.
+* Server: the startup failure status codes arrray was growing without bound.
 
 ## [0.5.102](//github.com/opentable/sous/compare/0.5.101...0.5.102)
 ### Added

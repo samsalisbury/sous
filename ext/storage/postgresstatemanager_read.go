@@ -108,44 +108,46 @@ func loadMetadataDefs(context context.Context, log logging.LogSink, tx *sql.Tx, 
 func loadClusters(context context.Context, log logging.LogSink, tx *sql.Tx, state *sous.State) error {
 	clusters := make(map[int]*sous.Cluster)
 	if err := loadTable(context, log, tx, "clusters",
-		`select
-		clusters.cluster_id, clusters.name, clusters.kind, "base_url",
-		"crdef_skip", "crdef_connect_delay", "crdef_timeout", "crdef_connect_interval",
-		"crdef_proto", "crdef_path", "crdef_port_index", "crdef_failure_statuses",
-		"crdef_uri_timeout", "crdef_interval", "crdef_retries",
-		qualities.name
+		`with advisories as (
+			select cluster_id,
+				array_agg(qualities.name order by qualities.name) as names
+			from
+				qualities
+				left join cluster_qualities using (quality_id)
+			where
+				kind = 'advisory' group by cluster_id
+		)
+		select
+			clusters.cluster_id, clusters.name, clusters.kind, "base_url",
+			"crdef_skip", "crdef_connect_delay", "crdef_timeout", "crdef_connect_interval",
+			"crdef_proto", "crdef_path", "crdef_port_index", "crdef_failure_statuses",
+			"crdef_uri_timeout", "crdef_interval", "crdef_retries",
+			advisories.names
 		from
 			clusters
-			left join cluster_qualities using (cluster_id)
-			left join qualities
-		    on cluster_qualities.quality_id = qualities.quality_id
-				and qualities.kind = 'advisory';
+			left join advisories using(cluster_id);
 		`,
 		func(rows *sql.Rows) error {
 			var cid int
-			c := &sous.Cluster{}
-			var qname sql.NullString
+			c := new(sous.Cluster)
+			qnames := make(pq.StringArray, 10)
 			failStates := make(pq.Int64Array, 10)
 			if err := rows.Scan(
 				&cid, &c.Name, &c.Kind, &c.BaseURL,
 				&c.Startup.SkipCheck, &c.Startup.ConnectDelay, &c.Startup.Timeout, &c.Startup.ConnectInterval,
 				&c.Startup.CheckReadyProtocol, &c.Startup.CheckReadyURIPath, &c.Startup.CheckReadyPortIndex, &failStates,
 				&c.Startup.CheckReadyURITimeout, &c.Startup.CheckReadyInterval, &c.Startup.CheckReadyRetries,
-				&qname,
+				&qnames,
 			); err != nil {
 				return errors.Wrapf(err, "loadClusters")
 			}
-			if newC, has := clusters[cid]; has {
-				c = newC
-			} else {
-				clusters[cid] = c
-			}
-			if qname.Valid {
-				c.AllowedAdvisories = append(c.AllowedAdvisories, qname.String)
+			for _, qs := range qnames {
+				c.AllowedAdvisories = append(c.AllowedAdvisories, qs)
 			}
 			for _, s := range failStates {
 				c.Startup.CheckReadyFailureStatuses = append(c.Startup.CheckReadyFailureStatuses, int(s))
 			}
+			clusters[cid] = c
 			return nil
 		}); err != nil {
 		return err
