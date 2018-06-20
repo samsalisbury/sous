@@ -12,6 +12,8 @@ with respect to its command line interface and HTTP interface
 * Client: The client wasn't sending back the global state "defs" configuration,
   which leads to an obscure edge case that prevents the switch to Postgres
   based storage.
+* Both: building with the `netcgo` build tag to ensure system DNS resolver is
+  used instead of the Go native resolver.
 
 ## [0.5.104](//github.com/opentable/sous/compare/0.5.102...0.5.104)
 ### Added
