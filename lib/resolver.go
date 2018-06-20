@@ -155,6 +155,11 @@ func (r *Resolver) Begin(intended Deployments, clusters Clusters) *ResolveRecord
 			return nil
 		})
 
-		logger.Wait()
+		// Remember: code inside of performPhase *might not be run* if the prior phase returns an error!
+		//   For discussion: maybe instead the recorder should just have "phase()", "errored()" and "complete()" methods,
+		//   and deal with early exits in the usual if err != nil way.
+		if logger != nil {
+			logger.Wait()
+		}
 	})
 }
