@@ -137,7 +137,7 @@ SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
 GO_TEST_PATHS ?= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
 
-DOCKER_BUILD_RELEASE := docker run --rm -e GOOS=$$GOOS -e GOARCH=$$GOARCH -e OUTPUT_BIN=$$OUTPUT_BIN -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 bash -c "( go build -o $$OUTPUT_BIN -ldflags $(FLAGS) && chown $(USER_ID):$(GROUP_ID) $$OUTPUT_BIN )"
+DOCKER_BUILD_RELEASE := docker run --rm -e GOOS=$$GOOS -e GOARCH=$$GOARCH -e OUTPUT_BIN=$$OUTPUT_BIN -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 bash -c "( go build -tags netcgo -o $$OUTPUT_BIN -ldflags $(FLAGS) && chown $(USER_ID):$(GROUP_ID) $$OUTPUT_BIN )"
 
 FIND_EXCLUSIONS := -type d -name \\.git -prune -o -type d -name \\.smoketest -prune
 
@@ -236,7 +236,7 @@ gitlog:
 install-dev:
 	brew uninstall opentable/public/sous || true
 	rm "$$(which sous)" || true
-	go install -ldflags "-X main.VersionString=$(DEV_VERSION)"
+	go install -tags=netcgo -ldflags "-X main.VersionString=$(DEV_VERSION)"
 	echo "Now run 'hash -r && sous version' to make sure you are using the dev version of sous."
 
 homebrew:
@@ -342,7 +342,7 @@ test-unit-base: $(COVER_DIR) $(GO_FILES) postgres-start | postgres-clean # | is 
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
 	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
-		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
+	  -tags=netcgo -covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
 		-timeout 12m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
 
 .PHONY: test-unit
@@ -364,11 +364,11 @@ test-integration: setup-containers postgres-start
 	@echo
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
-	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration --tags=integration $(TEST_TEAMCITY)
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration --tags='integration netcgo' $(TEST_TEAMCITY)
 	@date
 
 $(SMOKE_TEST_BINARY):
-	go build -o $@ -tags smoke -ldflags "-X main.VersionString=$(DEV_VERSION)"
+	go build -o $@ -tags 'smoke netcgo' -ldflags "-X main.VersionString=$(DEV_VERSION)"
 
 $(SMOKE_TEST_DATA_DIR):
 	mkdir -p $@
@@ -378,7 +378,7 @@ $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
 
 .PHONY: test-smoke-compiles
 test-smoke-compiles: ## Checks that the smoke tests compile.
-	@go test -c -o /dev/null -tags smoke ./test/smoke && echo Smoke tests compiled.
+	@go test -c -o /dev/null -tags 'smoke netcgo' ./test/smoke && echo Smoke tests compiled.
 
 .PHONY: test-smoke-all
 test-smoke-all: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
@@ -393,7 +393,7 @@ test-smoke-all: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LIN
 	SOUS_QA_DESC=$(QA_DESC) \
 	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
 	SOUS_TERSE_LOGGING=$(SOUS_TERSE_LOGGING) \
-	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
+	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags 'smoke netcgo' -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
 .PHONY: test-smoke
 test-smoke:
@@ -412,7 +412,7 @@ setup-containers: $(QA_DESC)
 test-cli: setup-containers linux-build
 	rm -rf integration/raw_shell_output/0*
 	@date
-	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
+	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 20m ./integration --tags='commandline netcgo'
 
 
 $(COVER_DIR):
