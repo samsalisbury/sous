@@ -193,10 +193,10 @@ func (rr *ResolveRecorder) earlyExit() (yes bool) {
 // resolve.
 func (rr *ResolveRecorder) performPhase(name string, f func() error) {
 	if rr.earlyExit() {
-		messages.ReportLogFieldsMessage("Skipping phase", logging.DebugLevel, rr.logSink, name, rr.err)
+		logging.Info(rr.logSink, "Skipping phase", name, rr.err)
 		return
 	}
-	messages.ReportLogFieldsMessage("Performing phase", logging.DebugLevel, rr.logSink, name)
+	logging.Debug(rr.logSink, "Performing phase", name)
 	rr.setPhase(name)
 	if err := f(); err != nil {
 		rr.doneWithError(err)
@@ -205,7 +205,6 @@ func (rr *ResolveRecorder) performPhase(name string, f func() error) {
 
 // setPhase sets the phase of this resolve status.
 func (rr *ResolveRecorder) setPhase(phase string) {
-	messages.ReportLogFieldsMessage("Setting phase", logging.ExtraDebug1Level, rr.logSink, phase)
 	rr.write(func() {
 		rr.status.Phase = phase
 	})
@@ -220,34 +219,21 @@ func (rr *ResolveRecorder) Phase() string {
 
 // write encapsulates locking this ResolveRecorder for writing using f.
 func (rr *ResolveRecorder) write(f func()) {
-	name, uuid := logging.RetrieveMetaData(f)
-	messages.ReportLogFieldsMessage("Waiting to Lock resolverecorder for write", logging.ExtraDebug1Level, rr.logSink, name, uuid)
 	rr.Lock()
-	messages.ReportLogFieldsMessage("Locked resolverecorder for write", logging.ExtraDebug1Level, rr.logSink, name, uuid)
-	defer func() {
-		rr.Unlock()
-		messages.ReportLogFieldsMessage("Unlocked resolverecorder for write", logging.ExtraDebug1Level,
-			rr.logSink, name, uuid)
-	}()
+	defer rr.Unlock()
 	f()
 }
 
 // read encapsulates locking this ResolveRecorder for reading using f.
 func (rr *ResolveRecorder) read(f func()) {
-	name, uuid := logging.RetrieveMetaData(f)
-	messages.ReportLogFieldsMessage("Waiting to Lock resolverecorder for read", logging.ExtraDebug1Level, rr.logSink, name, uuid)
 	rr.RLock()
-	messages.ReportLogFieldsMessage("Locked resolverecorder for read", logging.ExtraDebug1Level, rr.logSink, name, uuid)
-	defer func() {
-		rr.RUnlock()
-		messages.ReportLogFieldsMessage("Unlocked resolverecorder for read", logging.ExtraDebug1Level,
-			rr.logSink, name, uuid)
-	}()
+	defer rr.RUnlock()
 	f()
 }
 
 // doneWithError marks the resolution as finished with an error.
 func (rr *ResolveRecorder) doneWithError(err error) {
+	logging.Warn(rr.logSink, "Error during resolve", rr.Phase(), err)
 	rr.write(func() {
 		rr.err = err
 	})
