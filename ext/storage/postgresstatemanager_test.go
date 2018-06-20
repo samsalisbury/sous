@@ -100,7 +100,6 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 		}
 	}
 
-	assert.Len(t, suite.logs.CallsTo("Fields"), 22)
 	message := suite.logs.CallsTo("Fields")[0].PassedArgs().Get(0).([]logging.EachFielder)
 	// XXX This message deserves its own test
 	logging.AssertMessageFieldlist(t, message, append(
@@ -175,9 +174,7 @@ func assertSameClusters(t *testing.T, old *sous.State, new *sous.State) {
 
 	for _, n := range onames {
 		oc, nc := ocs[n], ncs[n]
-
 		assert.ElementsMatch(t, oc.AllowedAdvisories, nc.AllowedAdvisories)
-		t.Logf("Cluster advisories: %q: \n\t\tOld: %q \n\t\tNew: %q", n, oc.AllowedAdvisories, nc.AllowedAdvisories)
 	}
 }
 

@@ -168,7 +168,8 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 		// results in its own row. Maybe that could be reduced?
 		`select
 			"repo", "dir", "flavor", components.kind,
-			"versionstring", "num_instances", "schedule_string", "singularity_deployment_bindings"."singularity_request_id",
+			"versionstring", "num_instances", "schedule_string",
+			coalesce("singularity_deployment_bindings"."singularity_request_id", ''),
 			"cr_skip", "cr_connect_delay", "cr_timeout", "cr_connect_interval",
 			"cr_proto", "cr_path", "cr_port_index", "cr_failure_statuses",
 			"cr_uri_timeout", "cr_interval", "cr_retries",
@@ -188,12 +189,9 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 			left join resources using (deployment_id)
 			left join metadatas using (deployment_id)
 			left join volumes using (deployment_id)
-			join singularity_deployment_bindings using (component_id, cluster_id)
+			left join singularity_deployment_bindings using (singularity_deployment_bindings_id)
 		where deployment_id in (
 			select max(deployment_id) from deployments group by cluster_id, component_id
-		)
-		and singularity_deployment_bindings_id in (
-			select max(singularity_deployment_bindings_id) from singularity_deployment_bindings group by cluster_id, component_id
 		)
 		and deployments.lifecycle != 'decommissioned'
 		`,
