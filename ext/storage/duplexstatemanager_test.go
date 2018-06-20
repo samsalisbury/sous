@@ -31,6 +31,12 @@ func TestDuplexWrite(t *testing.T) {
 	require.NoError(t, err)
 	assertStatesEqual(t, s, pstate)
 
+	gstate, err := gsm.ReadState()
+	require.NoError(t, err)
+	assertStatesEqual(t, s, gstate)
+
+	assertStatesEqual(t, gstate, pstate)
+
 	remoteAbs, err := filepath.Abs("testdata/remote")
 	if err != nil {
 		t.Fatal(err)
@@ -72,6 +78,8 @@ func TestDuplexReadState(t *testing.T) {
 
 func assertStatesEqual(t *testing.T, oldState, newState *sous.State) {
 	t.Helper()
+
+	assertSameClusters(t, oldState, newState)
 
 	oldD, err := oldState.Deployments()
 	require.NoError(t, err)

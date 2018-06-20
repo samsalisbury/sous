@@ -12,6 +12,11 @@ with respect to its command line interface and HTTP interface
   Note that changing this any time after the first deployment results in an
   orphaned Singularity request.
 
+### Fixed
+* Client: The client wasn't sending back the global state "defs" configuration,
+  which leads to an obscure edge case that prevents the switch to Postgres
+  based storage.
+
 ## [0.5.104](//github.com/opentable/sous/compare/0.5.102...0.5.104)
 ### Added
 * Both: The client registers the digests for built artifacts to the server.

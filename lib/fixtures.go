@@ -30,6 +30,22 @@ func seq(name string) int {
 	return 0
 }
 
+// ClusterFixture returns a fixtured Cluster.
+func ClusterFixture(name string) *Cluster {
+	return &Cluster{
+		Name:    name,
+		Kind:    "singularity",
+		BaseURL: fmt.Sprintf("http://%s-singularity.example.com", name),
+		Env: map[string]Var{
+			"ENV_NAME": Var(name),
+		},
+		Startup: Startup{
+			SkipCheck: true,
+		},
+		AllowedAdvisories: AllAdvisoryStrings(),
+	}
+}
+
 // DeployConfigFixture returns a fixtured DeployConfig. There are no defined stereotypes of this fixture yet.
 func DeployConfigFixture(name string) DeployConfig {
 	switch name {

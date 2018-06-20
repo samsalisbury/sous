@@ -13,8 +13,9 @@ type (
 	// An HTTPStateManager gets state from a Sous server and transmits updates
 	// back to that server.
 	HTTPStateManager struct {
-		cached   *State
-		gdmState restful.Updater
+		cached    *State
+		defsState restful.Updater
+		gdmState  restful.Updater
 		restful.HTTPClient
 		tid             TraceID
 		clusterClients  map[string]restful.HTTPClient
@@ -73,6 +74,10 @@ func (hsm *HTTPStateManager) WriteState(s *State, u User) error {
 
 	wds, err := s.Deployments()
 	if err != nil {
+		return err
+	}
+
+	if err := hsm.putDefs(&s.Defs); err != nil {
 		return err
 	}
 
@@ -151,8 +156,17 @@ func (hsm *HTTPStateManager) WriteCluster(clusterName string, deps Deployments, 
 
 func (hsm *HTTPStateManager) getDefs() (Defs, error) {
 	ds := Defs{}
-	_, err := hsm.Retrieve("./defs", nil, &ds, hsm.User.HTTPHeaders())
-	return ds, errors.Wrapf(err, "getting defs")
+	updater, err := hsm.Retrieve("./defs", nil, &ds, hsm.User.HTTPHeaders())
+	if err != nil {
+		return ds, errors.Wrapf(err, "getting defs")
+	}
+	hsm.defsState = updater
+	return ds, nil
+}
+
+func (hsm *HTTPStateManager) putDefs(d *Defs) error {
+	_, err := hsm.defsState.Update(d, hsm.User.HTTPHeaders())
+	return errors.Wrapf(err, "putting Defs")
 }
 
 func (hsm *HTTPStateManager) getManifests(defs Defs) (Manifests, error) {

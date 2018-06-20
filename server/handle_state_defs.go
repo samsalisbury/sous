@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -12,12 +13,20 @@ import (
 type (
 	// StateDefResource defines the /defs endpoint
 	StateDefResource struct {
+		userExtractor
 		context ComponentLocator
 	}
 
 	// StateDefGetHandler handles GET /defs.
 	StateDefGetHandler struct {
 		*sous.State
+	}
+
+	// StateDefPutHandler handles PUT /defs.
+	StateDefPutHandler struct {
+		sous.StateManager
+		req  *http.Request
+		user ClientUser
 	}
 )
 
@@ -33,7 +42,39 @@ func (sdr *StateDefResource) Get(*restful.RouteMap, logging.LogSink, http.Respon
 	}
 }
 
+// Put implements restful.Putter on StateDefResource (and therefore makes it
+// handle PUT requests.)
+func (sdr *StateDefResource) Put(_ *restful.RouteMap, _ logging.LogSink, _ http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	return &StateDefPutHandler{
+		StateManager: sdr.context.StateManager,
+		req:          req,
+		user:         sdr.GetUser(req),
+	}
+}
+
 // Exchange implements restful.Exchanger on StateDefGetHandler.
 func (sdg *StateDefGetHandler) Exchange() (interface{}, int) {
 	return sdg.State.Defs, 200
+}
+
+// Exchange implements restful.Exchanger on StateDefGetHandler.
+func (sdp *StateDefPutHandler) Exchange() (interface{}, int) {
+	defs := sous.Defs{}
+	dec := json.NewDecoder(sdp.req.Body)
+	dec.Decode(&defs)
+
+	state, err := sdp.StateManager.ReadState()
+	if err != nil {
+		msg := "Error loading state from storage"
+		return msg, http.StatusInternalServerError
+	}
+
+	state.Defs = defs
+	err = sdp.StateManager.WriteState(state, sous.User(sdp.user))
+	if err != nil {
+		msg := "Error recording state to storage"
+		return msg, http.StatusInternalServerError
+	}
+
+	return nil, 204
 }

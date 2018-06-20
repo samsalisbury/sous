@@ -476,6 +476,9 @@ postgres-stop:
 postgres-connect:
 	psql -h $(PGHOST) -p $(PGPORT) --username=postgres $(DB_NAME)
 
+postgres-schema:
+	pg_dump --no-owner --no-privileges --no-acl --schema-only -h $(PGHOST) -p $(PGPORT) --username=postgres $(DB_NAME)
+
 postgres-validate-schema:
 	liquibase $(LIQUIBASE_FLAGS) validate
 
