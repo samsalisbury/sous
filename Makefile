@@ -137,6 +137,8 @@ SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
 GO_TEST_PATHS ?= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
 
+
+CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master --dest $(BIN_DIR) --ldflags $(FLAGS)
 DOCKER_BUILD_RELEASE := docker run --rm -e GOOS=$$GOOS -e GOARCH=$$GOARCH -e OUTPUT_BIN=$$OUTPUT_BIN -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 bash -c "( go build -tags netcgo -o $$OUTPUT_BIN -ldflags $(FLAGS) && chown $(USER_ID):$(GROUP_ID) $$OUTPUT_BIN )"
 
 FIND_EXCLUSIONS := -type d -name \\.git -prune -o -type d -name \\.smoketest -prune
@@ -188,8 +190,8 @@ build-debug-darwin:
 	@if [[ $(SOUS_VERSION) != *"debug" ]]; then echo 'missing debug at the end of semv, please add'; exit -1; fi
 	echo "building debug version" $(SOUS_VERSION) "to" $(BIN_DIR)
 	mkdir -p $(BIN_DIR)
-	export OUTPUT_BIN=artifacts/bin/sous-darwin-amd64 GOOS=darwin GOARCH=amd64; $(DOCKER_BUILD_RELEASE)
-	mv ./artifacts/bin/sous-darwin-amd64 ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
+	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64 -out darwin ./
+	mv ./artifacts/bin/darwin* ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
 
 install-debug-linux: build-debug-linux
 	rm $(SOUS_BIN_PATH) || true
@@ -261,6 +263,9 @@ install-ggen:
 
 install-stringer:
 	go get golang.org/x/tools/cmd/stringer
+
+install-xgo:
+	go get github.com/karalabe/xgo
 
 install-govendor:
 	go get github.com/kardianos/govendor
@@ -424,7 +429,7 @@ artifacts/$(DARWIN_RELEASE_DIR)/sous:
 	cp README.md artifacts/$(DARWIN_RELEASE_DIR)
 	cp LICENSE artifacts/$(DARWIN_RELEASE_DIR)
 	mkdir -p $(BIN_DIR)
-	export OUTPUT_BIN=$(BIN_DIR)/sous-darwin-10.6-amd64 GOOS=darwin GOARCH=amd64; $(DOCKER_BUILD_RELEASE)
+	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64 ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
 artifacts/$(LINUX_RELEASE_DIR)/sous:
