@@ -24,14 +24,17 @@ func build(ctx sous.BuildContext) (string, error) {
 		cmd = append(cmd, "--pull")
 	}
 
+	itag := intermediateTag()
+	cmd = append(cmd, "-t", itag)
+
 	cmd = append(cmd, getOffsetDir(ctx))
 
-	output, err := ctx.Sh.Stdout("docker", cmd...)
+	_, err := ctx.Sh.Stdout("docker", cmd...)
 	if err != nil {
 		return "", err
 	}
 
-	return findBuildID(output)
+	return itag, nil
 }
 
 func run(ctx sous.BuildContext, buildID string) error {
@@ -238,16 +241,13 @@ func buildRunnable(ctx sous.BuildContext, buildDir string, builder *runnableBuil
 	workDir := filepath.Join(buildDir, builder.RunSpec.Offset)
 	sh.CD(workDir)
 
-	out, err := sh.Stdout("docker", "build", ".")
-	if err != nil {
+	itag := intermediateTag()
+
+	if _, err := sh.Stdout("docker", "build", "-t", itag, "."); err != nil {
 		return nil, err
 	}
 
-	match := successfulBuildRE.FindStringSubmatch(string(out))
-	if match == nil {
-		return nil, fmt.Errorf("Couldn't find container id in:\n%s", out)
-	}
-	builder.deployImageID = match[1]
+	builder.deployImageID = itag
 
 	return builder, nil
 }
@@ -298,12 +298,4 @@ func getDockerFilePath(ctx sous.BuildContext) string {
 
 	dockerFilePath := path.Join(workDir, "Dockerfile")
 	return dockerFilePath
-}
-
-func findBuildID(cmdOut string) (string, error) {
-	match := successfulBuildRE.FindStringSubmatch(cmdOut)
-	if match == nil {
-		return "", fmt.Errorf("Couldn't find container id in:\n%s", cmdOut)
-	}
-	return match[1], nil
 }
