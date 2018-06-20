@@ -295,15 +295,12 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f f
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
-	fmt.Fprintf(os.Stdout, "\n\n\nUPDATED MANIFEST...\n\n\n%s\n\n\n\nEND UPDATED MANIFEST.", manifestBytes)
 	manifestSetCmd := c.ConfigureCommand(t, "manifest set", getSetFlags)
 	defer manifestSetCmd.Cancel()
 	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
 	if err := manifestSetCmd.runWithTimeout(3 * time.Minute); err != nil {
 		t.Fatalf("manifest set failed: %s; output:\n%s", err, manifestSetCmd.executed.Combined)
 	}
-	// This prints the updated manifest in the logs.
-	c.MustRun(t, "manifest get", getSetFlags)
 }
 
 func (c *TestClient) SetSingularityRequestID(t *testing.T, getSetFlags *sousFlags, clusterName, singReqID string) {
