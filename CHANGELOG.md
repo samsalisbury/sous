@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.102...HEAD)
+## [0.5.105](//github.com/opentable/sous/compare/0.5.102...0.5.105)
 ### Fixed
 * Client: The client wasn't sending back the global state "defs" configuration,
   which leads to an obscure edge case that prevents the switch to Postgres
