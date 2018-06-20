@@ -115,7 +115,6 @@ endif
 
 
 FLAGS := '-X "main.Revision=$(COMMIT)" -X "main.VersionString=$(SOUS_VERSION)"'
-XGOFLAGS := "-X 'main.Revision=$(COMMIT)' -X 'main.VersionString=$(SOUS_VERSION)'"
 BIN_DIR := artifacts/bin
 DARWIN_RELEASE_DIR := sous-darwin-amd64_$(SOUS_VERSION)
 LINUX_RELEASE_DIR := sous-linux-amd64_$(SOUS_VERSION)
