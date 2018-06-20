@@ -8,16 +8,17 @@ with respect to its command line interface and HTTP interface
 
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.102...HEAD)
+### Fixed
+* Client: The client wasn't sending back the global state "defs" configuration,
+  which leads to an obscure edge case that prevents the switch to Postgres
+  based storage.
+
+## [0.5.104](//github.com/opentable/sous/compare/0.5.102...0.5.104)
 ### Added
 * Both: The client registers the digests for built artifacts to the server.
   This enhances speed and correctness of subsequent deploys.
 * Developer: Adding a `sous-bootstrap` command (`go get github.com/opentable/sous/cmd/sous-bootstrap`)
   to handle initial and recovery deploys.
-
-### Fixed
-* Client: The client wasn't sending back the global state "defs" configuration,
-  which leads to an obscure edge case that prevents the switch to Postgres
-  based storage.
 
 ## [0.5.102](//github.com/opentable/sous/compare/0.5.101...0.5.102)
 ### Added

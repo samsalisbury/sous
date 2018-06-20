@@ -24,7 +24,7 @@ func TestRunmountBuilder_build(t *testing.T) {
 	}
 	buildID, err := build(ctx)
 	assert.NoError(t, err)
-	assert.Equal(t, testBuildID, buildID)
+	assert.Regexp(t, `^sousintermediate.*`, buildID)
 }
 
 // This isn't testing much other than docker run exited with a 0

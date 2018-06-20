@@ -65,19 +65,18 @@ func (sb *splitBuilder) buildBuild() error {
 		cmd = append(cmd, "--build-arg", sb.revisionConfig())
 	}
 
+	itag := intermediateTag()
+	cmd = append(cmd, "-t", itag)
+
 	// XXX I really think this should be "-f", path.Join(offset, "Dockerfile") -jdl
 	cmd = append(cmd, offset)
 
-	output, err := sb.context.Sh.Stdout("docker", cmd...)
+	_, err := sb.context.Sh.Stdout("docker", cmd...)
 	if err != nil {
 		return err
 	}
 
-	match := successfulBuildRE.FindStringSubmatch(string(output))
-	if match == nil {
-		return fmt.Errorf("Couldn't find container id in:\n%s", output)
-	}
-	sb.buildImageID = match[1]
+	sb.buildImageID = itag
 
 	return nil
 }
