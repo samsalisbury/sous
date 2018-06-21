@@ -290,8 +290,7 @@ func TestSousDeploy(t *testing.T) {
 						assertActiveStatus(t, f, customID2)
 						assertNonNilHealthCheckOnLatestDeploy(t, f, customID2)
 
-						// TODO SS: Assert that the old request has been removed.
-
+						assertRequestDoesNotExist(t, f, customID1)
 					})
 				})
 			})
