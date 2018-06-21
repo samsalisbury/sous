@@ -56,7 +56,12 @@ func (sb *splitBuilder) buildBuild() error {
 		offset = "."
 	}
 
-	cmd := []interface{}{"build", "--pull"}
+	cmd := []interface{}{"build"}
+	if !sb.context.Source.DevBuild {
+		//pull the image if you aren't doing a dev build.
+		cmd = append(cmd, "--pull")
+	}
+
 	r := sb.detected.Data.(detectData)
 	if r.HasAppVersionArg {
 		cmd = append(cmd, "--build-arg", sb.versionConfig())

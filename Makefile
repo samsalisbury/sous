@@ -141,7 +141,9 @@ GO_TEST_PATHS ?= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end
 endif
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
 
-DOCKER_BUILD_RELEASE := docker run --rm -e GOOS=$$GOOS -e GOARCH=$$GOARCH -e OUTPUT_BIN=$$OUTPUT_BIN -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 bash -c "( go build -o $$OUTPUT_BIN -ldflags $(FLAGS) && chown $(USER_ID):$(GROUP_ID) $$OUTPUT_BIN )"
+
+CONCAT_XGO_ARGS := -go $(GO_VERSION) -branch master --dest $(BIN_DIR) --ldflags $(FLAGS)
+DOCKER_BUILD_RELEASE := docker run --rm -e GOOS=$$GOOS -e GOARCH=$$GOARCH -e OUTPUT_BIN=$$OUTPUT_BIN -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 bash -c "( go build -tags netcgo -o $$OUTPUT_BIN -ldflags $(FLAGS) && chown $(USER_ID):$(GROUP_ID) $$OUTPUT_BIN )"
 
 FIND_EXCLUSIONS := -type d -name \\.git -prune -o -type d -name \\.smoketest -prune
 
@@ -192,8 +194,8 @@ build-debug-darwin:
 	@if [[ $(SOUS_VERSION) != *"debug" ]]; then echo 'missing debug at the end of semv, please add'; exit -1; fi
 	echo "building debug version" $(SOUS_VERSION) "to" $(BIN_DIR)
 	mkdir -p $(BIN_DIR)
-	export OUTPUT_BIN=artifacts/bin/sous-darwin-amd64 GOOS=darwin GOARCH=amd64; $(DOCKER_BUILD_RELEASE)
-	mv ./artifacts/bin/sous-darwin-amd64 ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
+	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64 -out darwin ./
+	mv ./artifacts/bin/darwin* ./artifacts/bin/sous-darwin-$(SOUS_VERSION)
 
 install-debug-linux: build-debug-linux
 	rm $(SOUS_BIN_PATH) || true
@@ -240,7 +242,7 @@ gitlog:
 install-dev:
 	brew uninstall opentable/public/sous || true
 	rm "$$(which sous)" || true
-	go install -ldflags "-X main.VersionString=$(DEV_VERSION)"
+	go install -tags=netcgo -ldflags "-X main.VersionString=$(DEV_VERSION)"
 	echo "Now run 'hash -r && sous version' to make sure you are using the dev version of sous."
 
 homebrew:
@@ -265,6 +267,9 @@ install-ggen:
 
 install-stringer:
 	go get golang.org/x/tools/cmd/stringer
+
+install-xgo:
+	go get github.com/karalabe/xgo
 
 install-govendor:
 	go get github.com/kardianos/govendor
@@ -346,7 +351,7 @@ test-unit-base: $(COVER_DIR) $(GO_FILES) postgres-start | postgres-clean # | is 
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
 	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
-		-covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
+	  -tags=netcgo -covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
 		-timeout 12m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
 
 .PHONY: test-unit
@@ -368,11 +373,11 @@ test-integration: setup-containers postgres-start
 	@echo
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
-	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration --tags=integration $(TEST_TEAMCITY)
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration --tags='integration netcgo' $(TEST_TEAMCITY)
 	@date
 
 $(SMOKE_TEST_BINARY):
-	go build -o $@ -tags smoke -ldflags "-X main.VersionString=$(DEV_VERSION)"
+	go build -o $@ -tags 'smoke netcgo' -ldflags "-X main.VersionString=$(DEV_VERSION)"
 
 $(SMOKE_TEST_DATA_DIR):
 	mkdir -p $@
@@ -382,7 +387,7 @@ $(SMOKE_TEST_LATEST_LINK): $(SMOKE_TEST_DATA_DIR)
 
 .PHONY: test-smoke-compiles
 test-smoke-compiles: ## Checks that the smoke tests compile.
-	@go test -c -o /dev/null -tags smoke ./test/smoke && echo Smoke tests compiled.
+	@go test -c -o /dev/null -tags 'smoke netcgo' ./test/smoke && echo Smoke tests compiled.
 
 .PHONY: test-smoke-all
 test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) postgres-clean-restart
@@ -397,7 +402,7 @@ test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TE
 	SOUS_QA_DESC=$(QA_DESC) \
 	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
 	SOUS_TERSE_LOGGING=$(SOUS_TERSE_LOGGING) \
-	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags smoke -v -count 1 ./test/smoke $(TEST_TEAMCITY)
+	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags 'smoke netcgo' -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
 .PHONY: test-smoke
 test-smoke:
@@ -416,7 +421,7 @@ setup-containers: $(QA_DESC)
 test-cli: setup-containers linux-build
 	rm -rf integration/raw_shell_output/0*
 	@date
-	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 20m ./integration --tags=commandline
+	SOUS_QA_DESC=$(QA_DESC) go test $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) -timeout 20m ./integration --tags='commandline netcgo'
 
 
 $(COVER_DIR):
@@ -428,7 +433,7 @@ artifacts/$(DARWIN_RELEASE_DIR)/sous:
 	cp README.md artifacts/$(DARWIN_RELEASE_DIR)
 	cp LICENSE artifacts/$(DARWIN_RELEASE_DIR)
 	mkdir -p $(BIN_DIR)
-	export OUTPUT_BIN=$(BIN_DIR)/sous-darwin-10.6-amd64 GOOS=darwin GOARCH=amd64; $(DOCKER_BUILD_RELEASE)
+	xgo $(CONCAT_XGO_ARGS) --targets=darwin/amd64 ./
 	mv $(BIN_DIR)/sous-darwin-10.6-amd64 $@
 
 artifacts/$(LINUX_RELEASE_DIR)/sous:

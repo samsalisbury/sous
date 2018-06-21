@@ -12,10 +12,14 @@ with respect to its command line interface and HTTP interface
   Note that changing this any time after the first deployment results in an
   orphaned Singularity request.
 
+## [0.5.105](//github.com/opentable/sous/compare/0.5.102...0.5.105)
 ### Fixed
 * Client: The client wasn't sending back the global state "defs" configuration,
   which leads to an obscure edge case that prevents the switch to Postgres
   based storage.
+* Both: building with the `netcgo` build tag to ensure system DNS resolver is
+  used instead of the Go native resolver.
+* Server: caught a place where a potentially nil reference got a method called on it.
 
 ## [0.5.104](//github.com/opentable/sous/compare/0.5.102...0.5.104)
 ### Added
