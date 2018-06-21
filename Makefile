@@ -64,15 +64,6 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
-# TODO SS: Find out why this is necessary.
-# Note: The Darwin test is arbitrary; simply "running on macOS" is probably not the problem,
-# but right now this is not necessary on any of the Linux machines in dev or CI.
-ifeq ($(shell uname),Darwin)
-DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES ?= YES
-else
-DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES ?= NO
-endif
-
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
 SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
 SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
@@ -134,7 +125,11 @@ COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
+ifneq ($(GO_TEST_PATH),)
+GO_TEST_PATHS = $(GO_TEST_PATH)
+else
 GO_TEST_PATHS ?= $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
+endif
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
 
 
@@ -386,7 +381,7 @@ test-smoke-compiles: ## Checks that the smoke tests compile.
 	@go test -c -o /dev/null -tags 'smoke netcgo' ./test/smoke && echo Smoke tests compiled.
 
 .PHONY: test-smoke-all
-test-smoke-all: test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) setup-containers postgres-clean-restart
+test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) postgres-clean-restart
 	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
 	ulimit -n 2048 && \
 	PGHOST=$(PGHOST) \
@@ -504,6 +499,10 @@ local-server:
 	@echo "WARNING WARNING WARNING WARNING WARNING WARNING WARNING"
 	@echo
 	@export DIR=$(PWD)/.sous-gdm-temp && rm -rf "$$DIR" && git clone $(SOUS_GDM_REPO) $$DIR && SOUS_SIBLING_URLS='{"$(EMULATE_CLUSTER)": "http://$(LOCAL_SERVER_LISTEN)"}' SOUS_STATE_LOCATION=$$DIR SOUS_PG_HOST=$(PGHOST) SOUS_PG_PORT=$(PGPORT) SOUS_PG_USER=postgres sous server -listen $(LOCAL_SERVER_LISTEN) -autoresolver=false -d -v
+
+.PHONY: provision-docker-machine
+provision-docker-machine:
+	docker-machine create -d virtualbox --virtualbox-memory "2048" default
 
 .PHONY: artifactory clean clean-containers clean-container-certs \
 	clean-running-containers clean-container-images coverage deb-build \

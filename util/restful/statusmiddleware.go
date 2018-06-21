@@ -65,5 +65,11 @@ func (ph *StatusMiddleware) HandlePanic(w http.ResponseWriter, r *http.Request, 
 		ph.LogSink = &fallbackLogger{}
 	}
 	messages.ReportLogFieldsMessage("Recovered, returned 500", logging.WarningLevel, ph.LogSink, recovered)
-	ph.errorBody(http.StatusInternalServerError, r, w, "panicked - see logs", recovered.(error), stack)
+	var recoveredErr error
+	if err, ok := recovered.(error); ok {
+		recoveredErr = err
+	} else {
+		recoveredErr = fmt.Errorf("%v", recovered)
+	}
+	ph.errorBody(http.StatusInternalServerError, r, w, "panicked - see logs", recoveredErr, stack)
 }

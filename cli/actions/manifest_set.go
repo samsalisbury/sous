@@ -12,7 +12,7 @@ import (
 	"github.com/opentable/sous/util/yaml"
 )
 
-// ManifestSet is an Action for setting a manifest
+// ManifestSet is an Action for setting a manifest.
 type ManifestSet struct {
 	sous.ManifestID
 	InReader      io.Reader

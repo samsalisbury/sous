@@ -93,9 +93,10 @@ func TestSousDeploy(t *testing.T) {
 							Cluster: "cluster1",
 						}
 
-						assertActiveStatus(t, f, did)
-						assertSingularityRequestTypeService(t, f, did)
-						assertNonNilHealthCheckOnLatestDeploy(t, f, did)
+						reqID := f.Singularity.DefaultReqID(t, did)
+						assertActiveStatus(t, f, reqID)
+						assertSingularityRequestTypeService(t, f, reqID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 					})
 
 					t.Run("zero-instances", func(t *testing.T) {
@@ -127,9 +128,10 @@ func TestSousDeploy(t *testing.T) {
 							Cluster: "cluster1",
 						}
 
-						assertActiveStatus(t, f, did)
-						assertSingularityRequestTypeService(t, f, did)
-						assertNonNilHealthCheckOnLatestDeploy(t, f, did)
+						reqID := f.Singularity.DefaultReqID(t, did)
+						assertActiveStatus(t, f, reqID)
+						assertSingularityRequestTypeService(t, f, reqID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 					})
 
 					t.Run("flavors", func(t *testing.T) {
@@ -153,9 +155,10 @@ func TestSousDeploy(t *testing.T) {
 							Cluster: "cluster1",
 						}
 
-						assertActiveStatus(t, f, did)
-						assertSingularityRequestTypeService(t, f, did)
-						assertNonNilHealthCheckOnLatestDeploy(t, f, did)
+						reqID := f.Singularity.DefaultReqID(t, did)
+						assertActiveStatus(t, f, reqID)
+						assertSingularityRequestTypeService(t, f, reqID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 					})
 
 					t.Run("pause-unpause", func(t *testing.T) {
@@ -177,16 +180,17 @@ func TestSousDeploy(t *testing.T) {
 							},
 							Cluster: "cluster1",
 						}
-						assertActiveStatus(t, f, did)
-						assertNonNilHealthCheckOnLatestDeploy(t, f, did)
-						assertSingularityRequestTypeService(t, f, did)
+						reqID := f.Singularity.DefaultReqID(t, did)
+						assertActiveStatus(t, f, reqID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+						assertSingularityRequestTypeService(t, f, reqID)
 
-						f.Singularity.PauseRequestForDeployment(t, did)
+						f.Singularity.PauseRequestForDeployment(t, reqID)
 						client.MustFail(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "2")
-						f.Singularity.UnpauseRequestForDeployment(t, did)
+						f.Singularity.UnpauseRequestForDeployment(t, reqID)
 
 						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "3")
-						assertActiveStatus(t, f, did)
+						assertActiveStatus(t, f, reqID)
 					})
 
 					t.Run("scheduled", func(t *testing.T) {
@@ -217,9 +221,96 @@ func TestSousDeploy(t *testing.T) {
 							Cluster: "cluster1",
 						}
 
-						assertSingularityRequestTypeScheduled(t, f, did)
-						assertActiveStatus(t, f, did)
-						assertNilHealthCheckOnLatestDeploy(t, f, did)
+						reqID := f.Singularity.DefaultReqID(t, did)
+						assertSingularityRequestTypeScheduled(t, f, reqID)
+						assertActiveStatus(t, f, reqID)
+						assertNilHealthCheckOnLatestDeploy(t, f, reqID)
+					})
+
+					t.Run("custom-reqid-first-deploy", func(t *testing.T) {
+						f := pf.NewIsolatedFixture(t, fixtureConfig)
+						defer f.ReportStatus(t)
+						client := setupProject(t, f, simpleServer)
+						client.MustRun(t, "init", nil, "-kind", "http-service")
+						client.MustRun(t, "build", nil, "-tag", "1.2.3")
+
+						customID := "some-custom-req-id" + f.ClusterSuffix
+						client.SetSingularityRequestID(t, nil, "cluster1", customID)
+
+						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+						assertSingularityRequestTypeService(t, f, customID)
+						assertActiveStatus(t, f, customID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
+
+					})
+
+					t.Run("custom-reqid-second-deploy", func(t *testing.T) {
+						f := pf.NewIsolatedFixture(t, fixtureConfig)
+						defer f.ReportStatus(t)
+						client := setupProject(t, f, simpleServer)
+						client.MustRun(t, "init", nil, "-kind", "http-service")
+						client.MustRun(t, "build", nil, "-tag", "1.2.3")
+
+						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+						did := sous.DeploymentID{
+							ManifestID: sous.ManifestID{
+								Source: sous.SourceLocation{
+									Repo: "github.com/user1/repo1",
+								},
+							},
+							Cluster: "cluster1",
+						}
+						originalReqID := f.Singularity.DefaultReqID(t, did)
+						assertSingularityRequestTypeService(t, f, originalReqID)
+						assertActiveStatus(t, f, originalReqID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, originalReqID)
+
+						customID := "some-custom-req-id" + f.ClusterSuffix
+						client.SetSingularityRequestID(t, nil, "cluster1", customID)
+
+						// Force to avoid having to make another build.
+						client.MustRun(t, deployCommand, nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
+
+						assertSingularityRequestTypeService(t, f, customID)
+						assertActiveStatus(t, f, customID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
+
+						// TODO: Implement cleanup of old request.
+						//assertRequestDoesNotExist(t, f, originalReqID)
+
+						assertActiveStatus(t, f, originalReqID)
+					})
+
+					t.Run("change-reqid", func(t *testing.T) {
+						f := pf.NewIsolatedFixture(t, fixtureConfig)
+						defer f.ReportStatus(t)
+						client := setupProject(t, f, simpleServer)
+						client.MustRun(t, "init", nil, "-kind", "http-service")
+						client.MustRun(t, "build", nil, "-tag", "1.2.3")
+
+						customID1 := "some-custom-req-id1" + f.ClusterSuffix
+						customID2 := "some-custom-req-id2" + f.ClusterSuffix
+
+						client.SetSingularityRequestID(t, nil, "cluster1", customID1)
+						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+						assertSingularityRequestTypeService(t, f, customID1)
+						assertActiveStatus(t, f, customID1)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, customID1)
+
+						client.SetSingularityRequestID(t, nil, "cluster1", customID2)
+						client.MustRun(t, deployCommand, nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
+
+						assertSingularityRequestTypeService(t, f, customID2)
+						assertActiveStatus(t, f, customID2)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, customID2)
+
+						// TODO: Implemend cleanup of old request.
+						//assertRequestDoesNotExist(t, f, customID1)
+
+						assertActiveStatus(t, f, customID1)
 					})
 				})
 			})

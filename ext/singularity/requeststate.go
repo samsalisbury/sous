@@ -49,5 +49,8 @@ func (r *deployer) Status(reg sous.Registry, clusters sous.Clusters, pair *sous.
 
 func (r *deployer) getRequestID(d *sous.Deployable) (string, error) {
 	// TODO: add a cache of known Deployables to their Requests (and current state...)
+	if d.SingularityRequestID != "" {
+		return d.SingularityRequestID, nil
+	}
 	return computeRequestID(d)
 }

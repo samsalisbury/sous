@@ -169,6 +169,7 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 		`select
 			"repo", "dir", "flavor", components.kind,
 			"versionstring", "num_instances", "schedule_string",
+			coalesce("singularity_deployment_bindings"."singularity_request_id", ''),
 			"cr_skip", "cr_connect_delay", "cr_timeout", "cr_connect_interval",
 			"cr_proto", "cr_path", "cr_port_index", "cr_failure_statuses",
 			"cr_uri_timeout", "cr_interval", "cr_retries",
@@ -188,6 +189,7 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 			left join resources using (deployment_id)
 			left join metadatas using (deployment_id)
 			left join volumes using (deployment_id)
+			left join singularity_deployment_bindings using (singularity_deployment_bindings_id)
 		where deployment_id in (
 			select max(deployment_id) from deployments group by cluster_id, component_id
 		)
@@ -220,7 +222,7 @@ func loadManifests(context context.Context, log logging.LogSink, tx *sql.Tx, sta
 
 			if err := rows.Scan(
 				&m.Source.Repo, &m.Source.Dir, &m.Flavor, &m.Kind,
-				&versionString, &ds.NumInstances, &ds.Schedule,
+				&versionString, &ds.NumInstances, &ds.Schedule, &ds.DeployConfig.SingularityRequestID,
 				&ds.Startup.SkipCheck, &ds.Startup.ConnectDelay, &ds.Startup.Timeout, &ds.Startup.ConnectInterval,
 				&ds.Startup.CheckReadyProtocol, &ds.Startup.CheckReadyURIPath, &ds.Startup.CheckReadyPortIndex, &failStates,
 				&ds.Startup.CheckReadyURITimeout, &ds.Startup.CheckReadyInterval, &ds.Startup.CheckReadyRetries,

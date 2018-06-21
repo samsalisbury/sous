@@ -23,19 +23,20 @@ type (
 		// assumes the greatest priority.
 		Env `yaml:",omitempty" validate:"keys=nonempty,values=nonempty"`
 
-		// No manifest uses this, it doesn't get sent to Singularity. If we want it we should bring it back.
-		//Args []string `yaml:",omitempty" validate:"values=nonempty"`
 		// NumInstances is a guide to the number of instances that should be
 		// deployed in this cluster, note that the actual number may differ due
-		// to decisions made by Sous. If set to zero, Sous will decide how many
-		// instances to launch.
+		// to decisions made by Sous.
 		NumInstances int
-		// Volumes lists the volume mappings for this deploy
+		// Volumes lists the volume mappings for this deploy.
 		Volumes Volumes
 		// Startup containts healthcheck options for this deploy.
 		Startup Startup `yaml:",omitempty"`
 		// Schedule is a cronjob-format schedule for jobs.
 		Schedule string
+
+		// SingularityRequestID is the ID of the request representing this
+		// deployment in a Singularity scheduler.
+		SingularityRequestID string `yaml:",omitempty"`
 	}
 
 	// A DeployConfigs is a map from cluster name to DeployConfig
@@ -147,33 +148,42 @@ func (dc *DeployConfig) Diff(o DeployConfig) (bool, []string) {
 			diffs = append(diffs, fmt.Sprintf("volumes; this: %v; other: %v", dc.Volumes, o.Volumes))
 		}
 	}
+	if dc.SingularityRequestID != o.SingularityRequestID {
+		diffs = append(diffs, fmt.Sprintf("SingularityRequestID; this: %q; other %q",
+			dc.SingularityRequestID, o.SingularityRequestID))
+	}
 	diffs = append(diffs, dc.Startup.diff(o.Startup)...)
-	// TODO: Compare Args
-	return len(diffs) == 0, diffs
+	return len(diffs) != 0, diffs
+}
+
+// Clone returns an independent copy of e.
+func (e Env) Clone() Env {
+	env := make(Env, len(e))
+	for k, v := range e {
+		env[k] = v
+	}
+	return env
+}
+
+// Clone returns an independent copy of m.
+func (m Metadata) Clone() Metadata {
+	if m == nil {
+		return nil
+	}
+	metadata := make(Metadata, len(m))
+	for k, v := range m {
+		metadata[k] = v
+	}
+	return metadata
 }
 
 // Clone returns a deep copy of this DeployConfig.
-func (dc DeployConfig) Clone() (c DeployConfig) {
-	c.NumInstances = dc.NumInstances
-	c.Env = make(Env)
-	for k, v := range dc.Env {
-		c.Env[k] = v
-	}
-	c.Resources = make(Resources)
-	for k, v := range dc.Resources {
-		c.Resources[k] = v
-	}
-	if dc.Metadata != nil {
-		c.Metadata = make(Metadata)
-		for k, v := range dc.Metadata {
-			c.Metadata[k] = v
-		}
-	}
-	c.Volumes = dc.Volumes.Clone()
-	c.Startup = dc.Startup
-	c.Schedule = dc.Schedule
-
-	return
+func (dc DeployConfig) Clone() DeployConfig {
+	dc.Env = dc.Env.Clone()
+	dc.Resources = dc.Resources.Clone()
+	dc.Metadata = dc.Metadata.Clone()
+	dc.Volumes = dc.Volumes.Clone()
+	return dc
 }
 
 // Equal compares Envs
@@ -191,12 +201,12 @@ func (e Env) Equal(o Env) bool {
 }
 
 // Equal compares Metadatas
-func (e Metadata) Equal(o Metadata) bool {
-	if len(e) != len(o) {
+func (m Metadata) Equal(o Metadata) bool {
+	if len(m) != len(o) {
 		return false
 	}
 
-	for name, value := range e {
+	for name, value := range m {
 		if ov, ok := o[name]; !ok || ov != value {
 			return false
 		}
@@ -258,6 +268,7 @@ func flattenDeployConfigs(dcs []DeployConfig) DeployConfig {
 		}
 
 		dc.Startup = c.Startup
+		dc.SingularityRequestID = c.SingularityRequestID
 	}
 	return dc
 }

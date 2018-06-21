@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.5.xsd">
+  <changeSet author="sam" id="8">
+	<createTable tableName="singularity_clusters">
+		<column name="singularity_cluster_id" type="SERIAL" autoIncrement="true">
+			<constraints primaryKey="true" />
+		</column>
+		<column name="singularity_url" type="TEXT">
+			<constraints nullable="false" unique="true" />
+		</column>
+	</createTable>
+
+	<createTable tableName="singularity_deployment_bindings">
+	  <column name="singularity_deployment_bindings_id" type="SERIAL" autoIncrement="true">
+	    <constraints primaryKey="true" />
+	  </column>
+	  <column name="singularity_cluster_id" type="INT">
+      <constraints
+        foreignKeyName="singularity_deployment_bindings_singularity_cluster_id_fkey"
+        references="singularity_clusters(singularity_cluster_id)"
+        />
+	  </column>
+	  <column name="singularity_request_id" type="TEXT">
+	    <constraints nullable="false" unique="false" />
+	  </column>
+	</createTable>
+
+	<addColumn tableName="deployments">
+		<column name="singularity_deployment_bindings_id" type="INT">
+      <constraints nullable="true"
+        foreignKeyName="singularity_deployment_bindings_singularity_cluster_id_fkey"
+        references="singularity_deployment_bindings(singularity_deployment_bindings_id)"
+      />
+		</column>
+	</addColumn>
+
+	<addUniqueConstraint
+		tableName="singularity_deployment_bindings"
+		columnNames="singularity_request_id, singularity_cluster_id" />
+  </changeSet>
+</databaseChangeLog>

@@ -17,6 +17,7 @@ Deployments:
       CheckReadyProtocol: HTTPS
       CheckReadyURIPath: /health
     Schedule: ""
+    SingularityRequestID: service1-cluster1
     Version: 1.0.0-rc.1+deadbeef
   other-cluster:
     Resources:
@@ -34,4 +35,5 @@ Deployments:
       - 500
       - 503
     Schedule: ""
+    SingularityRequestID: service1-other-cluster
     Version: 1.0.0-rc.1+deadbeef

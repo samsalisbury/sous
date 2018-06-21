@@ -48,10 +48,7 @@ func (d DeployStates) Diff(other Deployments) *DeployableChans {
 // Diff computes the differences between two sets of Deployments
 func (d Deployments) Diff(other Deployments) *DeployableChans {
 	difr := newDiffer(d)
-	go func(d *differ, o Deployments) {
-		d.diff(o)
-	}(difr, other)
-
+	go difr.diff(other)
 	return difr.DeployableChans
 }
 

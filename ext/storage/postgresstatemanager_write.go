@@ -40,6 +40,7 @@ func (m PostgresStateManager) WriteState(state *sous.State, user sous.User) erro
 }
 
 func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State, tx *sql.Tx) error {
+
 	newDeps, err := state.Deployments()
 	if err != nil {
 		return err
@@ -134,6 +135,25 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 		return err
 	}
 
+	if err := ins.Exec("singularity_clusters", sqlgen.DoNothing,
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			fields.Row(func(r sqlgen.RowDef) {
+				r.FD("?", "singularity_url", dep.Cluster.BaseURL)
+			})
+		})); err != nil {
+		return err
+	}
+
+	if err := ins.Exec("singularity_deployment_bindings", sqlgen.DoNothing,
+		deploymentsFieldSetter(updates, func(fields sqlgen.FieldSet, dep *sous.Deployment) {
+			fields.Row(func(r sqlgen.RowDef) {
+				singularityClusterID(r, dep.Cluster.BaseURL)
+				r.FD("?", "singularity_request_id", dep.DeployConfig.SingularityRequestID)
+			})
+		})); err != nil {
+		return err
+	}
+
 	// We use application diffs for deployments (instead of upserts) because
 	// otherwise it would be impossible to return to a previous state for a
 	// manifest. Since rollback is a concrete use case, we do not want e.g.
@@ -144,6 +164,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 			fields.Row(func(r sqlgen.RowDef) {
 				compID(r, dep)
 				clusterID(r, dep)
+				singularityRequestBindingsID(r, dep.DeployConfig.SingularityRequestID)
 				r.FD("?", "versionstring", dep.SourceID.Version.String())
 				r.FD("?", "num_instances", dep.NumInstances)
 				r.FD("?", "schedule_string", dep.Schedule)
@@ -162,6 +183,7 @@ func storeManifests(ctx context.Context, log logging.LogSink, state *sous.State,
 			fields.Row(func(r sqlgen.RowDef) {
 				compID(r, dep)
 				clusterID(r, dep)
+				singularityRequestBindingsID(r, dep.DeployConfig.SingularityRequestID)
 				r.FD("?", "versionstring", dep.SourceID.Version.String())
 				r.FD("?", "num_instances", dep.NumInstances)
 				r.FD("?", "schedule_string", dep.Schedule)
@@ -266,8 +288,7 @@ func depID(row sqlgen.RowDef, dep *sous.Deployment) {
 
 func compID(row sqlgen.RowDef, dep *sous.Deployment) {
 	sid := dep.SourceID
-	row.FD(`(select component_id from components
-	  where repo = ? and dir = ? and flavor = ? and kind = ?)`,
+	row.FD(`(select component_id from components where repo = ? and dir = ? and flavor = ? and kind = ?)`,
 		"component_id", sid.Location.Repo, sid.Location.Dir, dep.Flavor, dep.Kind)
 }
 
@@ -281,6 +302,20 @@ func advisoryID(row sqlgen.RowDef, advName string) {
 
 func ownerID(row sqlgen.RowDef, ownername string) {
 	row.FD("(select owner_id from owners where email = ?)", "owner_id", ownername)
+}
+
+func singularityClusterID(row sqlgen.RowDef, baseURL string) {
+	row.FD("(select singularity_cluster_id from singularity_clusters where singularity_url = ?)",
+		"singularity_cluster_id", baseURL)
+}
+
+func singularityRequestBindingsID(row sqlgen.RowDef, reqID string) {
+	if reqID == "" {
+		row.FD("?", "singularity_deployment_bindings_id", nil)
+		return
+	}
+	row.FD("(select singularity_deployment_bindings_id from singularity_deployment_bindings where singularity_request_id = ?)",
+		"singularity_deployment_bindings_id", reqID)
 }
 
 func startupFields(r sqlgen.RowDef, prefix string, s sous.Startup) {

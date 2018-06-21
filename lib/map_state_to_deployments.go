@@ -204,8 +204,8 @@ func BuildDeployment(m *Manifest, nick string, cluster *Cluster, spec DeploySpec
 
 	return &Deployment{
 		ClusterName:  nick,
-		Cluster:      cluster,
-		DeployConfig: ds.DeployConfig,
+		Cluster:      cluster.Clone(),
+		DeployConfig: ds.DeployConfig.Clone(),
 		Flavor:       m.Flavor,
 		Owners:       ownMap,
 		Kind:         m.Kind,

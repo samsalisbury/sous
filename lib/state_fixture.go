@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/samsalisbury/semv"
 )
@@ -79,6 +80,7 @@ func StateFixture(o StateFixtureOpts) *State {
 			if manifest.Deployments == nil {
 				manifest.Deployments = DeploySpecs{}
 			}
+			did := DeploymentID{ManifestID: mid, Cluster: clusterName}
 			manifest.Deployments[clusterName] = DeploySpec{
 				DeployConfig: DeployConfig{
 					Resources: map[string]string{
@@ -95,9 +97,10 @@ func StateFixture(o StateFixtureOpts) *State {
 					Env: map[string]string{
 						"": "",
 					},
-					NumInstances: 3,
-					Volumes:      nil,
-					Schedule:     "",
+					NumInstances:         3,
+					Volumes:              nil,
+					Schedule:             "",
+					SingularityRequestID: makeTestFixtureSingularityReqID(did),
 				},
 				Version: semv.MustParse("1.0.0"),
 			}
@@ -111,4 +114,14 @@ func StateFixture(o StateFixtureOpts) *State {
 	s.Manifests = m
 
 	return s
+}
+
+func makeTestFixtureSingularityReqID(did DeploymentID) string {
+	repo := strings.Split(did.ManifestID.Source.Repo, "/")
+	dir := strings.Replace(did.ManifestID.Source.Dir, "/", "-", -1)
+	if dir != "" {
+		dir = "-" + dir
+	}
+	return fmt.Sprintf("new-%s-%s-%s", repo[len(repo)-1]+dir, did.ManifestID.Flavor, did.Cluster)
+
 }

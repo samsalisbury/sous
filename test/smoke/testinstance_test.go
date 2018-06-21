@@ -77,12 +77,12 @@ func (i *Instance) Configure(config *config.Config, remoteGDMDir string, fcfg fi
 	if err := doCMD(gdmDir+"/..", "git", "clone", remoteGDMDir, gdmDir); err != nil {
 		return err
 	}
-	if err := doCMD(gdmDir, "git", "config", "user.name",
-		fmt.Sprintf("Sous Server %s", i.ClusterName)); err != nil {
+	username := fmt.Sprintf("Sous Server %s", i.ClusterName)
+	if err := doCMD(gdmDir, "git", "config", "user.name", username); err != nil {
 		return err
 	}
-	if err := doCMD(gdmDir, "git", "config", "user.email",
-		fmt.Sprintf("sous-%s@example.com", i.ClusterName)); err != nil {
+	email := fmt.Sprintf("sous-%s@example.com", i.ClusterName)
+	if err := doCMD(gdmDir, "git", "config", "user.email", email); err != nil {
 		return err
 	}
 
@@ -132,7 +132,7 @@ func (i *Instance) Start(t *testing.T, binPath string) error {
 	}
 
 	serverDebug := os.Getenv("SOUS_SERVER_DEBUG") == "true"
-	cmd, err := i.RunCmd(t, binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName, fmt.Sprintf("-d=%t", serverDebug))
+	cmd, err := i.RunCmd(t, binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName, "autoresolver=false", fmt.Sprintf("-d=%t", serverDebug))
 	if err != nil {
 		return err
 	}

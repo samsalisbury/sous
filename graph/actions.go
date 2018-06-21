@@ -115,10 +115,17 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 	}, nil
 }
 
+// DeployActionOpts are options for GetDeploy.
+type DeployActionOpts struct {
+	DFF                              config.DeployFilterFlags
+	DryRun, InitSingularityRequestID string
+	Force, WaitStable                bool
+}
+
 // GetDeploy constructs a Deploy Actions.
-func (di *SousGraph) GetDeploy(dff config.DeployFilterFlags, dryrun string, force, waitStable bool) (actions.Action, error) {
-	di.guardedAdd("Dryrun", DryrunOption(dryrun))
-	di.guardedAdd("DeployFilterFlags", &dff)
+func (di *SousGraph) GetDeploy(opts DeployActionOpts) (actions.Action, error) {
+	di.guardedAdd("Dryrun", DryrunOption(opts.DryRun))
+	di.guardedAdd("DeployFilterFlags", &opts.DFF)
 
 	scoop := struct {
 		ResolveFilter    *RefinedResolveFilter
@@ -142,8 +149,8 @@ func (di *SousGraph) GetDeploy(dff config.DeployFilterFlags, dryrun string, forc
 		LogSink:            scoop.LogSink.LogSink.Child("deploy", rf, did),
 		User:               scoop.User,
 		Config:             scoop.Config.Config,
-		Force:              force,
-		WaitStable:         waitStable,
+		Force:              opts.Force,
+		WaitStable:         opts.WaitStable,
 	}, nil
 }
 

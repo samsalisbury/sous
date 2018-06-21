@@ -75,9 +75,31 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 		suite.logs.DumpLogs(t)
 		t.FailNow()
 	}
+
 	suite.Equal(int64(4), suite.pluckSQL("select count(*) from deployments"))
 
-	assert.Len(t, suite.logs.CallsTo("Fields"), 15)
+	written, err := s.Deployments()
+	suite.require.NoError(err)
+	readState, err := suite.manager.ReadState()
+	suite.require.NoError(err)
+	read, err := readState.Deployments()
+	suite.require.NoError(err)
+
+	for did, d := range read.Snapshot() {
+		if d.SingularityRequestID == "" {
+			t.Fatalf("SingularityRequestID empty for %q", did)
+		}
+		t.Logf("SingularityRequestID == %q", d.SingularityRequestID)
+	}
+
+	deployableChans := written.Diff(read)
+	pairs := deployableChans.Collect()
+	for _, p := range pairs {
+		if p.Kind() != sous.SameKind {
+			t.Fatalf("read and written states not equal")
+		}
+	}
+
 	message := suite.logs.CallsTo("Fields")[0].PassedArgs().Get(0).([]logging.EachFielder)
 	// XXX This message deserves its own test
 	logging.AssertMessageFieldlist(t, message, append(
@@ -119,18 +141,27 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 	suite.require.NoError(err)
 
 	for diff := range oldD.Diff(newD).Pairs {
+		different, differences := diff.Post.Deployment.Diff(diff.Prior.Deployment)
+		if different {
+			suite.Fail("Differences detected between written and read states", "%+#v", differences)
+		}
 		switch diff.Kind() {
 		default:
 			suite.Fail("Difference detected between written and read states", "They are: %s %+#v", diff.Kind(), diff)
 		case sous.ModifiedKind:
 			suite.Fail("Difference detected between written and read states", "%+#v %+#v", diff, diff.Diffs())
-
 		case sous.SameKind:
+			different, differences := diff.Post.Deployment.Diff(diff.Prior.Deployment)
+			if different {
+				suite.Fail("Differences detected between written and read states", "%+#v", differences)
+			}
+			// OK, we expect them all the be the same.
 		}
 	}
 }
 
 func assertSameClusters(t *testing.T, old *sous.State, new *sous.State) {
+	t.Helper()
 	ocs := old.Defs.Clusters
 	ncs := new.Defs.Clusters
 
@@ -143,9 +174,7 @@ func assertSameClusters(t *testing.T, old *sous.State, new *sous.State) {
 
 	for _, n := range onames {
 		oc, nc := ocs[n], ncs[n]
-
 		assert.ElementsMatch(t, oc.AllowedAdvisories, nc.AllowedAdvisories)
-		t.Logf("Cluster advisories: %q: \n\t\tOld: %q \n\t\tNew: %q", n, oc.AllowedAdvisories, nc.AllowedAdvisories)
 	}
 }
 

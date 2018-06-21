@@ -11,6 +11,7 @@ import (
 	"github.com/opentable/sous/util/restful"
 )
 
+// SousManifestSet is the 'sous manifest set' command.
 type SousManifestSet struct {
 	config.DeployFilterFlags `inject:"optional"`
 	SousGraph                *graph.SousGraph

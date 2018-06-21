@@ -26,9 +26,8 @@ func NewSingularity(baseURL string) *Singularity {
 	return &Singularity{URL: baseURL, client: sing.NewClient(baseURL)}
 }
 
-func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.DeploymentID) {
+func (s *Singularity) PauseRequestForDeployment(t *testing.T, reqID string) {
 	t.Helper()
-	reqID := s.mustGetReqID(t, did)
 	if _, err := s.client.Pause(reqID, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -60,9 +59,8 @@ func (s *Singularity) PauseRequestForDeployment(t *testing.T, did sous.Deploymen
 	})
 }
 
-func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, did sous.DeploymentID) {
+func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, reqID string) {
 	t.Helper()
-	reqID := s.mustGetReqID(t, did)
 	if _, err := s.client.Unpause(reqID, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -79,19 +77,22 @@ func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, did sous.Deploym
 	})
 }
 
-func (s *Singularity) GetRequestForDeployment(t *testing.T, did sous.DeploymentID) *dtos.SingularityRequestParent {
+func (s *Singularity) MustGetRequestForDeployment(t *testing.T, reqID string) *dtos.SingularityRequestParent {
 	t.Helper()
-	reqID := s.mustGetReqID(t, did)
-	req, err := s.client.GetRequest(reqID, false)
+	req, err := s.GetRequestForDeployment(t, reqID)
 	if err != nil {
 		t.Fatalf("getting request: %s", err)
 	}
 	return req
 }
 
-func (s *Singularity) GetLatestDeployForDeployment(t *testing.T, did sous.DeploymentID) *dtos.SingularityDeployHistory {
+func (s *Singularity) GetRequestForDeployment(t *testing.T, reqID string) (*dtos.SingularityRequestParent, error) {
 	t.Helper()
-	reqID := s.mustGetReqID(t, did)
+	return s.client.GetRequest(reqID, false)
+}
+
+func (s *Singularity) MustGetLatestDeployForDeployment(t *testing.T, reqID string) *dtos.SingularityDeployHistory {
+	t.Helper()
 	deps, err := s.client.GetDeploys(reqID, 100, 1)
 	if err != nil {
 		t.Fatalf("getting deployments for request: %s", err)
@@ -115,7 +116,7 @@ func (s *Singularity) GetLatestDeployForDeployment(t *testing.T, did sous.Deploy
 	return dep
 }
 
-func (s *Singularity) mustGetReqID(t *testing.T, did sous.DeploymentID) string {
+func (s *Singularity) DefaultReqID(t *testing.T, did sous.DeploymentID) string {
 	t.Helper()
 	did.Cluster = did.Cluster + s.ClusterSuffix
 	reqID, err := singularity.MakeRequestID(did)
@@ -129,6 +130,7 @@ func waitFor(t *testing.T, what string, timeout, interval time.Duration, f func(
 	t.Helper()
 	fmt.Fprintf(os.Stderr, "waitFor: Waiting for %s...\n", what)
 	ticker := time.NewTicker(interval)
+	startTime := time.Now()
 	defer ticker.Stop()
 	select {
 	case <-time.After(timeout):
@@ -152,7 +154,8 @@ func waitFor(t *testing.T, what string, timeout, interval time.Duration, f func(
 				}()
 				if err != nil {
 					// Log direct to stderr for live updates.
-					fmt.Fprintf(os.Stderr, "waitFor: Waiting for %s: %s\n", what, err)
+					elapsed := startTime.Sub(time.Now())
+					fmt.Fprintf(os.Stderr, "waitFor: Waiting for %s: %s (%s elapsed)\n", what, err, elapsed)
 					<-ticker.C
 					continue
 				}

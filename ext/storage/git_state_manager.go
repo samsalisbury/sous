@@ -147,11 +147,14 @@ func (gsm *GitStateManager) assertOneChange() error {
 	}
 
 	secondNL := strings.IndexByte(diffIndex[firstNL+1:], '\n')
-	if secondNL != -1 {
-		return errors.Errorf("git update touches more than one file: %q", diffIndex)
+	if secondNL == -1 {
+		return nil
 	}
-
-	return nil
+	verboseDiff, err := gsm.gitOut("diff", "--cached", "master@{upstream}")
+	if err != nil {
+		verboseDiff = fmt.Sprintf("error getting verbose diff; got %s", diffIndex)
+	}
+	return errors.Errorf("git update touches more than one file: %q", verboseDiff)
 }
 
 // WriteState writes sous state to disk, then attempts to push it to Remote.

@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.104...master)
+## Added
+* Singularity request ID is now configurable per-deployment in the manifest.
+  Changing SingularityRequestID results in the next deployment being done to
+  the new SingularityRequestID, and the old singularity request being deleted.
 
 ## [0.5.105](//github.com/opentable/sous/compare/0.5.102...0.5.105)
 ### Fixed
@@ -24,8 +29,8 @@ with respect to its command line interface and HTTP interface
   to handle initial and recovery deploys.
 
 ### Fixed
-* Client: Builds are managed more reliably interenally, using randomized intermediate Docker tags.
-* Server: the startup failure status codes arrray was growing without bound.
+* Client: Builds are managed more reliably internally, using randomized intermediate Docker tags.
+* Server: the startup failure status codes array was growing without bound.
 
 ## [0.5.102](//github.com/opentable/sous/compare/0.5.101...0.5.102)
 ### Added
@@ -48,6 +53,8 @@ with respect to its command line interface and HTTP interface
 ### Added
 * Server: state storage toggle behind a feature flag - servers can be
   configured to use the database as the source of truth.
+* Manifest: per-deployment SingularityRequestID field. NOTE: This does not
+  do anything yet, just gets round-tripped to Git and Postgres.
 
 ### Changed
 * Client: Slack add additional channels to send via config
