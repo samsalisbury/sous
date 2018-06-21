@@ -254,6 +254,19 @@ func TestSousDeploy(t *testing.T) {
 
 						client.MustRun(t, deployCommand, nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
+						did := sous.DeploymentID{
+							ManifestID: sous.ManifestID{
+								Source: sous.SourceLocation{
+									Repo: "github.com/user1/repo1",
+								},
+							},
+							Cluster: "cluster1",
+						}
+						originalReqID := f.Singularity.DefaultReqID(t, did)
+						assertSingularityRequestTypeService(t, f, originalReqID)
+						assertActiveStatus(t, f, originalReqID)
+						assertNonNilHealthCheckOnLatestDeploy(t, f, originalReqID)
+
 						customID := "some-custom-req-id" + f.ClusterSuffix
 						client.SetSingularityRequestID(t, nil, "cluster1", customID)
 
@@ -263,6 +276,8 @@ func TestSousDeploy(t *testing.T) {
 						assertSingularityRequestTypeService(t, f, customID)
 						assertActiveStatus(t, f, customID)
 						assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
+
+						assertRequestDoesNotExist(t, f, originalReqID)
 
 					})
 
