@@ -64,15 +64,6 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
-# TODO SS: Find out why this is necessary.
-# Note: The Darwin test is arbitrary; simply "running on macOS" is probably not the problem,
-# but right now this is not necessary on any of the Linux machines in dev or CI.
-ifeq ($(shell uname),Darwin)
-DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES ?= YES
-else
-DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES ?= NO
-endif
-
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
 SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
 SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
