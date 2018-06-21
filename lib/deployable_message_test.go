@@ -1,6 +1,8 @@
 package sous
 
 import (
+	"crypto/md5"
+	"fmt"
 	"testing"
 
 	"github.com/opentable/sous/util/logging"
@@ -40,7 +42,7 @@ func TestDeployableMessage(t *testing.T) {
 		"sous-prior-checkready-uripath":         "",
 		"sous-prior-checkready-uritimeout":      0,
 		"sous-prior-clustername":                "cluster-1",
-		"sous-prior-env":                        "{}",
+		"sous-prior-env":                        fmt.Sprintf("%s", md5.Sum([]byte("{}"))),
 		"sous-prior-flavor":                     "",
 		"sous-prior-kind":                       "http-service",
 		"sous-prior-metadata":                   "{}",
@@ -68,7 +70,7 @@ func TestDeployableMessage(t *testing.T) {
 		"sous-post-checkready-uripath":         "",
 		"sous-post-checkready-uritimeout":      0,
 		"sous-post-clustername":                "cluster-1",
-		"sous-post-env":                        "{}",
+		"sous-post-env":                        fmt.Sprintf("%s", md5.Sum([]byte("{}"))),
 		"sous-post-flavor":                     "",
 		"sous-post-kind":                       "http-service",
 		"sous-post-metadata":                   "{}",
@@ -214,7 +216,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 		"sous-post-checkready-uripath":         "/health",
 		"sous-post-checkready-uritimeout":      5,
 		"sous-post-clustername":                "",
-		"sous-post-env":                        "{\"OT_DISCO_INIT_URL:\":\"discovery-ci-uswest2.otenv.com\"}",
+		"sous-post-env":                        fmt.Sprintf("%s", md5.Sum([]byte("{\"OT_DISCO_INIT_URL:\":\"discovery-ci-uswest2.otenv.com\"}"))),
 		"sous-post-flavor":                     "",
 		"sous-post-kind":                       "",
 		"sous-post-metadata":                   "{\"\":\"\"}",
@@ -239,7 +241,7 @@ func TestDiffMessages_knownpanic(t *testing.T) {
 		"sous-prior-checkready-uripath":         "/health",
 		"sous-prior-checkready-uritimeout":      5,
 		"sous-prior-clustername":                "",
-		"sous-prior-env":                        "{\"OT_DISCO_INIT_URL:\":\"discovery-ci-uswest2.otenv.com\"}",
+		"sous-prior-env":                        fmt.Sprintf("%s", md5.Sum([]byte("{\"OT_DISCO_INIT_URL:\":\"discovery-ci-uswest2.otenv.com\"}"))),
 		"sous-prior-flavor":                     "",
 		"sous-prior-kind":                       "",
 		"sous-prior-metadata":                   "{\"\":\"\"}",

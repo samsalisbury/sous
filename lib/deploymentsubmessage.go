@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -75,7 +76,7 @@ func (msg *deploymentSubmessage) deployConfigFields(f logging.FieldReportFn) {
 	case "sous-prior":
 		f(logging.SousPriorResources, marshal("resources", dc.Resources))
 		f(logging.SousPriorMetadata, marshal("metadata", dc.Metadata))
-		f(logging.SousPriorEnv, marshal("env", dc.Env))
+		f(logging.SousPriorEnv, fmt.Sprintf("%s", md5.Sum([]byte(marshal("env", dc.Env)))))
 		f(logging.SousPriorNuminstances, dc.NumInstances)
 		f(logging.SousPriorVolumes, marshal("volumes", dc.Volumes))
 		f(logging.SousPriorStartupSkipcheck, dc.Startup.SkipCheck)
@@ -92,7 +93,7 @@ func (msg *deploymentSubmessage) deployConfigFields(f logging.FieldReportFn) {
 	case "sous-post":
 		f(logging.SousPostResources, marshal("resources", dc.Resources))
 		f(logging.SousPostMetadata, marshal("metadata", dc.Metadata))
-		f(logging.SousPostEnv, marshal("env", dc.Env))
+		f(logging.SousPostEnv, fmt.Sprintf("%s", md5.Sum([]byte(marshal("env", dc.Env)))))
 		f(logging.SousPostNuminstances, dc.NumInstances)
 		f(logging.SousPostVolumes, marshal("volumes", dc.Volumes))
 		f(logging.SousPostStartupSkipcheck, dc.Startup.SkipCheck)
