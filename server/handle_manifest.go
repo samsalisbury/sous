@@ -2,9 +2,7 @@ package server
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/opentable/sous/lib"
@@ -117,8 +115,6 @@ func (pmh *PUTManifestHandler) Exchange() (interface{}, int) {
 	m := &sous.Manifest{}
 	dec := json.NewDecoder(pmh.Request.Body)
 	dec.Decode(m)
-
-	fmt.Fprintf(os.Stdout, "PUT Manifest received =================>\n\n\n%# +v\n\n\n<==================", m)
 
 	flaws := m.Validate()
 	if len(flaws) > 0 {
