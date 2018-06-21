@@ -132,7 +132,7 @@ func (i *Instance) Start(t *testing.T, binPath string) error {
 	}
 
 	serverDebug := os.Getenv("SOUS_SERVER_DEBUG") == "true"
-	cmd, err := i.RunCmd(t, binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName, fmt.Sprintf("-d=%t", serverDebug))
+	cmd, err := i.RunCmd(t, binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName, "autoresolver=false", fmt.Sprintf("-d=%t", serverDebug))
 	if err != nil {
 		return err
 	}
