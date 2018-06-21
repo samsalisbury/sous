@@ -9,34 +9,38 @@
 			<constraints nullable="false" unique="true" />
 		</column>
 	</createTable>
+
 	<createTable tableName="singularity_deployment_bindings">
 	  <column name="singularity_deployment_bindings_id" type="SERIAL" autoIncrement="true">
 	    <constraints primaryKey="true" />
 	  </column>
 	  <column name="singularity_cluster_id" type="INT">
-	    <constraints foreignKeyName="component_id" />
+      <constraints
+        foreignKeyName="singularity_deployment_bindings_singularity_cluster_id_fkey"
+        references="singularity_clusters(singularity_cluster_id)"
+        />
 	  </column>
 	  <column name="singularity_request_id" type="TEXT">
 	    <constraints nullable="false" unique="false" />
 	  </column>
 	</createTable>
+
 	<addColumn tableName="deployments">
 		<column name="singularity_deployment_bindings_id" type="INT">
 			<constraints nullable="true" />
 		</column>
 	</addColumn>
+
 	<addForeignKeyConstraint
-		baseColumnNames="singularity_deployment_bindings_id"
-		baseTableName="deployments"
-		constraintName="deployments_singularity_deployment_bindings_id_fkey"
+		      baseTableName="deployments"
+    referencedTableName="singularity_deployment_bindings"
+
+		      baseColumnNames="singularity_deployment_bindings_id"
 		referencedColumnNames="singularity_deployment_bindings_id"
-		referencedTableName="singularity_deployment_bindings" />
-	<addForeignKeyConstraint
-		baseColumnNames="singularity_cluster_id"
-		baseTableName="singularity_deployment_bindings"
-		constraintName="singularity_deployment_bindings_singularity_cluster_id_fkey"
-		referencedColumnNames="singularity_cluster_id"
-		referencedTableName="singularity_clusters" />
+
+		constraintName="deployments_singularity_deployment_bindings_id_fkey"
+    />
+
 	<addUniqueConstraint
 		tableName="singularity_deployment_bindings"
 		columnNames="singularity_request_id, singularity_cluster_id" />
