@@ -500,6 +500,10 @@ local-server:
 	@echo
 	@export DIR=$(PWD)/.sous-gdm-temp && rm -rf "$$DIR" && git clone $(SOUS_GDM_REPO) $$DIR && SOUS_SIBLING_URLS='{"$(EMULATE_CLUSTER)": "http://$(LOCAL_SERVER_LISTEN)"}' SOUS_STATE_LOCATION=$$DIR SOUS_PG_HOST=$(PGHOST) SOUS_PG_PORT=$(PGPORT) SOUS_PG_USER=postgres sous server -listen $(LOCAL_SERVER_LISTEN) -autoresolver=false -d -v
 
+.PHONY: provision-docker-machine
+provision-docker-machine:
+	docker-machine create -d virtualbox --virtualbox-memory "2048" default
+
 .PHONY: artifactory clean clean-containers clean-container-certs \
 	clean-running-containers clean-container-images coverage deb-build \
 	install-fpm install-jfrog install-ggen install-build-tools legendary release \
