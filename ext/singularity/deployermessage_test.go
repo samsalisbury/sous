@@ -1,6 +1,7 @@
 package singularity
 
 import (
+	"crypto/md5"
 	"errors"
 	"fmt"
 	"testing"
@@ -156,7 +157,7 @@ func defaultExpectedFields() map[string]interface{} {
 		"sous-post-checkready-uripath":          "",
 		"sous-post-checkready-uritimeout":       0,
 		"sous-post-clustername":                 "cluster",
-		"sous-post-env":                         "null",
+		"sous-post-env":                         fmt.Sprintf("%s", md5.Sum([]byte("null"))),
 		"sous-post-flavor":                      "",
 		"sous-post-kind":                        "",
 		"sous-post-metadata":                    "null",
@@ -183,7 +184,7 @@ func defaultExpectedFields() map[string]interface{} {
 		"sous-prior-checkready-uripath":         "",
 		"sous-prior-checkready-uritimeout":      0,
 		"sous-prior-clustername":                "cluster",
-		"sous-prior-env":                        "null",
+		"sous-prior-env":                        fmt.Sprintf("%s", md5.Sum([]byte("null"))),
 		"sous-prior-flavor":                     "",
 		"sous-prior-kind":                       "",
 		"sous-prior-metadata":                   "null",
