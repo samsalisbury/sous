@@ -27,19 +27,12 @@
 
 	<addColumn tableName="deployments">
 		<column name="singularity_deployment_bindings_id" type="INT">
-			<constraints nullable="true" />
+      <constraints nullable="true"
+        foreignKeyName="singularity_deployment_bindings_singularity_cluster_id_fkey"
+        references="singularity_deployment_bindings(singularity_deployment_bindings_id)"
+      />
 		</column>
 	</addColumn>
-
-	<addForeignKeyConstraint
-		      baseTableName="deployments"
-    referencedTableName="singularity_deployment_bindings"
-
-		      baseColumnNames="singularity_deployment_bindings_id"
-		referencedColumnNames="singularity_deployment_bindings_id"
-
-		constraintName="deployments_singularity_deployment_bindings_id_fkey"
-    />
 
 	<addUniqueConstraint
 		tableName="singularity_deployment_bindings"
