@@ -166,12 +166,12 @@ func (e Env) Clone() Env {
 }
 
 // Clone returns an independent copy of m.
-func (e Metadata) Clone() Metadata {
-	if e == nil {
+func (m Metadata) Clone() Metadata {
+	if m == nil {
 		return nil
 	}
-	metadata := make(Metadata, len(e))
-	for k, v := range e {
+	metadata := make(Metadata, len(m))
+	for k, v := range m {
 		metadata[k] = v
 	}
 	return metadata
@@ -201,12 +201,12 @@ func (e Env) Equal(o Env) bool {
 }
 
 // Equal compares Metadatas
-func (e Metadata) Equal(o Metadata) bool {
-	if len(e) != len(o) {
+func (m Metadata) Equal(o Metadata) bool {
+	if len(m) != len(o) {
 		return false
 	}
 
-	for name, value := range e {
+	for name, value := range m {
 		if ov, ok := o[name]; !ok || ov != value {
 			return false
 		}
