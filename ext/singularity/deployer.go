@@ -202,7 +202,6 @@ func (r *deployer) RectifySingleCreate(d *sous.DeployablePair) (err error) {
 		}
 	}
 
-	// TODO SS: Check this reques ID does not already exist.
 	if err = r.Client.PostRequest(*d.Post, reqID); err != nil {
 		return err
 	}
@@ -264,9 +263,10 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 		if err := r.Client.Deploy(*pair.Post, desiredReqID, depID); err != nil {
 			return err
 		}
-		// Remove the old request ID only once the new deployment is complete.
-		m = fmt.Sprintf("Renamed to %q", desiredReqID)
-		return r.Client.DeleteRequest(pair.Post.Deployment.Cluster.BaseURL, currentReqID, m)
+		// TODO: Remove the old request.
+		//m = fmt.Sprintf("Renamed to %q", desiredReqID)
+		//return r.Client.DeleteRequest(pair.Post.Deployment.Cluster.BaseURL, currentReqID, m)
+		return nil
 	}
 
 	reportDeployerMessage("Operating on request", pair, diffs, data, nil, logging.ExtraDebug1Level, r.log)
