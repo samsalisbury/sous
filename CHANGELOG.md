@@ -9,8 +9,8 @@ with respect to its command line interface and HTTP interface
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.104...master)
 ## Added
 * Singularity request ID is now configurable per-deployment in the manifest.
-  Note that changing this any time after the first deployment results in an
-  orphaned Singularity request.
+  Changing SingularityRequestID results in the next deployment being done to
+  the new SingularityRequestID, and the old singularity request being deleted.
 
 ## [0.5.105](//github.com/opentable/sous/compare/0.5.102...0.5.105)
 ### Fixed
