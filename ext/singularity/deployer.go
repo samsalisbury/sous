@@ -258,10 +258,9 @@ func (r *deployer) RectifySingleModification(pair *sous.DeployablePair) (err err
 	} else if desiredReqID != currentReqID {
 		// NOTE: This message is WarningLevel whilst the feature is new.
 		// TODO SS: Turn this down to debug level once we're happy with it.
-		m := fmt.Sprintf("Creating request %q to replace %q", currentReqID, desiredReqID)
+		m := fmt.Sprintf("Creating request %q to replace %q", desiredReqID, currentReqID)
 		reportDeployerMessage(m, pair, diffs, data, nil, logging.WarningLevel, r.log)
 
-		// TODO SS: Check that this request does not already exist; fail if it does.
 		if err := r.Client.PostRequest(*pair.Post, desiredReqID); err != nil {
 			return err
 		}
