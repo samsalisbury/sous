@@ -115,6 +115,32 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 	}, nil
 }
 
+// ArtifactOpts are options for Add Artifacts
+type ArtifactOpts struct {
+	Repo, Cluster string
+}
+
+func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
+
+	scoop := struct {
+		HTTP    *ClusterSpecificHTTPClient
+		LogSink LogSink
+		User    sous.User
+		Config  LocalSousConfig
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+	return &actions.AddArtifact{
+		HTTPClient: scoop.HTTP.HTTPClient,
+		LogSink:    scoop.LogSink.LogSink.Child("add-artifact"),
+		User:       scoop.User,
+		Config:     scoop.Config.Config,
+		Repo:       opts.Repo,
+		Cluster:    opts.Cluster,
+	}, nil
+}
+
 // DeployActionOpts are options for GetDeploy.
 type DeployActionOpts struct {
 	DFF                              config.DeployFilterFlags
