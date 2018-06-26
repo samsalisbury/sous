@@ -117,7 +117,8 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 
 // ArtifactOpts are options for Add Artifacts
 type ArtifactOpts struct {
-	DFF config.DeployFilterFlags
+	DFF         config.DeployFilterFlags
+	DockerImage string
 }
 
 func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
@@ -132,12 +133,15 @@ func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
 		return nil, err
 	}
 	return &actions.AddArtifact{
-		HTTPClient: scoop.HTTP.HTTPClient,
-		LogSink:    scoop.LogSink.LogSink.Child("add-artifact"),
-		User:       scoop.User,
-		Config:     scoop.Config.Config,
-		Repo:       opts.DFF.Repo,
-		Cluster:    opts.DFF.Cluster,
+		HTTPClient:  scoop.HTTP.HTTPClient,
+		LogSink:     scoop.LogSink.LogSink.Child("add-artifact"),
+		User:        scoop.User,
+		Config:      scoop.Config.Config,
+		Repo:        opts.DFF.Repo,
+		Cluster:     opts.DFF.Cluster,
+		Offset:      opts.DFF.Offset,
+		Tag:         opts.DFF.Tag,
+		DockerImage: opts.DockerImage,
 	}, nil
 }
 

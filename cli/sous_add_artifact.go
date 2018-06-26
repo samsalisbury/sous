@@ -26,6 +26,10 @@ This is to add the artifact to sous for deploy.
 // AddFlags adds the flags for sous init.
 func (sa *SousAddArtifact) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sa.opts.DFF, AddArtificatFlagsHelp)
+
+	fs.StringVar(&sa.opts.DockerImage, "docker-image", "",
+		"the docker image to store as an artifact")
+
 }
 
 // Execute defines the behavior of `sous plumbing normalizegdm`
