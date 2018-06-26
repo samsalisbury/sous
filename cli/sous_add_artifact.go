@@ -24,19 +24,14 @@ This is to add the artifact to sous for deploy.
 }
 
 // AddFlags adds the flags for sous init.
-func (sqa *SousAddArtifact) AddFlags(fs *flag.FlagSet) {
-
-	//MustAddFlags(fs, &sqa.opts.DFF, AddArtificatFlagsHelp)
-	fs.StringVar(&sqa.opts.Repo, "repo", "",
-		"repo for this artifact")
-	fs.StringVar(&sqa.opts.Cluster, "cluster", "",
-		"cluster for this artifact")
+func (sa *SousAddArtifact) AddFlags(fs *flag.FlagSet) {
+	MustAddFlags(fs, &sa.opts.DFF, AddArtificatFlagsHelp)
 }
 
 // Execute defines the behavior of `sous plumbing normalizegdm`
-func (sqa *SousAddArtifact) Execute(args []string) cmdr.Result {
+func (sa *SousAddArtifact) Execute(args []string) cmdr.Result {
 
-	addArtifact, err := sqa.SousGraph.GetArtifact(sqa.opts)
+	addArtifact, err := sa.SousGraph.GetArtifact(sa.opts)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
@@ -44,6 +39,5 @@ func (sqa *SousAddArtifact) Execute(args []string) cmdr.Result {
 	if err := addArtifact.Do(); err != nil {
 		return EnsureErrorResult(err)
 	}
-
 	return cmdr.Success("Artifact added.")
 }
