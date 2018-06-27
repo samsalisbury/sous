@@ -121,6 +121,7 @@ type ArtifactOpts struct {
 	DockerImage string
 }
 
+//GetArtifact will return artifact for cli add artifact
 func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &opts.DFF)
 	scoop := struct {
