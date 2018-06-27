@@ -23,11 +23,11 @@ func TestAddArttifact_Execute(t *testing.T) {
 	gr := graph.DefaultTestGraph(t)
 
 	require := require.New(t)
-	p := &SousAddArtifact{SousGraph: gr}
+	a := &SousAddArtifact{SousGraph: gr}
 
 	args := []string{"", ""}
 
-	result := p.Execute(args)
+	result := a.Execute(args)
 
 	require.IsType(cmdr.UnknownErr{}, result)
 

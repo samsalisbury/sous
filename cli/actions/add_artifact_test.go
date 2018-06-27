@@ -1,4 +1,4 @@
-package sous
+package actions
 
 import (
 	"encoding/json"
@@ -8,14 +8,20 @@ import (
 	"strings"
 	"testing"
 
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
-	"github.com/samsalisbury/semv"
+	"github.com/opentable/sous/util/shell"
+	"github.com/stretchr/testify/require"
 )
 
-func TestHTTPNameInserter(t *testing.T) {
+func TestAddArtificact_Do(t *testing.T) {
 
-	reqd := false
+	ls, _ := logging.NewLogSinkSpy()
+
+	sh, ctl := shell.NewTestShell()
+	_, cctl := ctl.CmdFor("docker", "inspect")
+	cctl.ResultSuccess("docker.otenv.com/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX", "")
 
 	srv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if meth := r.Method; strings.ToUpper(meth) != "PUT" {
@@ -32,9 +38,7 @@ func TestHTTPNameInserter(t *testing.T) {
 			t.Errorf("Empty body")
 		}
 		rw.WriteHeader(200)
-		reqd = true
 	}))
-
 	startSrv := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		if meth := r.Method; strings.ToUpper(meth) != "GET" {
 			t.Errorf("Method should be GET was %s", meth)
@@ -43,8 +47,8 @@ func TestHTTPNameInserter(t *testing.T) {
 			t.Errorf("Path should be '/server' but was: %s", path)
 		}
 		rw.Header().Set("Content-Type", "application/json")
-		sdata := ServerListData{
-			Servers: []Server{{
+		sdata := sous.ServerListData{
+			Servers: []sous.Server{{
 				ClusterName: "test",
 				URL:         srv.URL,
 			}},
@@ -53,31 +57,28 @@ func TestHTTPNameInserter(t *testing.T) {
 		enc.Encode(sdata)
 	}))
 
-	ls, _ := logging.NewLogSinkSpy()
-	tid := TraceID("trace!")
+	tid := sous.TraceID("trace!")
 
 	cl, err := restful.NewClient(startSrv.URL, ls, map[string]string{"OT-RequestId": string(tid)})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	hni := NewHTTPNameInserter(cl, tid, ls)
+	hni := sous.NewHTTPNameInserter(cl, tid, ls)
 	if err != nil {
 		t.Error(err)
 	}
-	err = hni.Insert(
-		SourceID{Location: SourceLocation{Repo: "a-repo", Dir: "offset"}, Version: semv.MustParse("5.5.5")},
-		BuildArtifact{
-			DigestReference: "dockerthin.com/repo@sha256:012345678901234567890123456789AB012345678901234567890123456789AB",
-			//Name:      "dockerthin.com/repo/latest",
-			Type:      "docker",
-			Qualities: []Quality{},
-		},
-	)
-	if err != nil {
-		t.Error(err)
+	a := &AddArtifact{
+		LogSink:    ls,
+		User:       sous.User{},
+		Cluster:    "test-cluster",
+		Repo:       "github.com/testorg/repo",
+		LocalShell: sh,
+		Inserter:   sous.ClientInserter{Inserter: hni},
+		Tag:        "0.0.3",
 	}
-	if !reqd {
-		t.Errorf("No request issued")
-	}
+
+	err = a.Do()
+
+	require.NoError(t, err)
 }

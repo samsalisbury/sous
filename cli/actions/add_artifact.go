@@ -8,7 +8,6 @@ import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
-	"github.com/opentable/sous/util/restful"
 	"github.com/opentable/sous/util/shell"
 )
 
@@ -20,7 +19,6 @@ type AddArtifact struct {
 	Tag         string
 	DockerImage string
 	LocalShell  shell.Shell
-	HTTPClient  restful.HTTPClient
 	LogSink     logging.LogSink
 	User        sous.User
 	Inserter    sous.ClientInserter

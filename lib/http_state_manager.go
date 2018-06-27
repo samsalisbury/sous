@@ -104,7 +104,7 @@ func (hsm *HTTPStateManager) buildClientBundle() error {
 	if hsm.clusterClients != nil {
 		return nil
 	}
-	serverList := serverListData{}
+	serverList := ServerListData{}
 	_, err := hsm.Retrieve("./servers", nil, &serverList, nil)
 	if err != nil {
 		return err

@@ -126,7 +126,6 @@ func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &opts.DFF)
 	scoop := struct {
 		Inserter   sous.ClientInserter
-		HTTP       *ClusterSpecificHTTPClient
 		LogSink    LogSink
 		User       sous.User
 		LocalShell LocalWorkDirShell
@@ -136,7 +135,6 @@ func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
 		return nil, err
 	}
 	return &actions.AddArtifact{
-		HTTPClient:  scoop.HTTP.HTTPClient,
 		LogSink:     scoop.LogSink.LogSink.Child("add-artifact"),
 		User:        scoop.User,
 		Config:      scoop.Config.Config,

@@ -31,8 +31,8 @@ type (
 		LastCycle bool
 	}
 
-	// copied from server - avoiding coupling to server implemention
-	server struct {
+	// Server copied from server - avoiding coupling to server implemention
+	Server struct {
 		ClusterName string
 		URL         string
 	}
@@ -42,9 +42,9 @@ type (
 		Deployments []*Deployment
 	}
 
-	// copied from server - avoiding coupling to server implemention
-	serverListData struct {
-		Servers []server
+	// ServerListData copied from server - avoiding coupling to server implemention
+	ServerListData struct {
+		Servers []Server
 	}
 
 	// copied from server - avoiding coupling to server implemention
@@ -102,7 +102,7 @@ func (sp *StatusPoller) Wait(ctx context.Context) (ResolveState, error) {
 func (sp *StatusPoller) waitForever() (ResolveState, error) {
 	sp.results = make(chan pollResult)
 	// Retrieve the list of servers known to our main server.
-	clusters := &serverListData{}
+	clusters := &ServerListData{}
 	if _, err := sp.Retrieve("./servers", nil, clusters, sp.User.HTTPHeaders()); err != nil {
 		return ResolveFailed, err
 	}
@@ -131,7 +131,7 @@ func (sp *StatusPoller) waitForever() (ResolveState, error) {
 	return sp.poll(subs), nil
 }
 
-func (sp *StatusPoller) subPollers(clusters *serverListData, deps Deployments) ([]*subPoller, error) {
+func (sp *StatusPoller) subPollers(clusters *ServerListData, deps Deployments) ([]*subPoller, error) {
 	subs := []*subPoller{}
 	for _, s := range clusters.Servers {
 		// skip clusters the user isn't interested in

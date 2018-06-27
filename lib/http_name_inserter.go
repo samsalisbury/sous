@@ -27,7 +27,7 @@ func (hni *HTTPNameInserter) getClients() error {
 	if hni.clients != nil {
 		return nil
 	}
-	serverList := serverListData{}
+	serverList := ServerListData{}
 	_, err := hni.client.Retrieve("./servers", nil, &serverList, nil)
 	if err != nil {
 		return err
