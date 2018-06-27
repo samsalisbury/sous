@@ -47,6 +47,8 @@ type (
 	RegistrySpy struct {
 		spy *spies.Spy
 	}
+
+	// A client instance of Inserter, differenciates between Server for graph
 	ClientInserter struct{ Inserter }
 )
 
