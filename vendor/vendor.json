@@ -212,6 +212,12 @@
 			"revisionTime": "2016-03-17T21:34:30Z"
 		},
 		{
+			"checksumSHA1": "g7uHECbzuaWwdxvwoyxBwgeERPk=",
+			"path": "github.com/hashicorp/go-multierror",
+			"revision": "b7773ae218740a7be65057fc60b366a49b538a44",
+			"revisionTime": "2017-12-04T18:29:08Z"
+		},
+		{
 			"checksumSHA1": "HtpYAWHvd9mq+mHkpo7z8PGzMik=",
 			"path": "github.com/hashicorp/hcl",
 			"revision": "ef8a98b0bbce4a65b5aa4c368430a80ddc533168",
@@ -372,6 +378,306 @@
 			"path": "github.com/opentable/hy",
 			"revision": "1338e7e3e2c5144a40409b80e687e0532b9c656a",
 			"revisionTime": "2016-08-20T15:25:38Z"
+		},
+		{
+			"checksumSHA1": "75qVidE3jtMufGt8+r3bOhI13lo=",
+			"path": "github.com/opentable/sous",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "GDh4/3aCaVRPSjXi91BDGiRqAew=",
+			"path": "github.com/opentable/sous/bin",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "Lk/Sf1NUWMt15lHQmqDTV/h6+8c=",
+			"path": "github.com/opentable/sous/bin/cert_san",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "qQgPde8D4mCbxn8tr3KyTz0bMns=",
+			"path": "github.com/opentable/sous/bin/docker_labels",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "ioOUrgzQIgnrLbsUq3Z0DBbyjbs=",
+			"path": "github.com/opentable/sous/bin/ggen",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "M0W+GiIThytSKgnPJH2weLBdFbw=",
+			"path": "github.com/opentable/sous/cli",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "0pC6CtJ3EC2QiKpKdrg+ubCmGsg=",
+			"path": "github.com/opentable/sous/cli/actions",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "2PpKXacdPguDYopFIuYzj+dVLkY=",
+			"path": "github.com/opentable/sous/cli/tests",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "FllANXgWb1qxUiVju9lFbwff/2s=",
+			"path": "github.com/opentable/sous/cmd/sous-bootstrap",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "BPuEoyBCuZBIMSNlh5cGshstyQo=",
+			"path": "github.com/opentable/sous/config",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "Nw+pgr2AwyIxmtCoZ9T7viXvPPw=",
+			"path": "github.com/opentable/sous/dev_support/sous_qa_setup",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "QttrB1LVdaGUHb/nA0ZFFG+kDCk=",
+			"path": "github.com/opentable/sous/dev_support/sous_qa_setup/desc",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "6PjYwEV1iILIwlzhnv1gOEl4u5U=",
+			"path": "github.com/opentable/sous/dto",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "J0YnmJYQk0aNZlvE3BEZCPGtbcg=",
+			"path": "github.com/opentable/sous/examples",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "/AU27dy0TCtJKwhhWHpgI9oxJMc=",
+			"path": "github.com/opentable/sous/ext",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "4mie5WZ4Ha0vKvh0UVuwdhNFYAY=",
+			"path": "github.com/opentable/sous/ext/docker",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "LGj2V/nSgqnkjBo7+CgCSaQt5bE=",
+			"path": "github.com/opentable/sous/ext/docker/machine",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "3BBAfQXZsdrI0TMC+Tjk8sU8p5E=",
+			"path": "github.com/opentable/sous/ext/git",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "8/Tu6j0K7cCiXRnfjBuH9/qvniI=",
+			"path": "github.com/opentable/sous/ext/github",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "ytCmnBEpmQ8dIrOU3GNTdw82lHA=",
+			"path": "github.com/opentable/sous/ext/otpl",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "/gJuy9gIKvcQ1mwreBUrBDfoLx8=",
+			"path": "github.com/opentable/sous/ext/singularity",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "7Geh/D5GimFR+hNxONETuzkIMM8=",
+			"path": "github.com/opentable/sous/ext/storage",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "GyGwwoyyoWBR/0LcG4e/GTjyyDk=",
+			"path": "github.com/opentable/sous/graph",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "LJ+NRYjZimYp/jcoSJCiIeqRNc4=",
+			"path": "github.com/opentable/sous/integration",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "dm+v3pi1oQ69eZ48bIrh/8xeyfk=",
+			"path": "github.com/opentable/sous/lib",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "1P2Qh7WH/hxi51Paqfp4pjGhsq0=",
+			"path": "github.com/opentable/sous/server",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "MoNOLilhWChIa1uVjdOkCO+ITMs=",
+			"path": "github.com/opentable/sous/test",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "qj2zX0oNtxLhmLbx4G+5tf99dpc=",
+			"path": "github.com/opentable/sous/test/smoke",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "FC30GFHtkQZJTF4PPqsMdEfRshk=",
+			"path": "github.com/opentable/sous/util/allfields",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "kvW0yYYk/BIetHV+Tpenwl1TxqY=",
+			"path": "github.com/opentable/sous/util/allfields/tester",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "VHBtCurDFhT3uIWPmGH0Dya65ac=",
+			"path": "github.com/opentable/sous/util/blueprints/cmap",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "ZxifFJWMAoprrxSfVm0BViEsauk=",
+			"path": "github.com/opentable/sous/util/cmdr",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "6TMkkQ8nBc3YbJWIVYemrDjI+/4=",
+			"path": "github.com/opentable/sous/util/cmdr/cmdr-example",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "morO+i1zY04uGtFRvVKMbplioPk=",
+			"path": "github.com/opentable/sous/util/configloader",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "vqhvQM/CkeXElolDWH/JdJMWgEU=",
+			"path": "github.com/opentable/sous/util/docker_registry",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "iz6RqqKCZgojzaWBiL2P+bf9OTY=",
+			"path": "github.com/opentable/sous/util/filemap",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "OIhI61oXz6fFxBlw8RA3eyzq0Dc=",
+			"path": "github.com/opentable/sous/util/firsterr",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "r6YGNLvDlprwL1jMuj9LrpYB8/c=",
+			"path": "github.com/opentable/sous/util/logging",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "KMoYQ4LsVkAS4AdlCRA3K5V+DZk=",
+			"path": "github.com/opentable/sous/util/logging/messages",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "S+tQnZ96pHrqHOrQu19eW4pkKRM=",
+			"path": "github.com/opentable/sous/util/readdebugger",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "kiPuoQ13QRpogmvKrEvAHFSYDCI=",
+			"path": "github.com/opentable/sous/util/restful",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "OCEO6K0yAmZb5enFjB8Hw5X9SEE=",
+			"path": "github.com/opentable/sous/util/restful/restfultest",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "jM+ZG/roq8/HN20+MIc7ijK8JDg=",
+			"path": "github.com/opentable/sous/util/shell",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "NRwB64mhZpv1qzPrt5xTyQPZID0=",
+			"path": "github.com/opentable/sous/util/shelltest",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "Qy/3s415W6gdxY2mC0WcklExsec=",
+			"path": "github.com/opentable/sous/util/sqlgen",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "ChF0HbI5mhOZ7rctzP4LcghZ058=",
+			"path": "github.com/opentable/sous/util/tempfile",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "sGedEXqudRRnVgokZKFVaALMZlg=",
+			"path": "github.com/opentable/sous/util/test_with_docker",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "DFN3kIKo+/n6huIM7QB1on4WGIg=",
+			"path": "github.com/opentable/sous/util/validator",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "AjCPzyn15i5+6aZIzXJhRstI51I=",
+			"path": "github.com/opentable/sous/util/whitespace",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
+		},
+		{
+			"checksumSHA1": "3aM6KZr+D9gkiwqkV6HwqxfTla8=",
+			"path": "github.com/opentable/sous/util/yaml",
+			"revision": "9190614a53054ec2a6cbcc223a1af85b7a4e2dc0",
+			"revisionTime": "2018-06-27T18:27:43Z"
 		},
 		{
 			"checksumSHA1": "26DOediQVdeY5UbSePJouPNk8z0=",
