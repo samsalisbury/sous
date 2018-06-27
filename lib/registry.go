@@ -1,6 +1,8 @@
 package sous
 
-import "github.com/nyarly/spies"
+import (
+	"github.com/nyarly/spies"
+)
 
 type (
 	// ImageLabeller can get the image labels for a given imageName
@@ -45,6 +47,7 @@ type (
 	RegistrySpy struct {
 		spy *spies.Spy
 	}
+	ClientInserter struct{ Inserter }
 )
 
 // NewInserterSpy returns a spy inserter for testing

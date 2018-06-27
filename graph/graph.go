@@ -105,7 +105,6 @@ type (
 	// Wrappers for the Inserter interface, to make explicit the difference
 	// between client and server handling.
 	serverInserter struct{ sous.Inserter }
-	ClientInserter struct{ sous.Inserter }
 
 	// StateReader wraps a storage.StateReader.
 	StateReader struct{ sous.StateReader }
@@ -520,7 +519,7 @@ func newSelector(regClient LocalDockerClient, log LogSink) sous.Selector {
 	return docker.NewBuildStrategySelector(log.Child("docker-build-strategy"), regClient)
 }
 
-func newDockerBuilder(cfg LocalSousConfig, nc ClientInserter, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, log LogSink) (*docker.Builder, error) {
+func newDockerBuilder(cfg LocalSousConfig, nc sous.ClientInserter, ctx *sous.SourceContext, source LocalWorkDirShell, scratch ScratchDirShell, log LogSink) (*docker.Builder, error) {
 	drh := cfg.Docker.RegistryHost
 	source.Sh = source.Sh.Clone().(*shell.Sh)
 	source.Sh.LongRunning(true)
@@ -789,9 +788,9 @@ func newServerInserter(nc lazyNameCache) (serverInserter, error) {
 	return serverInserter{i}, nil
 }
 
-func newClientInserter(cfg LocalSousConfig, tid sous.TraceID, log LogSink) (ClientInserter, error) {
+func newClientInserter(cfg LocalSousConfig, tid sous.TraceID, log LogSink) (sous.ClientInserter, error) {
 	cl, err := restful.NewClient(cfg.Server, log.Child("http-client"), map[string]string{"OT-RequestId": string(tid)})
-	return ClientInserter{sous.NewHTTPNameInserter(cl, tid, log.LogSink)}, err
+	return sous.ClientInserter{sous.NewHTTPNameInserter(cl, tid, log.LogSink)}, err
 }
 
 // initErr returns nil if error is nil, otherwise an initialisation error.

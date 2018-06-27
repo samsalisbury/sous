@@ -124,7 +124,7 @@ type ArtifactOpts struct {
 func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
 	di.guardedAdd("DeployFilterFlags", &opts.DFF)
 	scoop := struct {
-		Inserter   ClientInserter
+		Inserter   sous.ClientInserter
 		HTTP       *ClusterSpecificHTTPClient
 		LogSink    LogSink
 		User       sous.User
@@ -140,6 +140,7 @@ func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
 		User:        scoop.User,
 		Config:      scoop.Config.Config,
 		LocalShell:  scoop.LocalShell,
+		Inserter:    scoop.Inserter,
 		Repo:        opts.DFF.Repo,
 		Cluster:     opts.DFF.Cluster,
 		Offset:      opts.DFF.Offset,
