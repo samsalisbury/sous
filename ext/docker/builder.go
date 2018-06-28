@@ -138,7 +138,8 @@ func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
 	if err == nil {
 		return err
 	}
-	bp.DigestName = strings.Trim(output, " \n\t\r")
+	bp.DigestName = strings.Replace(strings.Trim(output, " \n\t\r"), "'", "", -1)
+
 	return nil
 }
 
