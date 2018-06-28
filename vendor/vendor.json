@@ -212,6 +212,12 @@
 			"revisionTime": "2016-03-17T21:34:30Z"
 		},
 		{
+			"checksumSHA1": "cdOCt0Yb+hdErz8NAQqayxPmRsY=",
+			"path": "github.com/hashicorp/errwrap",
+			"revision": "7554cd9344cec97297fa6649b055a8c98c2a1e55",
+			"revisionTime": "2014-10-28T05:47:10Z"
+		},
+		{
 			"checksumSHA1": "g7uHECbzuaWwdxvwoyxBwgeERPk=",
 			"path": "github.com/hashicorp/go-multierror",
 			"revision": "b7773ae218740a7be65057fc60b366a49b538a44",
