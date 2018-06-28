@@ -45,6 +45,7 @@ func (a *AddArtifact) Do() error {
 	return a.UploadArtifact(versionName, digestName)
 }
 
+//UploadArtifact add artifact to sous servers
 func (a *AddArtifact) UploadArtifact(versionName, digestName string) error {
 
 	art := sous.BuildArtifact{
