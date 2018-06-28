@@ -36,7 +36,7 @@ master:
     MESOS_ROLES: "OPS"
 
 slave:
-  image: hubspot/singularityexecutorslave:0.19.2
+  image: hubspot/singularityexecutorslave:0.20.1
   command: mesos-slave
   net: host
   environment:

@@ -33,13 +33,12 @@ func (a *AddArtifact) Do() error {
 	versionName := fmt.Sprintf("%s:%s", a.DockerImage, a.Tag)
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Attempting to get Digest for: %s", versionName), logging.ExtraDebug1Level, a.LogSink)
 
-	//Now figure out the digest
-	output, err := a.LocalShell.Stdout("docker", "inspect", "--format={{index .RepoDigests 0}}", versionName)
+	output, err := a.LocalShell.Stdout("docker", "inspect", "--format='{{index .RepoDigests 0}}'", versionName)
 	if err != nil {
 		return err
 	}
+	digestName := strings.Replace(strings.Trim(output, " \n\t\r"), "'", "", -1)
 
-	digestName := strings.Trim(output, " \n\t\r")
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Digest for: %s is %s", versionName, digestName), logging.ExtraDebug1Level, a.LogSink)
 
 	return a.UploadArtifact(versionName, digestName)
