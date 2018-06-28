@@ -256,6 +256,7 @@ var contentTypeHeader = http.CanonicalHeaderKey("Content-Type")
 var contentLengthHeader = http.CanonicalHeaderKey("Content-Length")
 
 func (mh *MetaHandler) renderData(status int, w *loggingResponseWriter, r *http.Request, data interface{}) {
+
 	if data == nil || status >= 300 {
 		mh.writeHeaders(status, w, r, data)
 		return
