@@ -135,7 +135,7 @@ func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
 	// Thus, this arcane incantation.
 	// Oh, and the Digest is never computed until `docker push` happens.
 	output, err := b.SourceShell.Stdout("docker", "inspect", "--format='{{index .RepoDigests 0}}'", bp.VersionName)
-	if err == nil {
+	if err != nil {
 		return err
 	}
 	bp.DigestName = strings.Replace(strings.Trim(output, " \n\t\r"), "'", "", -1)
