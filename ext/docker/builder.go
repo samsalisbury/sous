@@ -140,6 +140,9 @@ func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
 	}
 	bp.DigestName = strings.Replace(strings.Trim(output, " \n\t\r"), "'", "", -1)
 
+	logging.DebugConsole(b.log, fmt.Sprintf("push to registry versionName: %s, revisionName: %s, digest: %s", bp.VersionName,
+		bp.RevisionName, bp.DigestName), bp)
+
 	return nil
 }
 
