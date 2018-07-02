@@ -50,7 +50,8 @@ func (a *AddArtifact) UploadArtifact(versionName, digestName string) error {
 	art := sous.BuildArtifact{
 		VersionName:     versionName,
 		DigestReference: digestName,
-		Qualities:       []sous.Quality{{"otpl_tag", "advisory"}},
+		Qualities:       []sous.Quality{{}},
+		//		Qualities:       []sous.Quality{{"otpl_tag", "advisory"}},
 	}
 
 	//TODO:  Does directory need to be present?
