@@ -37,7 +37,7 @@ func (a *AddArtifact) Do() error {
 	if err != nil {
 		return err
 	}
-	digestName := strings.Replace(strings.Trim(output, " \n\t\r"), "'", "", -1)
+	digestName := strings.Replace(strings.TrimSpace(output), "'", "", -1)
 
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Digest for: %s is %s", versionName, digestName), logging.ExtraDebug1Level, a.LogSink)
 
