@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/textproto"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/hydrogen18/memlistener"
@@ -360,18 +361,24 @@ func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.R
 	return rz, err
 }
 
+func checkContentType(ct string) error {
+	switch {
+	default:
+		return fmt.Errorf("bad content type %q", ct)
+	case ct == "", ct == "application/json",
+		strings.HasPrefix(ct, "text/plain"):
+		return nil
+	}
+}
+
 func (client *LiveHTTPClient) extractBody(rz *http.Response, rzBody interface{}, err error) (*resourceState, error) {
 	if err != nil {
 		return nil, err
 	}
 	defer rz.Body.Close()
 
-	const aj = "application/json"
-	if ct := rz.Header.Get("Content-Type"); ct != aj {
-		if ct == "" {
-			ct = "<empty>"
-		}
-		return nil, fmt.Errorf("Received Content-Type: %s (expected %s)", ct, aj)
+	if err := checkContentType(rz.Header.Get("Content-Type")); err != nil {
+		return nil, err
 	}
 
 	b, e := ioutil.ReadAll(rz.Body)
