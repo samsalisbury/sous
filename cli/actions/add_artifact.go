@@ -50,7 +50,6 @@ func (a *AddArtifact) UploadArtifact(versionName, digestName string) error {
 	art := sous.BuildArtifact{
 		VersionName:     versionName,
 		DigestReference: digestName,
-		Qualities:       []sous.Quality{{}},
 		Qualities:       []sous.Quality{{"added artifact", "advisory"}},
 	}
 
