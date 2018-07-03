@@ -11,7 +11,7 @@ import (
 	"github.com/opentable/sous/util/shell"
 )
 
-//AddArtifact struct for normalize GDM action.
+//AddArtifact struct for add artifact action.
 type AddArtifact struct {
 	Repo        string
 	Cluster     string
@@ -25,7 +25,7 @@ type AddArtifact struct {
 	*config.Config
 }
 
-//Do executes the action for plumb normalize GDM.
+//Do executes the action for add artifact.
 func (a *AddArtifact) Do() error {
 
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Executing add artifact Repo: %s, Cluster: %s, Offset: %s, Tag: %s, DockerImage: %s", a.Repo, a.Cluster, a.Offset, a.Tag, a.DockerImage), logging.ExtraDebug1Level, a.LogSink)
@@ -51,11 +51,10 @@ func (a *AddArtifact) UploadArtifact(versionName, digestName string) error {
 		VersionName:     versionName,
 		DigestReference: digestName,
 		Qualities:       []sous.Quality{{}},
-		//		Qualities:       []sous.Quality{{"otpl_tag", "advisory"}},
+		Qualities:       []sous.Quality{{"added artifact", "advisory"}},
 	}
 
-	//TODO:  Does directory need to be present?
-	sid := sous.MakeSourceID(a.Repo, "", a.Tag)
+	sid := sous.MakeSourceID(a.Repo, a.Offset, a.Tag)
 
 	return a.Inserter.Insert(sid, art)
 }
