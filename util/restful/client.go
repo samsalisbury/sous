@@ -180,7 +180,10 @@ func (client *LiveHTTPClient) RetrieveCtx(ctx context.Context, urlPath string, q
 	rq, err := client.constructRequest(ctx, "GET", urlPath, qParms, nil, headers)
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.extractBody(rz, rzBody, err)
-	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
+	if err != nil {
+		return nil, fmt.Errorf("GET %s: %s", rq.URL, err)
+	}
+	return client.enrichState(state, urlPath, qParms), nil //errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
 }
 
 // Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
@@ -362,6 +365,14 @@ func (client *LiveHTTPClient) extractBody(rz *http.Response, rzBody interface{},
 		return nil, err
 	}
 	defer rz.Body.Close()
+
+	const aj = "application/json"
+	if ct := rz.Header.Get("Content-Type"); ct != aj {
+		if ct == "" {
+			ct = "<empty>"
+		}
+		return nil, fmt.Errorf("Received Content-Type: %s (expected %s)", ct, aj)
+	}
 
 	b, e := ioutil.ReadAll(rz.Body)
 	if e != nil {
