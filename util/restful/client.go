@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/textproto"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/hydrogen18/memlistener"
@@ -180,7 +181,10 @@ func (client *LiveHTTPClient) RetrieveCtx(ctx context.Context, urlPath string, q
 	rq, err := client.constructRequest(ctx, "GET", urlPath, qParms, nil, headers)
 	rz, err := client.sendRequest(rq, err)
 	state, err := client.extractBody(rz, rzBody, err)
-	return client.enrichState(state, urlPath, qParms), errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
+	if err != nil {
+		return nil, fmt.Errorf("GET %s: %s", rq.URL, err)
+	}
+	return client.enrichState(state, urlPath, qParms), nil //errors.Wrapf(err, "Retrieve %s params: %v", urlPath, qParms)
 }
 
 // Create uses the contents of qBody to create a new resource at the server at urlPath/qParms
@@ -357,11 +361,25 @@ func (client *LiveHTTPClient) sendRequest(rq *http.Request, ierr error) (*http.R
 	return rz, err
 }
 
+func checkContentType(ct string) error {
+	switch {
+	default:
+		return fmt.Errorf("bad content type %q", ct)
+	case ct == "", ct == "application/json",
+		strings.HasPrefix(ct, "text/plain"):
+		return nil
+	}
+}
+
 func (client *LiveHTTPClient) extractBody(rz *http.Response, rzBody interface{}, err error) (*resourceState, error) {
 	if err != nil {
 		return nil, err
 	}
 	defer rz.Body.Close()
+
+	if err := checkContentType(rz.Header.Get("Content-Type")); err != nil {
+		return nil, err
+	}
 
 	b, e := ioutil.ReadAll(rz.Body)
 	if e != nil {
