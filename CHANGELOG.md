@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.104...master)
+## [0.5.109](//github.com/opentable/sous/compare/0.5.104...0.5.109)
 ## Added
 * Singularity request ID is now configurable per-deployment in the manifest.
   Changing SingularityRequestID results in the next deployment being done to

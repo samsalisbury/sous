@@ -59,7 +59,7 @@ func (pah *PUTArtifactHandler) Exchange() (interface{}, int) {
 		return err, http.StatusNotAcceptable
 	}
 
-	return "{}", http.StatusOK
+	return nil, http.StatusOK
 }
 
 func sourceIDFromValues(qv restful.QueryValues) (sous.SourceID, error) {
