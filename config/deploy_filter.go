@@ -12,16 +12,37 @@ import (
 // a given command will refer to
 // N.b. that not every command will use every filter
 type DeployFilterFlags struct {
-	Source   string
-	Repo     string
-	Offset   string
-	Flavor   string
-	Tag      string
-	Revision string
-	Cluster  string
-	All      bool
+	DeploymentIDFlags
+	SourceVersionFlags
+	All bool
 }
 
+// SourceVersionFlags are Tag and Revision.
+type SourceVersionFlags struct {
+	Tag      string
+	Revision string
+}
+
+// DeploymentIDFlags identify a Deployment.
+type DeploymentIDFlags struct {
+	ManifestIDFlags
+	Cluster string
+}
+
+// ManifestIDFlags identify a manifest.
+type ManifestIDFlags struct {
+	SourceLocationFlags
+	Flavor string
+}
+
+// SourceLocationFlags identify a SourceLocation.
+type SourceLocationFlags struct {
+	Source string
+	Repo   string
+	Offset string
+}
+
+// BuildFilter creates a ResolveFilter from DeployFilterFlags.
 func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocation, error)) (*sous.ResolveFilter, error) {
 	rf := &sous.ResolveFilter{}
 
