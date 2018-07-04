@@ -5,6 +5,7 @@ import (
 
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
+	"github.com/samsalisbury/semv"
 )
 
 // SousAddArtifact is the description of the `sous add artifacat` command
@@ -34,6 +35,23 @@ func (sa *SousAddArtifact) AddFlags(fs *flag.FlagSet) {
 
 // Execute defines the behavior of `sous plumbing normalizegdm`
 func (sa *SousAddArtifact) Execute(args []string) cmdr.Result {
+
+	if sa.opts.DockerImage == "" {
+		return cmdr.UsageErrorf("-docker-image flag required")
+	}
+	if sa.opts.SourceID.Tag == "" {
+		return cmdr.UsageErrorf("-tag flag required")
+	}
+	sid, err := sa.opts.SourceID.SourceID()
+	if err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
+	if sid.Location.Repo == "" {
+		return cmdr.UsageErrorf("-repo flag required")
+	}
+	if (sid.Version == semv.Version{}) {
+		return cmdr.UsageErrorf("-tag flag required")
+	}
 
 	addArtifact, err := sa.SousGraph.GetArtifact(sa.opts)
 	if err != nil {

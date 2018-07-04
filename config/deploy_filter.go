@@ -6,6 +6,7 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
+	"github.com/samsalisbury/semv"
 )
 
 // DeployFilterFlags are CLI flags used to configure the underlying deployments
@@ -38,6 +39,18 @@ type SourceIDFlags struct {
 	SourceVersionFlags
 }
 
+// SourceID returns the sous.SourceID represented by these flags.
+func (f SourceIDFlags) SourceID() (sous.SourceID, error) {
+	version, err := semv.Parse(f.Tag)
+	if err != nil {
+		return sous.SourceID{}, err
+	}
+	return sous.SourceID{
+		Version:  version,
+		Location: f.SourceLocationFlags.SourceLocation(),
+	}, nil
+}
+
 // DeploymentIDFlags identify a Deployment.
 type DeploymentIDFlags struct {
 	ManifestIDFlags
@@ -55,6 +68,14 @@ type SourceLocationFlags struct {
 	Source string
 	Repo   string
 	Offset string
+}
+
+// SourceLocation returns the SourceLocation represented by these flags.
+func (f SourceLocationFlags) SourceLocation() sous.SourceLocation {
+	return sous.SourceLocation{
+		Repo: f.Repo,
+		Dir:  f.Offset,
+	}
 }
 
 // BuildFilter creates a ResolveFilter from DeployFilterFlags.
