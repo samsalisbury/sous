@@ -59,8 +59,10 @@ func (suite serverTests) prepare(extras ...interface{}) http.Handler {
 	g := graph.TestGraphWithConfig(suite.T(), semv.Version{}, &bytes.Buffer{}, os.Stdout, os.Stdout, "StateLocation: '"+outpath+"'\n")
 	g.Add(extras...)
 
+	dff := config.DeployFilterFlags{}
+	dff.Cluster = "test"
 	g.Add(&config.Verbosity{})
-	g.Add(&config.DeployFilterFlags{Cluster: "test"})
+	g.Add(&dff)
 	g.Add(graph.DryrunBoth)
 
 	serverScoop := struct {

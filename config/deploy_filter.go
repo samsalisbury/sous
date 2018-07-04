@@ -17,10 +17,25 @@ type DeployFilterFlags struct {
 	All bool
 }
 
+// MakeDeployFilterFlags encapsulates setting fields on a brand new
+// DeployFilterFlags. It is more convenient to use this than to manually
+// construct the hierarchical nested structs otherwise necessary.
+func MakeDeployFilterFlags(config func(*DeployFilterFlags)) DeployFilterFlags {
+	dff := DeployFilterFlags{}
+	config(&dff)
+	return dff
+}
+
 // SourceVersionFlags are Tag and Revision.
 type SourceVersionFlags struct {
 	Tag      string
 	Revision string
+}
+
+// SourceIDFlags identify a version of a particular SourceLocation.
+type SourceIDFlags struct {
+	SourceLocationFlags
+	SourceVersionFlags
 }
 
 // DeploymentIDFlags identify a Deployment.

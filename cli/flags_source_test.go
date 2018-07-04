@@ -14,43 +14,77 @@ var buildPredicateErrorTests = []struct {
 }{
 	{
 		Flags: config.DeployFilterFlags{
-			Source: "hello",
-			Repo:   "hi",
+			DeploymentIDFlags: config.DeploymentIDFlags{
+				ManifestIDFlags: config.ManifestIDFlags{
+					SourceLocationFlags: config.SourceLocationFlags{
+						Source: "hello",
+						Repo:   "hi",
+					},
+				},
+			},
 		},
 		Error: "you cannot specify both -source and -repo",
 	},
 	{
 		Flags: config.DeployFilterFlags{
-			Source: "hello",
-			Offset: "hi",
+			DeploymentIDFlags: config.DeploymentIDFlags{
+				ManifestIDFlags: config.ManifestIDFlags{
+					SourceLocationFlags: config.SourceLocationFlags{
+						Source: "hello",
+						Offset: "hi",
+					},
+				},
+			},
 		},
 		Error: "you cannot specify both -source and -offset",
 	},
 	{
 		Flags: config.DeployFilterFlags{
-			Source: "hello",
-			All:    true,
+			DeploymentIDFlags: config.DeploymentIDFlags{
+				ManifestIDFlags: config.ManifestIDFlags{
+					SourceLocationFlags: config.SourceLocationFlags{
+						Source: "hello",
+					},
+				},
+			},
+			All: true,
 		},
 		Error: "You cannot specify both -all and filtering options",
 	},
 	{
 		Flags: config.DeployFilterFlags{
-			All:  true,
-			Repo: "hello",
+			All: true,
+			DeploymentIDFlags: config.DeploymentIDFlags{
+				ManifestIDFlags: config.ManifestIDFlags{
+					SourceLocationFlags: config.SourceLocationFlags{
+						Repo: "hello",
+					},
+				},
+			},
 		},
 		Error: "You cannot specify both -all and filtering options",
 	},
 	{
 		Flags: config.DeployFilterFlags{
-			All:    true,
-			Offset: "hello",
+			All: true,
+			DeploymentIDFlags: config.DeploymentIDFlags{
+				ManifestIDFlags: config.ManifestIDFlags{
+					SourceLocationFlags: config.SourceLocationFlags{
+						Offset: "hello",
+					},
+				},
+			},
 		},
 		Error: "You cannot specify both -all and filtering options",
 	},
 	{
 		Flags: config.DeployFilterFlags{
-			All:    true,
-			Flavor: "hello",
+			All: true,
+			DeploymentIDFlags: config.DeploymentIDFlags{
+				ManifestIDFlags: config.ManifestIDFlags{
+					Flavor: "hello",
+				},
+			},
 		},
 		Error: "You cannot specify both -all and filtering options",
 	},

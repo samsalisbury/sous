@@ -96,7 +96,9 @@ func TestComponentLocatorInjection(t *testing.T) {
 
 	g.Add(DryrunBoth)
 	g.Add(&config.Verbosity{})
-	g.Add(&config.DeployFilterFlags{Cluster: "test"})
+	dff := config.DeployFilterFlags{}
+	dff.Cluster = "test"
+	g.Add(&dff)
 
 	tg := &psyringe.TestPsyringe{Psyringe: g.Psyringe}
 	rawConfig := RawConfig{Config: &config.Config{}}

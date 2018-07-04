@@ -12,21 +12,21 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMetadataGetFieldAndCluster(t *testing.T) {
-	output := runCommand(t, []string{"DeployOn"}, config.DeployFilterFlags{
-		Repo:    project1.Repo,
-		Cluster: "cluster-2",
+func dffRepoCluster(repo, cluster string) config.DeployFilterFlags {
+	return config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+		f.Repo = repo
+		f.Cluster = cluster
 	})
+}
+
+func TestMetadataGetFieldAndCluster(t *testing.T) {
+	output := runCommand(t, []string{"DeployOn"}, dffRepoCluster(project1.Repo, "cluster-2"))
 
 	assert.Regexp(t, "version advance", output)
 }
 
 func TestMetadataGetAllCluster(t *testing.T) {
-	output := runCommand(t, []string{}, config.DeployFilterFlags{
-		Repo:    project1.Repo,
-		Cluster: "cluster-2",
-	})
-
+	output := runCommand(t, []string{}, dffRepoCluster(project1.Repo, "cluster-2"))
 	assert.Regexp(t, "BuildBranch", output)
 	assert.Regexp(t, "master", output)
 	assert.Regexp(t, "DeployOn", output)
@@ -35,17 +35,13 @@ func TestMetadataGetAllCluster(t *testing.T) {
 }
 
 func TestMetadataGetField(t *testing.T) {
-	output := runCommand(t, []string{"BuildBranch"}, config.DeployFilterFlags{
-		Repo: project1.Repo,
-	})
+	output := runCommand(t, []string{"BuildBranch"}, dffRepoCluster(project1.Repo, ""))
 
 	assert.Regexp(t, "master", output)
 }
 
 func TestMetadataGetAll(t *testing.T) {
-	output := runCommand(t, []string{}, config.DeployFilterFlags{
-		Repo: project1.Repo,
-	})
+	output := runCommand(t, []string{}, dffRepoCluster(project1.Repo, ""))
 
 	assert.Regexp(t, "BuildBranch", output)
 	assert.Regexp(t, "master", output)
@@ -64,7 +60,7 @@ func runCommand(t *testing.T, args []string, dff config.DeployFilterFlags) strin
 		TargetManifestID:  graph.TargetManifestID{Source: sous.SourceLocation{Repo: project1.Repo}},
 		DeployFilterFlags: dff,
 		ResolveFilter:     rf,
-		HTTPClient:        graph.HTTPClient{cl},
+		HTTPClient:        graph.HTTPClient{HTTPClient: cl},
 		OutWriter:         graph.OutWriter(out),
 	}
 

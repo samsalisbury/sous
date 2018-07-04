@@ -40,7 +40,10 @@ func TestPredicateBuilder(t *testing.T) {
 	//		fmt.Printf("%d: %#v\n", i, d)
 	//	}
 	//
-	f := config.DeployFilterFlags{Offset: "*", Flavor: "*"}
+	f := config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+		f.Offset = "*"
+		f.Flavor = "*"
+	})
 
 	rf, err := f.BuildFilter(parseSL)
 	assert.NoError(err)
@@ -74,7 +77,11 @@ func TestPredicateBuilder(t *testing.T) {
 	assert.Contains(filtered, ds[0])
 	assert.Len(filtered, 1)
 
-	f = config.DeployFilterFlags{Offset: "*", Flavor: "*", Cluster: cs[1]}
+	f = config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+		f.Offset = "*"
+		f.Flavor = "*"
+		f.Cluster = cs[1]
+	})
 	pd, err = f.BuildPredicate(parseSL)
 	assert.NoError(err)
 	assert.NotNil(pd)

@@ -117,13 +117,13 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 
 // ArtifactOpts are options for Add Artifacts
 type ArtifactOpts struct {
-	DFF         config.DeployFilterFlags
+	SourceID    config.SourceIDFlags
 	DockerImage string
 }
 
 //GetArtifact will return artifact for cli add artifact
 func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
-	di.guardedAdd("DeployFilterFlags", &opts.DFF)
+	di.guardedAdd("SourceIDFlags", &opts.SourceID)
 	scoop := struct {
 		Inserter   sous.ClientInserter
 		LogSink    LogSink
@@ -140,10 +140,9 @@ func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
 		Config:      scoop.Config.Config,
 		LocalShell:  scoop.LocalShell,
 		Inserter:    scoop.Inserter,
-		Repo:        opts.DFF.Repo,
-		Cluster:     opts.DFF.Cluster,
-		Offset:      opts.DFF.Offset,
-		Tag:         opts.DFF.Tag,
+		Repo:        opts.SourceID.Repo,
+		Offset:      opts.SourceID.Offset,
+		Tag:         opts.SourceID.Tag,
 		DockerImage: opts.DockerImage,
 	}, nil
 }

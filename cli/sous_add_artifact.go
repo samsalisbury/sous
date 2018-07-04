@@ -25,7 +25,7 @@ Tell sous that this docker image represents a particular SourceID.
 
 // AddFlags adds the flags for sous init.
 func (sa *SousAddArtifact) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sa.opts.DFF, AddArtificatFlagsHelp)
+	MustAddFlags(fs, &sa.opts.SourceID, AddArtificatFlagsHelp)
 
 	fs.StringVar(&sa.opts.DockerImage, "docker-image", "",
 		"the docker image to store as an artifact")
