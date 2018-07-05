@@ -565,11 +565,13 @@ func newDeployer(dryrun DryrunOption, nc lazyNameCache, ls LogSink, c LocalSousC
 	), nil
 }
 
-func newServerHandler(g *SousGraph, ComponentLocator server.ComponentLocator, metrics MetricsHandler, log LogSink) ServerHandler {
+func newServerHandler(g *SousGraph, Registry sous.Registry, ComponentLocator server.ComponentLocator, metrics MetricsHandler, log LogSink) ServerHandler {
 	var handler http.Handler
 
 	profileQuery := struct{ Yes ProfilingServer }{}
 	g.Inject(&profileQuery)
+
+	ComponentLocator.Registry = Registry
 	if profileQuery.Yes {
 		handler = server.ProfilingHandler(ComponentLocator, metrics, log.Child("http-server"))
 	} else {

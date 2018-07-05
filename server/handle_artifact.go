@@ -5,10 +5,12 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/ext/docker"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
@@ -58,6 +60,10 @@ func (gh *GETArtifactHandler) Exchange() (interface{}, int) {
 	}
 
 	ba, err := gh.GetArtifact(sid)
+	if _, ok := errors.Cause(err).(docker.NoImageNameFound); ok {
+		return nil, http.StatusOK
+	}
+
 	if err != nil {
 		return err, http.StatusNotAcceptable
 	}
