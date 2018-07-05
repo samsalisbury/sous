@@ -61,7 +61,7 @@ func (gh *GETArtifactHandler) Exchange() (interface{}, int) {
 
 	ba, err := gh.GetArtifact(sid)
 	if _, ok := errors.Cause(err).(docker.NoImageNameFound); ok {
-		return nil, http.StatusOK
+		return nil, http.StatusNotFound
 	}
 
 	if err != nil {
