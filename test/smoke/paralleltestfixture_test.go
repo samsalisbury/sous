@@ -76,7 +76,7 @@ func resetSingularity() {
 
 func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T) *ParallelTestFixture {
 	t.Helper()
-	return &ParallelTestFixture{
+	pf := &ParallelTestFixture{
 		T:                t,
 		NextAddr:         pfs.NextAddr,
 		testNames:        map[string]struct{}{},
@@ -84,6 +84,10 @@ func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T) *Paralle
 		testNamesSkipped: map[string]struct{}{},
 		testNamesFailed:  map[string]struct{}{},
 	}
+	pfs.mu.Lock()
+	defer pfs.mu.Unlock()
+	pfs.fixtures[t.Name()] = pf
+	return pf
 }
 
 func (fcfg fixtureConfig) Desc() string {

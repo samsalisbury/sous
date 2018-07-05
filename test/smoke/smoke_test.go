@@ -65,7 +65,7 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
-func Test(t *testing.T) {
+func TestInitToDeploy(t *testing.T) {
 	t.Parallel()
 
 	fixtureConfigs := []fixtureConfig{
@@ -316,6 +316,23 @@ func Test(t *testing.T) {
 
 				assertActiveStatus(t, f, customID1)
 			})
+		})
+	}
+}
+
+func TestOTPLInitToDeploy(t *testing.T) {
+
+	fixtureConfigs := []fixtureConfig{
+		{dbPrimary: false},
+		{dbPrimary: true},
+	}
+
+	// Set the global parallel test fixture.
+	pf := pfs.newParallelTestFixture(t)
+
+	for _, fixtureConfig := range fixtureConfigs {
+		t.Run(fixtureConfig.Desc(), func(t *testing.T) {
+			t.Parallel()
 
 			t.Run("add-artifact", func(t *testing.T) {
 				f := pf.NewIsolatedFixture(t, fixtureConfig)
