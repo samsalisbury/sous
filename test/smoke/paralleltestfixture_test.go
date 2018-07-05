@@ -27,6 +27,7 @@ type (
 	}
 
 	ParallelTestFixture struct {
+		T                  *testing.T
 		NextAddr           func() string
 		testNames          map[string]struct{}
 		testNamesMu        sync.RWMutex
@@ -60,6 +61,7 @@ func newParallelTestFixture(t *testing.T, opts PTFOpts) *ParallelTestFixture {
 		return freeAddrs[i]
 	}
 	return &ParallelTestFixture{
+		T:                t,
 		NextAddr:         nextAddr,
 		testNames:        map[string]struct{}{},
 		testNamesPassed:  map[string]struct{}{},
@@ -115,7 +117,9 @@ func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 	}
 }
 
-func (pf *ParallelTestFixture) PrintSummary(t *testing.T) {
+func (pf *ParallelTestFixture) PrintSummary() {
+	t := pf.T
+	t.Helper()
 	total := len(pf.testNames)
 	passed := len(pf.testNamesPassed)
 	skipped := len(pf.testNamesSkipped)
@@ -123,7 +127,7 @@ func (pf *ParallelTestFixture) PrintSummary(t *testing.T) {
 
 	summary := fmt.Sprintf("Test summary: %d failed; %d skipped; %d passed (total %d)", failed, skipped, passed, total)
 	t.Log(summary)
-	fmt.Fprint(os.Stdout, summary)
+	fmt.Fprintln(os.Stdout, summary)
 
 	missing := total - (passed + failed + skipped)
 	if missing != 0 {
