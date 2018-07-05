@@ -62,6 +62,7 @@ func TestSousDeploy(t *testing.T) {
 	pf := newParallelTestFixture(t, PTFOpts{
 		NumFreeAddrs: 128,
 	})
+	defer pf.PrintSummary(t)
 
 	deployCommand := "deploy"
 
@@ -331,6 +332,4 @@ func TestSousDeploy(t *testing.T) {
 			})
 		}
 	})
-
-	pf.PrintSummary(t)
 }
