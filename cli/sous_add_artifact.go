@@ -23,7 +23,7 @@ Tell sous that this docker image represents a particular SourceID.
 `
 }
 
-// AddFlags adds the flags,
+// AddFlags adds the flags.
 func (sa *SousAddArtifact) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sa.opts.SourceID, AddArtifactFlagsHelp)
 

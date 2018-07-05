@@ -305,7 +305,7 @@ func TestSousDeploy(t *testing.T) {
 					assertActiveStatus(t, f, customID2)
 					assertNonNilHealthCheckOnLatestDeploy(t, f, customID2)
 
-					// TODO: Implemend cleanup of old request.
+					// TODO: Implement cleanup of old request.
 					//assertRequestDoesNotExist(t, f, customID1)
 
 					assertActiveStatus(t, f, customID1)
@@ -326,6 +326,7 @@ func TestSousDeploy(t *testing.T) {
 					mustDoCMD(t, client.Dir, "docker", "push", dockerRef)
 
 					client.MustRun(t, "add artifact", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
+					// TODO: Assert artifact stored correctly.
 				})
 			})
 		}

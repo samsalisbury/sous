@@ -50,7 +50,10 @@ func (a *AddArtifact) UploadArtifact(versionName, digestName string) error {
 	art := sous.BuildArtifact{
 		VersionName:     versionName,
 		DigestReference: digestName,
-		Qualities:       []sous.Quality{{"added artifact", "advisory"}},
+		Qualities: []sous.Quality{{
+			Name: "added artifact",
+			Kind: "advisory",
+		}},
 	}
 
 	sid := sous.MakeSourceID(a.Repo, a.Offset, a.Tag)
