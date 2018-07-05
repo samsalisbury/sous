@@ -28,8 +28,11 @@ type TestClient struct {
 	ConfigDir string
 	LogDir    string
 	// Dir is the working directory.
-	Dir           string
-	ClusterSuffix string
+	Dir string
+	// Config is set after calling Configure()
+	Config config.Config
+	// Fixture is the test fixture this client belongs to.
+	Fixture *TestFixture
 }
 
 type sousFlags struct {
@@ -67,13 +70,14 @@ func (f *sousFlags) Args() []string {
 	return out
 }
 
-func makeClient(baseDir, sousBin string) *TestClient {
+func makeClient(fixture *TestFixture, baseDir, sousBin string) *TestClient {
 	baseDir = path.Join(baseDir, "client1")
 	return &TestClient{
 		BaseDir:   baseDir,
 		BinPath:   sousBin,
 		ConfigDir: path.Join(baseDir, "config"),
 		LogDir:    path.Join(baseDir, "logs"),
+		Fixture:   fixture,
 	}
 }
 
@@ -112,6 +116,7 @@ func (c *TestClient) Configure(server, dockerReg, userEmail string) error {
 	if err := ioutil.WriteFile(path.Join(c.ConfigDir, "config.yaml"), y, os.ModePerm); err != nil {
 		return err
 	}
+	c.Config = conf
 	return nil
 }
 
@@ -124,13 +129,14 @@ func allArgs(subcmd string, f *sousFlags, args []string) []string {
 	return allArgs
 }
 
-func insertClusterSuffix(args []string, suffix string) []string {
+func (c *TestClient) insertClusterSuffix(t *testing.T, args []string) []string {
+	t.Helper()
 	for i, s := range args {
 		if s == "-cluster" && len(args) > i+1 {
-			args[i+1] = args[i+1] + suffix
+			args[i+1] = c.Fixture.IsolatedClusterName(args[i+1])
 		}
 		if s == "-tag" && len(args) > i+1 {
-			args[i+1] = args[i+1] + "-" + strings.Replace(suffix, "_", "-", -1)
+			args[i+1] = c.Fixture.IsolatedVersionTag(t, args[i+1])
 		}
 	}
 	return args
@@ -138,7 +144,7 @@ func insertClusterSuffix(args []string, suffix string) []string {
 
 func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) (*exec.Cmd, context.CancelFunc) {
 	t.Helper()
-	args = insertClusterSuffix(args, c.ClusterSuffix)
+	args = c.insertClusterSuffix(t, args)
 	cmd, cancel := mkCMD(c.Dir, c.BinPath, allArgs(subcmd, f, args)...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", c.ConfigDir))
 	return cmd, cancel
@@ -305,7 +311,7 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f f
 
 func (c *TestClient) SetSingularityRequestID(t *testing.T, getSetFlags *sousFlags, clusterName, singReqID string) {
 	c.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
-		clusterName := clusterName + c.ClusterSuffix
+		clusterName := c.Fixture.IsolatedClusterName(clusterName)
 		d, ok := m.Deployments[clusterName]
 		if !ok {
 			t.Fatalf("no deployment for %q", clusterName)

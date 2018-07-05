@@ -10,6 +10,7 @@ import (
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
 )
 
 type TestFixture struct {
@@ -27,7 +28,7 @@ type TestFixture struct {
 	knownToFail   bool
 }
 
-func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) TestFixture {
+func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) *TestFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {
@@ -66,16 +67,11 @@ func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() s
 		t.Fatalf("starting test cluster: %s", err)
 	}
 
-	client := makeClient(baseDir, sousBin)
 	primaryServer := "http://" + c.Instances[0].Addr
 	userEmail := "sous_client1@example.com"
-	if err := client.Configure(primaryServer, envDesc.RegistryName(), userEmail); err != nil {
-		t.Fatal(err)
-	}
 
-	return TestFixture{
+	tf := &TestFixture{
 		Cluster:       *c,
-		Client:        client,
 		BaseDir:       baseDir,
 		Singularity:   singularity,
 		ClusterSuffix: clusterSuffix,
@@ -83,6 +79,36 @@ func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() s
 		TestName:      t.Name(),
 		UserEmail:     userEmail,
 	}
+	client := makeClient(tf, baseDir, sousBin)
+	if err := client.Configure(primaryServer, envDesc.RegistryName(), userEmail); err != nil {
+		t.Fatal(err)
+	}
+	tf.Client = client
+	return tf
+}
+
+// IsolatedClusterName returns a cluster name unique to this test fixture.
+func (f *TestFixture) IsolatedClusterName(baseName string) string {
+	return baseName + f.ClusterSuffix
+}
+
+// IsolatedVersionTag returns an all-lowercase unique version tag (unique per
+// test-run, subsequent runs will use the same tag). These version tags should
+// be compatible natively as both Sous and Docker tags.
+func (f *TestFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
+	t.Helper()
+	v, err := semv.Parse(baseTag)
+	if err != nil {
+		t.Fatalf("version tag %q not semver: %s", baseTag, err)
+	}
+	if v.Meta != "" {
+		t.Fatalf("version tag %q contains metatdata field", baseTag)
+	}
+	suffix := strings.Replace(f.ClusterSuffix, "_", "-", -1)
+	if v.Pre != "" {
+		return strings.ToLower(baseTag + suffix)
+	}
+	return strings.ToLower(baseTag + "-" + suffix)
 }
 
 func (f *TestFixture) Stop(t *testing.T) {
