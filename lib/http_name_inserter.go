@@ -4,6 +4,7 @@ import (
 	"net/url"
 	"sync"
 
+	multierror "github.com/hashicorp/go-multierror"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 )
@@ -27,7 +28,7 @@ func (hni *HTTPNameInserter) getClients() error {
 	if hni.clients != nil {
 		return nil
 	}
-	serverList := serverListData{}
+	serverList := ServerListData{}
 	_, err := hni.client.Retrieve("./servers", nil, &serverList, nil)
 	if err != nil {
 		return err
@@ -35,6 +36,7 @@ func (hni *HTTPNameInserter) getClients() error {
 
 	bundle := map[string]restful.HTTPClient{}
 	for _, s := range serverList.Servers {
+		//messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Adding %s : %s", s.ClusterName, s.URL), logging.ExtraDebug1Level, hni.log, s)
 		client, err := restful.NewClient(s.URL, hni.log.Child(s.ClusterName+".http-client"), map[string]string{"OT-RequestId": string(hni.tid)})
 		if err != nil {
 			return err
@@ -65,12 +67,17 @@ func (hni *HTTPNameInserter) Insert(sid SourceID, ba BuildArtifact) error {
 	}
 
 	wg.Wait()
+
+	var result *multierror.Error
+
 	select {
 	default:
 	case err := <-errs:
 		logging.ReportError(hni.log, err)
+		result = multierror.Append(result, err)
 	}
-	return nil
+
+	return result.ErrorOrNil()
 }
 
 func simplifyQV(qvs url.Values) map[string]string {

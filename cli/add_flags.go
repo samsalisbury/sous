@@ -44,6 +44,11 @@ func AddFlags(fs *flag.FlagSet, target interface{}, help string, optDefaults ...
 		f := t.Field(i)
 		ft := f.Type
 		fp := v.Field(i).Addr().Interface()
+		if f.Type.Kind() == reflect.Struct {
+			if err := AddFlags(fs, fp, help, optDefaults...); err != nil {
+				return err
+			}
+		}
 		name := strings.ToLower(f.Name)
 		if tag := f.Tag.Get("flag"); tag != "" {
 			name = tag
@@ -54,8 +59,7 @@ func AddFlags(fs *flag.FlagSet, target interface{}, help string, optDefaults ...
 		}
 		switch field := fp.(type) {
 		default:
-			return errors.Errorf("target field %s.%s is %s; want string, int, or bool",
-				t, f.Name, ft)
+			return errors.Errorf("target field %s.%s is %s; want string, int, or bool", t, f.Name, ft)
 		case *string:
 			fs.StringVar(field, name, getDefault(name, "", defaults).(string), u)
 		case *bool:

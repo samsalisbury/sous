@@ -46,12 +46,37 @@ func TestDeployFilter(t *testing.T) {
 	}
 
 	testFilter(DeployFilterFlags{All: true}, 0, 1, 2, 3, 4)
-	testFilter(DeployFilterFlags{Repo: deploys[0].SourceID.Location.Repo}, 0)
-	testFilter(DeployFilterFlags{Repo: deploys[1].SourceID.Location.Repo}, 1)
-	testFilter(DeployFilterFlags{}, 0, 1)
-	testFilter(DeployFilterFlags{Offset: ""}, 0, 1)
-	testFilter(DeployFilterFlags{Offset: "*"}, 0, 1, 2)
-	testFilter(DeployFilterFlags{Offset: "*", Flavor: "*"}, 0, 1, 2, 3, 4)
-	testFilter(DeployFilterFlags{Flavor: "choc"}, 3)
 
+	testFilter(DeployFilterFlags{DeploymentIDFlags: DeploymentIDFlags{ManifestIDFlags: ManifestIDFlags{
+		SourceLocationFlags: SourceLocationFlags{
+			Repo: deploys[0].SourceID.Location.Repo,
+		}}}}, 0)
+
+	testFilter(DeployFilterFlags{DeploymentIDFlags: DeploymentIDFlags{ManifestIDFlags: ManifestIDFlags{
+		SourceLocationFlags: SourceLocationFlags{
+			Repo: deploys[1].SourceID.Location.Repo,
+		}}}}, 1)
+
+	testFilter(DeployFilterFlags{}, 0, 1)
+
+	testFilter(DeployFilterFlags{DeploymentIDFlags: DeploymentIDFlags{ManifestIDFlags: ManifestIDFlags{
+		SourceLocationFlags: SourceLocationFlags{
+			Offset: "",
+		}}}}, 0, 1)
+
+	testFilter(DeployFilterFlags{DeploymentIDFlags: DeploymentIDFlags{ManifestIDFlags: ManifestIDFlags{
+		SourceLocationFlags: SourceLocationFlags{
+			Offset: "*",
+		}}}}, 0, 1, 2)
+
+	testFilter(DeployFilterFlags{DeploymentIDFlags: DeploymentIDFlags{ManifestIDFlags: ManifestIDFlags{
+		SourceLocationFlags: SourceLocationFlags{
+			Offset: "*",
+		},
+		Flavor: "*",
+	}}}, 0, 1, 2, 3, 4)
+
+	testFilter(DeployFilterFlags{DeploymentIDFlags: DeploymentIDFlags{ManifestIDFlags: ManifestIDFlags{
+		Flavor: "choc",
+	}}}, 3)
 }

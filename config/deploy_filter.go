@@ -6,22 +6,79 @@ import (
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
+	"github.com/samsalisbury/semv"
 )
 
 // DeployFilterFlags are CLI flags used to configure the underlying deployments
 // a given command will refer to
 // N.b. that not every command will use every filter
 type DeployFilterFlags struct {
-	Source   string
-	Repo     string
-	Offset   string
-	Flavor   string
-	Tag      string
-	Revision string
-	Cluster  string
-	All      bool
+	DeploymentIDFlags
+	SourceVersionFlags
+	All bool
 }
 
+// MakeDeployFilterFlags encapsulates setting fields on a brand new
+// DeployFilterFlags. It is more convenient to use this than to manually
+// construct the hierarchical nested structs otherwise necessary.
+func MakeDeployFilterFlags(config func(*DeployFilterFlags)) DeployFilterFlags {
+	dff := DeployFilterFlags{}
+	config(&dff)
+	return dff
+}
+
+// SourceVersionFlags are Tag and Revision.
+type SourceVersionFlags struct {
+	Tag      string
+	Revision string
+}
+
+// SourceIDFlags identify a version of a particular SourceLocation.
+type SourceIDFlags struct {
+	SourceLocationFlags
+	SourceVersionFlags
+}
+
+// SourceID returns the sous.SourceID represented by these flags.
+func (f SourceIDFlags) SourceID() (sous.SourceID, error) {
+	version, err := semv.Parse(f.Tag)
+	if err != nil {
+		return sous.SourceID{}, err
+	}
+	return sous.SourceID{
+		Version:  version,
+		Location: f.SourceLocationFlags.SourceLocation(),
+	}, nil
+}
+
+// DeploymentIDFlags identify a Deployment.
+type DeploymentIDFlags struct {
+	ManifestIDFlags
+	Cluster string
+}
+
+// ManifestIDFlags identify a manifest.
+type ManifestIDFlags struct {
+	SourceLocationFlags
+	Flavor string
+}
+
+// SourceLocationFlags identify a SourceLocation.
+type SourceLocationFlags struct {
+	Source string
+	Repo   string
+	Offset string
+}
+
+// SourceLocation returns the SourceLocation represented by these flags.
+func (f SourceLocationFlags) SourceLocation() sous.SourceLocation {
+	return sous.SourceLocation{
+		Repo: f.Repo,
+		Dir:  f.Offset,
+	}
+}
+
+// BuildFilter creates a ResolveFilter from DeployFilterFlags.
 func (f *DeployFilterFlags) BuildFilter(parseSL func(string) (sous.SourceLocation, error)) (*sous.ResolveFilter, error) {
 	rf := &sous.ResolveFilter{}
 

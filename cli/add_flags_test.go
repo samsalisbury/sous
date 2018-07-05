@@ -31,12 +31,12 @@ func TestAddFlagsForRectify(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := config.DeployFilterFlags{
-		Repo:    "github.com/opentable/sous",
-		Offset:  "cli",
-		Cluster: "test",
-		All:     true,
-	}
+	expected := config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+		f.Repo = "github.com/opentable/sous"
+		f.Offset = "cli"
+		f.Cluster = "test"
+		f.All = true
+	})
 
 	args := []string{
 		"-repo", expected.Repo,
@@ -104,12 +104,12 @@ func TestAddFlags(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expected := config.DeployFilterFlags{
-		Repo:     "github.com/opentable/sous",
-		Offset:   "",
-		Tag:      "v1.0.0",
-		Revision: "cabba9e",
-	}
+	expected := config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+		f.Repo = "github.com/opentable/sous"
+		f.Offset = ""
+		f.Tag = "v1.0.0"
+		f.Revision = "cabba9e"
+	})
 
 	args := []string{
 		"-repo", expected.Repo,

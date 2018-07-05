@@ -16,7 +16,7 @@ func TestSous(t *testing.T) {
 
 	t.Log(term.Stderr)
 	term.Stdout.ShouldHaveNumLines(0)
-	term.Stderr.ShouldHaveNumLines(44)
+	term.Stderr.ShouldHaveNumLines(45)
 
 	term.Stderr.ShouldHaveExactLine("usage: sous <command>")
 	term.Stderr.ShouldHaveLineContaining("help      get help with sous")

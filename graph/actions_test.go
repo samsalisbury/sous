@@ -15,12 +15,20 @@ import (
 
 func fixtureDeployFilterFlags() config.DeployFilterFlags {
 	return config.DeployFilterFlags{
-		Repo:    "github.com/example/project",
-		Offset:  "",
-		Flavor:  "vanilla",
-		Tag:     "0.1.22",
-		Cluster: "test-cluster",
-		All:     false,
+		DeploymentIDFlags: config.DeploymentIDFlags{
+			Cluster: "test-cluster",
+			ManifestIDFlags: config.ManifestIDFlags{
+				Flavor: "vanilla",
+				SourceLocationFlags: config.SourceLocationFlags{
+					Repo:   "github.com/example/project",
+					Offset: "",
+				},
+			},
+		},
+		SourceVersionFlags: config.SourceVersionFlags{
+			Tag: "0.1.22",
+		},
+		All: false,
 	}
 }
 

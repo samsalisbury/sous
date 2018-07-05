@@ -13,45 +13,45 @@ var buildPredicateErrorTests = []struct {
 	Error string
 }{
 	{
-		Flags: config.DeployFilterFlags{
-			Source: "hello",
-			Repo:   "hi",
-		},
+		Flags: config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+			f.Source = "hello"
+			f.Repo = "hi"
+		}),
 		Error: "you cannot specify both -source and -repo",
 	},
 	{
-		Flags: config.DeployFilterFlags{
-			Source: "hello",
-			Offset: "hi",
-		},
+		Flags: config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+			f.Source = "hello"
+			f.Offset = "hi"
+		}),
 		Error: "you cannot specify both -source and -offset",
 	},
 	{
-		Flags: config.DeployFilterFlags{
-			Source: "hello",
-			All:    true,
-		},
+		Flags: config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+			f.Source = "hello"
+			f.All = true
+		}),
 		Error: "You cannot specify both -all and filtering options",
 	},
 	{
-		Flags: config.DeployFilterFlags{
-			All:  true,
-			Repo: "hello",
-		},
+		Flags: config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+			f.Repo = "hello"
+			f.All = true
+		}),
 		Error: "You cannot specify both -all and filtering options",
 	},
 	{
-		Flags: config.DeployFilterFlags{
-			All:    true,
-			Offset: "hello",
-		},
+		Flags: config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+			f.Offset = "hello"
+			f.All = true
+		}),
 		Error: "You cannot specify both -all and filtering options",
 	},
 	{
-		Flags: config.DeployFilterFlags{
-			All:    true,
-			Flavor: "hello",
-		},
+		Flags: config.MakeDeployFilterFlags(func(f *config.DeployFilterFlags) {
+			f.Flavor = "hello"
+			f.All = true
+		}),
 		Error: "You cannot specify both -all and filtering options",
 	},
 }

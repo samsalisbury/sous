@@ -115,6 +115,38 @@ func (di *SousGraph) GetUpdate(dff config.DeployFilterFlags, otpl config.OTPLFla
 	}, nil
 }
 
+// ArtifactOpts are options for Add Artifacts
+type ArtifactOpts struct {
+	SourceID    config.SourceIDFlags
+	DockerImage string
+}
+
+//GetArtifact will return artifact for cli add artifact
+func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
+	di.guardedAdd("SourceIDFlags", &opts.SourceID)
+	scoop := struct {
+		Inserter   sous.ClientInserter
+		LogSink    LogSink
+		User       sous.User
+		LocalShell LocalWorkDirShell
+		Config     LocalSousConfig
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+	return &actions.AddArtifact{
+		LogSink:     scoop.LogSink.LogSink.Child("add-artifact"),
+		User:        scoop.User,
+		Config:      scoop.Config.Config,
+		LocalShell:  scoop.LocalShell,
+		Inserter:    scoop.Inserter,
+		Repo:        opts.SourceID.Repo,
+		Offset:      opts.SourceID.Offset,
+		Tag:         opts.SourceID.Tag,
+		DockerImage: opts.DockerImage,
+	}, nil
+}
+
 // DeployActionOpts are options for GetDeploy.
 type DeployActionOpts struct {
 	DFF                              config.DeployFilterFlags

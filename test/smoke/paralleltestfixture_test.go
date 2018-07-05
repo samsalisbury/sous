@@ -144,7 +144,7 @@ func (pf *ParallelTestFixture) PrintSummary(t *testing.T) {
 	}
 }
 
-func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) TestFixture {
+func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) *TestFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
 	return newTestFixture(t, pf, pf.NextAddr, fcfg)

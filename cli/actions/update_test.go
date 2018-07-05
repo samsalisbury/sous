@@ -187,11 +187,17 @@ func TestSousUpdate_Execute(t *testing.T) {
 	control.State.Manifests.Add(&manifest)
 
 	dff := config.DeployFilterFlags{
-		Repo:    manifest.Source.Repo,
-		Offset:  manifest.Source.Dir,
-		Flavor:  manifest.Flavor,
-		Cluster: "test-cluster",
-		Tag:     manifest.Deployments["test-cluster"].Version.String(),
+		DeploymentIDFlags: config.DeploymentIDFlags{
+			Cluster: "test-cluster",
+			ManifestIDFlags: config.ManifestIDFlags{
+				Flavor: manifest.Flavor,
+				SourceLocationFlags: config.SourceLocationFlags{
+					Repo:   manifest.Source.Repo,
+					Offset: manifest.Source.Dir,
+				}}},
+		SourceVersionFlags: config.SourceVersionFlags{
+			Tag: manifest.Deployments["test-cluster"].Version.String(),
+		},
 	}
 
 	shc := sous.SourceHostChooser{}
