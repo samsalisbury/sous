@@ -4,6 +4,7 @@ package smoke
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -38,20 +39,21 @@ type (
 		testNamesFailed    map[string]struct{}
 		testNamesFailedMu  sync.Mutex
 	}
+
+	ParallelTestFixtureSet struct {
+		NextAddr func() string
+		mu       sync.Mutex
+		fixtures map[string]*ParallelTestFixture
+	}
 )
 
-func resetSingularity(t *testing.T) {
-	envDesc := getEnvDesc(t)
-	singularity := NewSingularity(envDesc.SingularityURL())
-	singularity.Reset(t)
-}
-
-func newParallelTestFixture(t *testing.T, opts PTFOpts) *ParallelTestFixture {
-	t.Helper()
-	resetSingularity(t)
-	stopPIDs(t)
+func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
+	resetSingularity()
+	if err := stopPIDs(); err != nil {
+		panic(err)
+	}
 	numFreeAddrs := opts.NumFreeAddrs
-	freeAddrs := freePortAddrs(t, "127.0.0.1", numFreeAddrs, 6601, 9000)
+	freeAddrs := freePortAddrs("127.0.0.1", numFreeAddrs, 6601, 9000)
 	var nextAddrIndex int64
 	nextAddr := func() string {
 		i := atomic.AddInt64(&nextAddrIndex, 1)
@@ -60,9 +62,23 @@ func newParallelTestFixture(t *testing.T, opts PTFOpts) *ParallelTestFixture {
 		}
 		return freeAddrs[i]
 	}
+	return &ParallelTestFixtureSet{
+		NextAddr: nextAddr,
+		fixtures: map[string]*ParallelTestFixture{},
+	}
+}
+
+func resetSingularity() {
+	envDesc := getEnvDesc()
+	singularity := NewSingularity(envDesc.SingularityURL())
+	singularity.Reset()
+}
+
+func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T) *ParallelTestFixture {
+	t.Helper()
 	return &ParallelTestFixture{
 		T:                t,
-		NextAddr:         nextAddr,
+		NextAddr:         pfs.NextAddr,
 		testNames:        map[string]struct{}{},
 		testNamesPassed:  map[string]struct{}{},
 		testNamesSkipped: map[string]struct{}{},
@@ -117,6 +133,13 @@ func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 	}
 }
 
+func (pfs *ParallelTestFixtureSet) PrintSummary() {
+	for name, pf := range pfs.fixtures {
+		log.Printf("Summary for %s", name)
+		pf.PrintSummary()
+	}
+}
+
 func (pf *ParallelTestFixture) PrintSummary() {
 	t := pf.T
 	t.Helper()
@@ -151,5 +174,6 @@ func (pf *ParallelTestFixture) PrintSummary() {
 func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) *TestFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
-	return newTestFixture(t, pf, pf.NextAddr, fcfg)
+	envDesc := getEnvDesc()
+	return newTestFixture(t, envDesc, pf, pf.NextAddr, fcfg)
 }

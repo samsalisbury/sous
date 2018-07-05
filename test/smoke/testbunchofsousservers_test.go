@@ -143,10 +143,3 @@ func (c *TestBunchOfSousServers) Start(t *testing.T, sousBin string) error {
 	}
 	return nil
 }
-func (c *TestBunchOfSousServers) Stop(t *testing.T) {
-	t.Helper()
-	stopPIDs(t)
-	for n := range c.Instances {
-		sous.ReleaseDB(t, n)
-	}
-}

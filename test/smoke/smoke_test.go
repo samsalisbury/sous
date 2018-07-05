@@ -54,12 +54,14 @@ func setupProject(t *testing.T, f *TestFixture, dockerfile string) *TestClient {
 	return client
 }
 
-var pf *ParallelTestFixture
+var pfs = newParallelTestFixtureSet(PTFOpts{
+	NumFreeAddrs: 128,
+})
 
 func TestMain(m *testing.M) {
 	flag.Parse()
 	exitCode := m.Run()
-	pf.PrintSummary()
+	pfs.PrintSummary()
 	os.Exit(exitCode)
 }
 
@@ -72,9 +74,7 @@ func Test(t *testing.T) {
 	}
 
 	// Set the global parallel test fixture.
-	pf = newParallelTestFixture(t, PTFOpts{
-		NumFreeAddrs: 128,
-	})
+	pf := pfs.newParallelTestFixture(t)
 
 	for _, fixtureConfig := range fixtureConfigs {
 		t.Run(fixtureConfig.Desc(), func(t *testing.T) {

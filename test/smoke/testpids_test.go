@@ -5,6 +5,7 @@ package smoke
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -54,17 +55,15 @@ func writePID(t *testing.T, pid int) {
 	}
 }
 
-func stopPIDs(t *testing.T) {
+func stopPIDs() error {
 	pidMutex.Lock()
 	defer pidMutex.Unlock()
-	t.Helper()
 	d, err := ioutil.ReadFile(pidFile)
 	if err != nil {
 		if isNotExist(err) {
-			return
+			return nil
 		}
-		t.Fatalf("unable to read %q: %s", pidFile, err)
-		return
+		return fmt.Errorf("unable to read %q: %s", pidFile, err)
 	}
 	pids := strings.Split(string(d), "\n")
 	var failedPIDs []string
@@ -74,44 +73,44 @@ func stopPIDs(t *testing.T) {
 		}
 		parts := strings.Split(p, "\t")
 		if len(parts) != 2 {
-			t.Fatalf("%q corrupted: contains %s", pidFile, p)
+			return fmt.Errorf("%q corrupted: contains %s", pidFile, p)
 		}
 		tmp, executable := parts[0], parts[1]
 		p = tmp
 		pid, err := strconv.Atoi(p)
 		if err != nil {
-			t.Fatalf("%q corrupted: contains %q (not an int)", pidFile, p)
+			return fmt.Errorf("%q corrupted: contains %q (not an int)", pidFile, p)
 		}
 		proc, err := os.FindProcess(pid)
 		if err != nil {
 			if err != os.ErrNotExist {
-				t.Fatalf("cannot find proc %d: %s", pid, err)
+				return fmt.Errorf("cannot find proc %d: %s", pid, err)
 			}
 		}
 		psProc, err := ps.FindProcess(pid)
 		if err != nil {
-			t.Fatalf("cannot inspect proc %d: %s", pid, err)
+			return fmt.Errorf("cannot inspect proc %d: %s", pid, err)
 		}
 		if psProc == nil {
-			t.Logf("skipping cleanup of %d (already stopped)", pid)
+			log.Printf("skipping cleanup of %d (already stopped)", pid)
 			continue
 		}
 
 		if psProc.Executable() != executable {
-			t.Logf("not killing process %s; it is %q not %q", p, psProc.Executable(), executable)
+			log.Printf("not killing process %s; it is %q not %q", p, psProc.Executable(), executable)
 			continue
 		}
 		if err := proc.Kill(); err != nil {
 			failedPIDs = append(failedPIDs, p)
-			t.Errorf("failed to stop process %d: %s", pid, err)
+			log.Printf("failed to stop process %d: %s", pid, err)
 		}
 	}
 	if len(failedPIDs) != 0 {
 		err := ioutil.WriteFile(pidFile, []byte(strings.Join(failedPIDs, "\n")), 0777)
 		if err != nil {
-			t.Fatalf("Failed to track failed PIDs %s: %s", strings.Join(failedPIDs, ", "), err)
+			return fmt.Errorf("Failed to track failed PIDs %s: %s", strings.Join(failedPIDs, ", "), err)
 		}
-	} else {
-		os.Remove(pidFile)
+		return nil
 	}
+	return os.Remove(pidFile)
 }
