@@ -54,5 +54,5 @@ var (
 	// NewDeployFilterFlagsHelp is the text and config for deploy flags
 	NewDeployFilterFlagsHelp = repoFlagHelp + offsetFlagHelp + flavorFlagHelp + clusterFlagHelp + tagFlagHelp
 	// AddArtifactFlagsHelp is the text and config for add artifact flags
-	AddArtificatFlagsHelp = repoFlagHelp + offsetFlagHelp + tagFlagHelp
+	AddArtifactFlagsHelp = repoFlagHelp + offsetFlagHelp + tagFlagHelp
 )

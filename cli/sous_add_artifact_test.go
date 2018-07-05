@@ -18,7 +18,7 @@ func TestAddArtifact_Help(t *testing.T) {
 
 }
 
-func TestAddArttifact_Execute(t *testing.T) {
+func TestAddArtifact_Execute(t *testing.T) {
 
 	gr := graph.DefaultTestGraph(t)
 
@@ -29,6 +29,6 @@ func TestAddArttifact_Execute(t *testing.T) {
 
 	result := a.Execute(args)
 
-	require.IsType(cmdr.UnknownErr{}, result)
+	require.IsType(cmdr.UsageErr{}, result)
 
 }

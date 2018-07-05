@@ -5,7 +5,6 @@ import (
 
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
-	"github.com/samsalisbury/semv"
 )
 
 // SousAddArtifact is the description of the `sous add artifacat` command
@@ -16,7 +15,7 @@ type SousAddArtifact struct {
 
 func init() { AddSubcommands["artifact"] = &SousAddArtifact{} }
 
-// Help prints the help
+// Help prints the help.
 func (*SousAddArtifact) Help() string {
 	return `Add artifact of docker image.
 
@@ -24,16 +23,16 @@ Tell sous that this docker image represents a particular SourceID.
 `
 }
 
-// AddFlags adds the flags for sous init.
+// AddFlags adds the flags,
 func (sa *SousAddArtifact) AddFlags(fs *flag.FlagSet) {
-	MustAddFlags(fs, &sa.opts.SourceID, AddArtificatFlagsHelp)
+	MustAddFlags(fs, &sa.opts.SourceID, AddArtifactFlagsHelp)
 
 	fs.StringVar(&sa.opts.DockerImage, "docker-image", "",
 		"the docker image to store as an artifact")
 
 }
 
-// Execute defines the behavior of `sous plumbing normalizegdm`
+// Execute defines the behavior of 'sous add artifact'.
 func (sa *SousAddArtifact) Execute(args []string) cmdr.Result {
 
 	if sa.opts.DockerImage == "" {
@@ -48,9 +47,6 @@ func (sa *SousAddArtifact) Execute(args []string) cmdr.Result {
 	}
 	if sid.Location.Repo == "" {
 		return cmdr.UsageErrorf("-repo flag required")
-	}
-	if (sid.Version == semv.Version{}) {
-		return cmdr.UsageErrorf("-tag flag required")
 	}
 
 	addArtifact, err := sa.SousGraph.GetArtifact(sa.opts)
