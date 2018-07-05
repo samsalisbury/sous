@@ -14,7 +14,6 @@ import (
 //AddArtifact struct for add artifact action.
 type AddArtifact struct {
 	Repo        string
-	Cluster     string
 	Offset      string
 	Tag         string
 	DockerImage string
@@ -28,7 +27,7 @@ type AddArtifact struct {
 //Do executes the action for add artifact.
 func (a *AddArtifact) Do() error {
 
-	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Executing add artifact Repo: %s, Cluster: %s, Offset: %s, Tag: %s, DockerImage: %s", a.Repo, a.Cluster, a.Offset, a.Tag, a.DockerImage), logging.ExtraDebug1Level, a.LogSink)
+	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Executing add artifact Repo: %s, Offset: %s, Tag: %s, DockerImage: %s", a.Repo, a.Offset, a.Tag, a.DockerImage), logging.ExtraDebug1Level, a.LogSink)
 
 	versionName := fmt.Sprintf("%s:%s", a.DockerImage, a.Tag)
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Attempting to get Digest for: %s", versionName), logging.ExtraDebug1Level, a.LogSink)
