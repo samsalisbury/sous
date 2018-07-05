@@ -13,6 +13,15 @@ import (
 )
 
 type (
+
+	// GETArtifactHandler is an injectable request handler
+	GETArtifactHandler struct {
+		logging.LogSink
+		*http.Request
+		restful.QueryValues
+		sous.Registry
+	}
+
 	// ArtifactResource provides the /artifact endpoint
 	ArtifactResource struct {
 		restful.QueryParser
@@ -26,6 +35,31 @@ type (
 		sous.Inserter
 	}
 )
+
+// Get implements Getable on GDMResource
+func (ar *ArtifactResource) Get(_ *restful.RouteMap, ls logging.LogSink, writer http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	return &GETArtifactHandler{
+		Request:     req,
+		LogSink:     ls,
+		QueryValues: ar.ParseQuery(req),
+		Registry:    ar.context.Registry,
+	}
+}
+
+// Exchange implements the Handler interface
+func (h *GETArtifactHandler) Exchange() (interface{}, int) {
+	sid, err := sourceIDFromValues(h.QueryValues)
+	if err != nil {
+		return err, http.StatusNotAcceptable
+	}
+
+	ba, err := h.GetArtifact(sid)
+	if err != nil {
+		return err, http.StatusNotAcceptable
+	}
+
+	return ba, http.StatusOK
+}
 
 func newArtifactResource(ctx ComponentLocator) *ArtifactResource {
 	return &ArtifactResource{context: ctx}
