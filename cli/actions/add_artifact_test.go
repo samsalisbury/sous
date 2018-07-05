@@ -71,7 +71,6 @@ func TestAddArtificact_Do(t *testing.T) {
 	a := &AddArtifact{
 		LogSink:    ls,
 		User:       sous.User{},
-		Cluster:    "test-cluster",
 		Repo:       "github.com/testorg/repo",
 		LocalShell: sh,
 		Inserter:   sous.ClientInserter{Inserter: hni},
