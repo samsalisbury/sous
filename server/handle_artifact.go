@@ -14,18 +14,18 @@ import (
 
 type (
 
+	// ArtifactResource provides the /artifact endpoint
+	ArtifactResource struct {
+		restful.QueryParser
+		context ComponentLocator
+	}
+
 	// GETArtifactHandler is an injectable request handler
 	GETArtifactHandler struct {
 		logging.LogSink
 		*http.Request
 		restful.QueryValues
 		sous.Registry
-	}
-
-	// ArtifactResource provides the /artifact endpoint
-	ArtifactResource struct {
-		restful.QueryParser
-		context ComponentLocator
 	}
 
 	// PUTArtifactHandler handles PUT requests to /artifact
@@ -35,6 +35,10 @@ type (
 		sous.Inserter
 	}
 )
+
+func newArtifactResource(ctx ComponentLocator) *ArtifactResource {
+	return &ArtifactResource{context: ctx}
+}
 
 // Get implements Getable on GDMResource
 func (ar *ArtifactResource) Get(_ *restful.RouteMap, ls logging.LogSink, writer http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
@@ -47,22 +51,18 @@ func (ar *ArtifactResource) Get(_ *restful.RouteMap, ls logging.LogSink, writer 
 }
 
 // Exchange implements the Handler interface
-func (h *GETArtifactHandler) Exchange() (interface{}, int) {
-	sid, err := sourceIDFromValues(h.QueryValues)
+func (gh *GETArtifactHandler) Exchange() (interface{}, int) {
+	sid, err := sourceIDFromValues(gh.QueryValues)
 	if err != nil {
 		return err, http.StatusNotAcceptable
 	}
 
-	ba, err := h.GetArtifact(sid)
+	ba, err := gh.GetArtifact(sid)
 	if err != nil {
 		return err, http.StatusNotAcceptable
 	}
 
 	return ba, http.StatusOK
-}
-
-func newArtifactResource(ctx ComponentLocator) *ArtifactResource {
-	return &ArtifactResource{context: ctx}
 }
 
 // Put implements Putable on ArtifactResource, which marks it as accepting PUT requests
