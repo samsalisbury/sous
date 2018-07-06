@@ -121,8 +121,34 @@ type ArtifactOpts struct {
 	DockerImage string
 }
 
-//GetArtifact will return artifact for cli add artifact
-func (di *SousGraph) GetArtifact(opts ArtifactOpts) (actions.Action, error) {
+//GetGetArtifact will return artifact for cli add artifact
+func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (actions.Action, error) {
+	di.guardedAdd("SourceIDFlags", &opts.SourceID)
+	scoop := struct {
+		LogSink    LogSink
+		User       sous.User
+		LocalShell LocalWorkDirShell
+		Config     LocalSousConfig
+		HTTP       *ClusterSpecificHTTPClient
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+	return &actions.GetArtifact{
+
+		LogSink:    scoop.LogSink.LogSink.Child("get-artifact"),
+		User:       scoop.User,
+		Config:     scoop.Config.Config,
+		LocalShell: scoop.LocalShell,
+		HTTPClient: scoop.HTTP,
+		Repo:       opts.SourceID.Repo,
+		Offset:     opts.SourceID.Offset,
+		Tag:        opts.SourceID.Tag, //might need to switch to version and seperate concept of tag and semv
+	}, nil
+}
+
+//GetAddArtifact will return artifact for cli add artifact
+func (di *SousGraph) GetAddArtifact(opts ArtifactOpts) (actions.Action, error) {
 	di.guardedAdd("SourceIDFlags", &opts.SourceID)
 	scoop := struct {
 		Inserter   sous.ClientInserter
