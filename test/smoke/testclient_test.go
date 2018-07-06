@@ -68,6 +68,15 @@ func (f *sousFlags) DeploymentIDFlags() *sousFlags {
 	return didFlags
 }
 
+func (f *sousFlags) SousDeployFlags() *sousFlags {
+	if f == nil {
+		return nil
+	}
+	deployFlags := f.DeploymentIDFlags()
+	deployFlags.tag = f.tag
+	return deployFlags
+}
+
 // SousInitFlags returns a derived set of flags only keeping those that play a
 // part in the 'sous init' command.
 func (f *sousFlags) SousInitFlags() *sousFlags {
@@ -188,8 +197,8 @@ func (c *TestClient) insertClusterSuffix(t *testing.T, args []string) []string {
 
 func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) (*exec.Cmd, context.CancelFunc) {
 	t.Helper()
-	args = c.insertClusterSuffix(t, args)
-	cmd, cancel := mkCMD(c.Dir, c.BinPath, allArgs(subcmd, f, args)...)
+	args = c.insertClusterSuffix(t, allArgs(subcmd, f, args))
+	cmd, cancel := mkCMD(c.Dir, c.BinPath, args...)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", c.ConfigDir))
 	return cmd, cancel
 }

@@ -87,7 +87,7 @@ func initBuild(t *testing.T, client *TestClient, flags *sousFlags, transforms ..
 // deployed that tag successfully to cluster.
 func initBuildDeploy(t *testing.T, client *TestClient, flags *sousFlags, transforms ...ManifestTransform) {
 	initBuild(t, client, flags, transforms...)
-	client.MustRun(t, "deploy", flags.DeploymentIDFlags())
+	client.MustRun(t, "deploy", flags.SousDeployFlags())
 }
 
 func TestInitToDeploy(t *testing.T) {
