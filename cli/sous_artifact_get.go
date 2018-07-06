@@ -17,7 +17,7 @@ func init() { AddSubcommands["artifact"] = &SousGetArtifact{} }
 
 // Help prints the help.
 func (*SousGetArtifact) Help() string {
-	return `Add artifact of docker image.
+	return `Get artifact of docker image.
 
 Tell sous that this docker image represents a particular SourceID.
 `
