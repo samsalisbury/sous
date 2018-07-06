@@ -9,6 +9,24 @@ import (
 	"github.com/opentable/sous/util/filemap"
 )
 
+func dockerBuildAddArtifact(t *testing.T, f *TestFixture, client *TestClient, flags *sousFlags) {
+	t.Helper()
+	tag := flags.tag
+	if tag == "" {
+		t.Fatalf("you must add a non-empty tag flag")
+	}
+	reg := client.Config.Docker.RegistryHost
+	repo := "github.com/user1/project1"
+	dockerTag := f.IsolatedVersionTag(t, tag)
+	dockerRepo := fmt.Sprintf("%s/%s", reg, repo)
+	dockerRef := fmt.Sprintf("%s:%s", dockerRepo, dockerTag)
+
+	mustDoCMD(t, client.Dir, "docker", "build", "-t", dockerRef, ".")
+	mustDoCMD(t, client.Dir, "docker", "push", dockerRef)
+
+	client.MustRun(t, "add artifact", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
+}
+
 func TestOTPLInitToDeploy(t *testing.T) {
 	pf := pfs.newParallelTestFixture(t)
 
@@ -22,20 +40,13 @@ func TestOTPLInitToDeploy(t *testing.T) {
 		PTest{Name: "add-artifact", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, simpleServer)
 
-			reg := f.Client.Config.Docker.RegistryHost
-			repo := "github.com/user1/project1"
-			tag := "1.2.3"
-			dockerTag := f.IsolatedVersionTag(t, tag)
-			dockerRepo := fmt.Sprintf("%s/%s", reg, repo)
-			dockerRef := fmt.Sprintf("%s:%s", dockerRepo, dockerTag)
+			flags := &sousFlags{tag: "1.2.3"}
 
-			mustDoCMD(t, client.Dir, "docker", "build", "-t", dockerRef, ".")
-			mustDoCMD(t, client.Dir, "docker", "push", dockerRef)
-
-			client.MustRun(t, "add artifact", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
+			dockerBuildAddArtifact(t, f, client, flags)
+			// TODO: Assertion that artifact was registered.
 		}},
 
-		PTest{Name: "init-simple", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "build-init-deploy", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProject(t, f, filemap.FileMap{
 				"Dockerfile": simpleServer,
 				"config/cluster1/singularity.json": `
@@ -49,18 +60,30 @@ func TestOTPLInitToDeploy(t *testing.T) {
 				}`,
 				"config/cluster1/singularity-request.json": `
 				{
-					id: "request1",
+					"id": "request1",
 					"requestType": "SERVICE",
 					"owners": [
 					    "test-user1@example.com"
 					],
-					"instances": 3,
+					"instances": 3
 				}`,
 			})
-			client.MustRun(t, "version", nil)
+
+			flags := &sousFlags{
+				kind:    "http-service",
+				repo:    "github.com/build-init-deploy-user/project1",
+				tag:     "1.2.3",
+				cluster: "cluster1",
+			}
+
+			dockerBuildAddArtifact(t, f, client, flags)
+
+			client.MustRun(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
+
+			client.MustRun(t, "deploy", flags.SousDeployFlags())
 		}},
 
-		PTest{Name: "init-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProject(t, f, filemap.FileMap{
 				"Dockerfile": simpleServer,
 				"config/cluster1/singularity.json": `
