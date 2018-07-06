@@ -44,6 +44,50 @@ type sousFlags struct {
 	tag     string
 }
 
+// ManifestIDFlags returns a derived set of flags only keeping those that play a
+// part in identifying a manifest.
+func (f *sousFlags) ManifestIDFlags() *sousFlags {
+	if f == nil {
+		return nil
+	}
+	return &sousFlags{
+		repo:   f.repo,
+		offset: f.offset,
+		flavor: f.flavor,
+	}
+}
+
+// ManifestIDFlags returns a derived set of flags only keeping those that play a
+// part in identifying a deployment.
+func (f *sousFlags) DeploymentIDFlags() *sousFlags {
+	if f == nil {
+		return nil
+	}
+	didFlags := f.ManifestIDFlags()
+	didFlags.cluster = f.cluster
+	return didFlags
+}
+
+// SousInitFlags returns a derived set of flags only keeping those that play a
+// part in the 'sous init' command.
+func (f *sousFlags) SousInitFlags() *sousFlags {
+	if f == nil {
+		return nil
+	}
+	initFlags := f.ManifestIDFlags()
+	initFlags.kind = f.kind
+	return initFlags
+}
+
+func (f *sousFlags) SourceIDFlags() *sousFlags {
+	if f == nil {
+		return nil
+	}
+	sidFlags := f.ManifestIDFlags()
+	sidFlags.tag = f.tag
+	return sidFlags
+}
+
 func (f *sousFlags) Args() []string {
 	if f == nil {
 		return nil
@@ -289,14 +333,18 @@ func (c *TestClient) MustFail(t *testing.T, subcmd string, f *sousFlags, args ..
 	}
 }
 
-func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, f func(m sous.Manifest) sous.Manifest) {
+// TransformManifest applies each of transforms in order to the retrieved
+// manifest, then calls 'sous manifest set' to apply them. Any failure is fatal.
+func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, transforms ...ManifestTransform) {
 	t.Helper()
 	manifest := c.MustRun(t, "manifest get", getSetFlags)
 	var m sous.Manifest
 	if err := yaml.Unmarshal([]byte(manifest), &m); err != nil {
 		t.Fatalf("manifest get returned invalid YAML: %s\nInvalid YAML was:\n%s", err, manifest)
 	}
-	m = f(m)
+	for _, f := range transforms {
+		m = f(m)
+	}
 	manifestBytes, err := yaml.Marshal(m)
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)

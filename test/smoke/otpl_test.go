@@ -1,6 +1,6 @@
 //+build smoke
 
-package main
+package smoke
 
 import (
 	"fmt"
@@ -18,6 +18,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 	}
 
 	pf.RunMatrix(fixtureConfigs,
+
 		PTest{Name: "add-artifact", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, simpleServer)
 
@@ -33,8 +34,10 @@ func TestOTPLInitToDeploy(t *testing.T) {
 
 			client.MustRun(t, "add artifact", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
 		}},
+
 		PTest{Name: "init-simple", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, simpleServer, filemap.FileMap{
+			client := setupProject(t, f, filemap.FileMap{
+				"Dockerfile": simpleServer,
 				"config/cluster1/singularity.json": `
 				{
 					"requestId": "request1",
@@ -51,15 +54,15 @@ func TestOTPLInitToDeploy(t *testing.T) {
 					"owners": [
 					    "test-user1@example.com"
 					],
-					"slavePlacement": "SEPARATE_BY_REQUEST",
 					"instances": 3,
-					"rackSensitive": false,
-					"loadBalanced": false
 				}`,
 			})
+			client.MustRun(t, "version", nil)
 		}},
+
 		PTest{Name: "init-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, simpleServer, filemap.FileMap{
+			client := setupProject(t, f, filemap.FileMap{
+				"Dockerfile": simpleServer,
 				"config/cluster1/singularity.json": `
 				{
 					"requestId": "request1",
@@ -82,7 +85,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 					"loadBalanced": false
 				}`,
 			})
-
+			client.MustRun(t, "version", nil)
 		}},
 	)
 }

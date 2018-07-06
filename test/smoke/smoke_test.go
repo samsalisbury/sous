@@ -15,15 +15,15 @@ import (
 // Define some Dockerfiles for use in tests.
 const (
 	simpleServer = `
-FROM alpine
+FROM alpine:3.7
 CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done
 `
 	sleeper = `
-FROM alpine
+FROM alpine:3.7
 CMD echo -n Sleeping for 10s...; sleep 10; echo Done
 `
 	failer = `
-FROM alpine
+FROM alpine:3.7
 CMD echo -n Failing in 10s...; sleep 10; echo Failed; exit 1
 `
 )
@@ -31,11 +31,11 @@ CMD echo -n Failing in 10s...; sleep 10; echo Failed; exit 1
 // setupProject creates a brand new git repo containing the provided Dockerfile,
 // commits that Dockerfile, runs 'sous version' and 'sous config', and returns a
 // sous TestClient in the project directory.
-func setupProjectSingleDockerfile(t *testing.T, f TestFixture, dockerfile string) *TestClient {
-	return setupProjectFileMap(t, f, filemap.FileMap{"Dockerfile": dockerfile})
+func setupProjectSingleDockerfile(t *testing.T, f *TestFixture, dockerfile string) *TestClient {
+	return setupProject(t, f, filemap.FileMap{"Dockerfile": dockerfile})
 }
 
-func setupProject(t *testing.T, f TestFixture, fm filemap.FileMap) *TestClient {
+func setupProject(t *testing.T, f *TestFixture, fm filemap.FileMap) *TestClient {
 	t.Helper()
 	// Setup project git repo.
 	projectDir := makeGitRepo(t, f.Client.BaseDir, "projects/project1", GitRepoSpec{
@@ -55,7 +55,6 @@ func setupProject(t *testing.T, f TestFixture, fm filemap.FileMap) *TestClient {
 
 	// cd into project dir
 	client.Dir = projectDir
-	client.ClusterSuffix = f.ClusterSuffix
 
 	// Dump sous version & config.
 	t.Logf("Sous version: %s", client.MustRun(t, "version", nil))
@@ -75,6 +74,22 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
+// initBuild is a macro to fast-forward to tests to a point where we have
+// initialised the project, transformed the manifest, and performed a build.
+func initBuild(t *testing.T, client *TestClient, flags *sousFlags, transforms ...ManifestTransform) {
+	client.MustRun(t, "init", flags.SousInitFlags())
+	client.TransformManifest(t, flags.ManifestIDFlags(), transforms...)
+	client.MustRun(t, "build", flags.SourceIDFlags())
+}
+
+// initBuildDeploy is a macro for fast-forwarding tests to a point where we have
+// initialised the project as a kind project, built it with -tag tag and
+// deployed that tag successfully to cluster.
+func initBuildDeploy(t *testing.T, client *TestClient, flags *sousFlags, transforms ...ManifestTransform) {
+	initBuild(t, client, flags, transforms...)
+	client.MustRun(t, "deploy", flags.DeploymentIDFlags())
+}
+
 func TestInitToDeploy(t *testing.T) {
 	pf := pfs.newParallelTestFixture(t)
 
@@ -87,10 +102,10 @@ func TestInitToDeploy(t *testing.T) {
 
 		PTest{Name: "simple", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, simpleServer)
-			client.MustRun(t, "init", nil, "-kind", "http-service")
-			client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
-			client.MustRun(t, "build", nil, "-tag", "1.2.3")
-			client.MustRun(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+
+			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
+
+			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
 
 			did := sous.DeploymentID{
 				ManifestID: sous.ManifestID{
@@ -107,20 +122,23 @@ func TestInitToDeploy(t *testing.T) {
 			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
-		PTest{Name: "zero-instances", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "fail-zero-instances", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, simpleServer)
-			client.MustRun(t, "init", nil, "-kind", "http-service")
-			client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst0)
-			client.MustRun(t, "build", nil, "-tag", "1.2.3")
+
+			flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
+
+			initBuild(t, client, flags, setMinimalMemAndCPUNumInst0)
 
 			client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
 		}},
 
-		PTest{Name: "fails", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "fail-container-crash", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, failer)
-			client.MustRun(t, "init", nil, "-kind", "http-service")
-			client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
-			client.MustRun(t, "build", nil, "-tag", "1.2.3")
+
+			flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
+
+			initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
+
 			client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
 			did := sous.DeploymentID{
@@ -140,19 +158,20 @@ func TestInitToDeploy(t *testing.T) {
 
 		PTest{Name: "flavors", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, simpleServer)
-			flavor := "flavor1"
-			flavorFlag := &sousFlags{flavor: flavor}
-			client.MustRun(t, "init", flavorFlag, "-kind", "http-service")
-			client.TransformManifest(t, flavorFlag, setMinimalMemAndCPUNumInst1)
-			client.MustRun(t, "build", nil, "-tag", "1.2.3")
-			client.MustRun(t, "deploy", flavorFlag, "-cluster", "cluster1", "-tag", "1.2.3")
+
+			flags := &sousFlags{
+				kind: "http-service", tag: "1.2.3", cluster: "cluster1",
+				flavor: "flavor1",
+			}
+
+			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
 
 			did := sous.DeploymentID{
 				ManifestID: sous.ManifestID{
 					Source: sous.SourceLocation{
 						Repo: "github.com/user1/repo1",
 					},
-					Flavor: flavor,
+					Flavor: "flavor1",
 				},
 				Cluster: "cluster1",
 			}
@@ -165,12 +184,14 @@ func TestInitToDeploy(t *testing.T) {
 
 		PTest{Name: "pause-unpause", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, simpleServer)
-			client.MustRun(t, "init", nil, "-kind", "http-service")
-			client.TransformManifest(t, nil, setMinimalMemAndCPUNumInst1)
-			client.MustRun(t, "build", nil, "-tag", "1")
+
+			flags := &sousFlags{kind: "http-service", tag: "1", cluster: "cluster1"}
+
+			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
+
+			// Prepare a couple more builds...
 			client.MustRun(t, "build", nil, "-tag", "2")
 			client.MustRun(t, "build", nil, "-tag", "3")
-			client.MustRun(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1")
 
 			did := sous.DeploymentID{
 				ManifestID: sous.ManifestID{
@@ -195,8 +216,10 @@ func TestInitToDeploy(t *testing.T) {
 
 		PTest{Name: "scheduled", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, sleeper)
-			client.MustRun(t, "init", nil, "-kind", "scheduled")
-			client.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
+
+			flags := &sousFlags{kind: "scheduled", tag: "1.2.3", cluster: "cluster1"}
+
+			initBuildDeploy(t, client, flags, func(m sous.Manifest) sous.Manifest {
 				clusterName := "cluster1" + f.ClusterSuffix
 				d := m.Deployments[clusterName]
 				d.NumInstances = 1
@@ -207,8 +230,6 @@ func TestInitToDeploy(t *testing.T) {
 
 				return m
 			})
-			client.MustRun(t, "build", nil, "-tag", "1.2.3")
-			client.MustRun(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
 			did := sous.DeploymentID{
 				ManifestID: sous.ManifestID{
