@@ -5,6 +5,8 @@ package main
 import (
 	"fmt"
 	"testing"
+
+	"github.com/opentable/sous/util/filemap"
 )
 
 func TestOTPLInitToDeploy(t *testing.T) {
@@ -17,7 +19,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 
 	pf.RunMatrix(fixtureConfigs,
 		PTest{Name: "add-artifact", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, simpleServer)
+			client := setupProjectSingleDockerfile(t, f, simpleServer)
 
 			reg := f.Client.Config.Docker.RegistryHost
 			repo := "github.com/user1/project1"
@@ -32,7 +34,54 @@ func TestOTPLInitToDeploy(t *testing.T) {
 			client.MustRun(t, "add artifact", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
 		}},
 		PTest{Name: "init-simple", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, simpleServer)
+			client := setupProject(t, f, simpleServer, filemap.FileMap{
+				"config/cluster1/singularity.json": `
+				{
+					"requestId": "request1",
+					"resources": {
+						"cpus": 0.01,
+						"memoryMb": 1,
+						"numPorts": 3
+					}
+				}`,
+				"config/cluster1/singularity-request.json": `
+				{
+					id: "request1",
+					"requestType": "SERVICE",
+					"owners": [
+					    "test-user1@example.com"
+					],
+					"slavePlacement": "SEPARATE_BY_REQUEST",
+					"instances": 3,
+					"rackSensitive": false,
+					"loadBalanced": false
+				}`,
+			})
+		}},
+		PTest{Name: "init-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
+			client := setupProject(t, f, simpleServer, filemap.FileMap{
+				"config/cluster1/singularity.json": `
+				{
+					"requestId": "request1",
+					"resources": {
+						"cpus": 0.01,
+						"memoryMb": 1,
+						"numPorts": 3
+					}
+				}`,
+				"config/cluster1/singularity-request.json": `
+				{
+					id: "request1",
+					"requestType": "WORKER",
+					"owners": [
+					    "test-user1@example.com"
+					],
+					"slavePlacement": "SEPARATE_BY_REQUEST",
+					"instances": 3,
+					"rackSensitive": false,
+					"loadBalanced": false
+				}`,
+			})
 
 		}},
 	)
