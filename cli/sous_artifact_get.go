@@ -7,16 +7,16 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-// SousGetArtifact is the description of the `sous add artifacat` command
-type SousGetArtifact struct {
+// SousArtifactGet is the description of the `sous add artifacat` command
+type SousArtifactGet struct {
 	SousGraph *graph.SousGraph
 	opts      graph.ArtifactOpts
 }
 
-func init() { AddSubcommands["artifact"] = &SousGetArtifact{} }
+func init() { AddSubcommands["get"] = &SousArtifactGet{} }
 
 // Help prints the help.
-func (*SousGetArtifact) Help() string {
+func (*SousArtifactGet) Help() string {
 	return `Get artifact of docker image.
 
 Tell sous that this docker image represents a particular SourceID.
@@ -24,7 +24,7 @@ Tell sous that this docker image represents a particular SourceID.
 }
 
 // AddFlags adds the flags.
-func (sa *SousGetArtifact) AddFlags(fs *flag.FlagSet) {
+func (sa *SousArtifactGet) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sa.opts.SourceID, AddArtifactFlagsHelp)
 
 	fs.StringVar(&sa.opts.DockerImage, "docker-image", "",
@@ -33,7 +33,7 @@ func (sa *SousGetArtifact) AddFlags(fs *flag.FlagSet) {
 }
 
 // Execute defines the behavior of 'sous add artifact'.
-func (sa *SousGetArtifact) Execute(args []string) cmdr.Result {
+func (sa *SousArtifactGet) Execute(args []string) cmdr.Result {
 
 	if sa.opts.SourceID.Tag == "" {
 		return cmdr.UsageErrorf("-tag flag required")
