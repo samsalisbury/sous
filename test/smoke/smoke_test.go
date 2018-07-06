@@ -318,8 +318,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 			mustDoCMD(t, client.Dir, "docker", "build", "-t", dockerRef, ".")
 			mustDoCMD(t, client.Dir, "docker", "push", dockerRef)
 
-			client.MustRun(t, "add artifact", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
+			client.MustRun(t, "artifact add", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
 		},
 	})
 }
-
