@@ -366,8 +366,8 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, tra
 	}
 }
 
-func (c *TestClient) SetSingularityRequestID(t *testing.T, getSetFlags *sousFlags, clusterName, singReqID string) {
-	c.TransformManifest(t, nil, func(m sous.Manifest) sous.Manifest {
+func (c *TestClient) setSingularityRequestID(t *testing.T, clusterName, singReqID string) ManifestTransform {
+	return func(m sous.Manifest) sous.Manifest {
 		clusterName := c.Fixture.IsolatedClusterName(clusterName)
 		d, ok := m.Deployments[clusterName]
 		if !ok {
@@ -379,5 +379,5 @@ func (c *TestClient) SetSingularityRequestID(t *testing.T, getSetFlags *sousFlag
 		m.Deployments[clusterName] = d
 		m.Deployments = setMemAndCPUForAll(m.Deployments)
 		return m
-	})
+	}
 }

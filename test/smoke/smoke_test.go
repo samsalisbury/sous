@@ -246,15 +246,17 @@ func TestInitToDeploy(t *testing.T) {
 			assertNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
-		PTest{Name: "custom-requid-first-deploy", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "custom-reqid-first-deploy", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, simpleServer)
-			client.MustRun(t, "init", nil, "-kind", "http-service")
-			client.MustRun(t, "build", nil, "-tag", "1.2.3")
+
+			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 
 			customID := "some-custom-req-id" + f.ClusterSuffix
-			client.SetSingularityRequestID(t, nil, "cluster1", customID)
 
-			client.MustRun(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+			initBuildDeploy(t, client, flags,
+				setMinimalMemAndCPUNumInst1,
+				client.setSingularityRequestID(t, "cluster1", customID),
+			)
 
 			assertSingularityRequestTypeService(t, f, customID)
 			assertActiveStatus(t, f, customID)
@@ -263,10 +265,10 @@ func TestInitToDeploy(t *testing.T) {
 
 		PTest{Name: "custom-reqid-second-deploy", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, simpleServer)
-			client.MustRun(t, "init", nil, "-kind", "http-service")
-			client.MustRun(t, "build", nil, "-tag", "1.2.3")
 
-			client.MustRun(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
+
+			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
 
 			did := sous.DeploymentID{
 				ManifestID: sous.ManifestID{
@@ -276,13 +278,14 @@ func TestInitToDeploy(t *testing.T) {
 				},
 				Cluster: "cluster1",
 			}
+
 			originalReqID := f.Singularity.DefaultReqID(t, did)
 			assertSingularityRequestTypeService(t, f, originalReqID)
 			assertActiveStatus(t, f, originalReqID)
 			assertNonNilHealthCheckOnLatestDeploy(t, f, originalReqID)
 
 			customID := "some-custom-req-id" + f.ClusterSuffix
-			client.SetSingularityRequestID(t, nil, "cluster1", customID)
+			client.TransformManifest(t, nil, client.setSingularityRequestID(t, "cluster1", customID))
 
 			// Force to avoid having to make another build.
 			client.MustRun(t, "deploy", nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
@@ -299,20 +302,24 @@ func TestInitToDeploy(t *testing.T) {
 
 		PTest{Name: "change-reqid", Test: func(t *testing.T, f *TestFixture) {
 			client := setupProjectSingleDockerfile(t, f, simpleServer)
-			client.MustRun(t, "init", nil, "-kind", "http-service")
-			client.MustRun(t, "build", nil, "-tag", "1.2.3")
+
+			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 
 			customID1 := "some-custom-req-id1" + f.ClusterSuffix
-			customID2 := "some-custom-req-id2" + f.ClusterSuffix
 
-			client.SetSingularityRequestID(t, nil, "cluster1", customID1)
-			client.MustRun(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+			initBuildDeploy(t, client, flags,
+				setMinimalMemAndCPUNumInst1,
+				client.setSingularityRequestID(t, "cluster1", customID1),
+			)
 
 			assertSingularityRequestTypeService(t, f, customID1)
 			assertActiveStatus(t, f, customID1)
 			assertNonNilHealthCheckOnLatestDeploy(t, f, customID1)
 
-			client.SetSingularityRequestID(t, nil, "cluster1", customID2)
+			customID2 := "some-custom-req-id2" + f.ClusterSuffix
+
+			client.TransformManifest(t, nil, client.setSingularityRequestID(t, "cluster1", customID2))
+
 			client.MustRun(t, "deploy", nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
 
 			assertSingularityRequestTypeService(t, f, customID2)
@@ -322,7 +329,7 @@ func TestInitToDeploy(t *testing.T) {
 			// TODO: Implement cleanup of old request.
 			//assertRequestDoesNotExist(t, f, customID1)
 
-			assertActiveStatus(t, f, customID1)
+			assertActiveStatus(t, f, customID1) // This works because we do not yet do cleanup.
 		}},
 	)
 }
