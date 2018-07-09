@@ -26,6 +26,7 @@ type (
 		logging.LogSink
 		*config.Config
 		sous.Inserter
+		sous.Registry
 		sous.StateManager
 		sous.ClusterManager    // xxx temporary?
 		sous.DeploymentManager // xxx temporary?

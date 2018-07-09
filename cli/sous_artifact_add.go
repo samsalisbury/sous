@@ -7,16 +7,16 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-// SousAddArtifact is the description of the `sous add artifacat` command
-type SousAddArtifact struct {
+// SousArtifactAdd defines the `sous artifact add` command
+type SousArtifactAdd struct {
 	SousGraph *graph.SousGraph
 	opts      graph.ArtifactOpts
 }
 
-func init() { AddSubcommands["artifact"] = &SousAddArtifact{} }
+func init() { ArtifactSubcommands["add"] = &SousArtifactAdd{} }
 
 // Help prints the help.
-func (*SousAddArtifact) Help() string {
+func (*SousArtifactAdd) Help() string {
 	return `Add artifact of docker image.
 
 Tell sous that this docker image represents a particular SourceID.
@@ -24,7 +24,7 @@ Tell sous that this docker image represents a particular SourceID.
 }
 
 // AddFlags adds the flags.
-func (sa *SousAddArtifact) AddFlags(fs *flag.FlagSet) {
+func (sa *SousArtifactAdd) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sa.opts.SourceID, AddArtifactFlagsHelp)
 
 	fs.StringVar(&sa.opts.DockerImage, "docker-image", "",
@@ -33,7 +33,7 @@ func (sa *SousAddArtifact) AddFlags(fs *flag.FlagSet) {
 }
 
 // Execute defines the behavior of 'sous add artifact'.
-func (sa *SousAddArtifact) Execute(args []string) cmdr.Result {
+func (sa *SousArtifactAdd) Execute(args []string) cmdr.Result {
 
 	if sa.opts.DockerImage == "" {
 		return cmdr.UsageErrorf("-docker-image flag required")
@@ -49,7 +49,7 @@ func (sa *SousAddArtifact) Execute(args []string) cmdr.Result {
 		return cmdr.UsageErrorf("-repo flag required")
 	}
 
-	addArtifact, err := sa.SousGraph.GetArtifact(sa.opts)
+	addArtifact, err := sa.SousGraph.GetAddArtifact(sa.opts)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}

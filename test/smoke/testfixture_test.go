@@ -28,14 +28,13 @@ type TestFixture struct {
 	knownToFail   bool
 }
 
-func newTestFixture(t *testing.T, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) *TestFixture {
+func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) *TestFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {
 		t.Skipf("-short flag present")
 	}
 	sousBin := getSousBin(t)
-	envDesc := getEnvDesc(t)
 	baseDir := getDataDir(t)
 
 	clusterSuffix := strings.Replace(t.Name(), "/", "_", -1)
@@ -109,11 +108,6 @@ func (f *TestFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
 		return strings.ToLower(baseTag + suffix)
 	}
 	return strings.ToLower(baseTag + "-" + suffix)
-}
-
-func (f *TestFixture) Stop(t *testing.T) {
-	t.Helper()
-	f.Cluster.Stop(t)
 }
 
 func (f *TestFixture) ReportStatus(t *testing.T) {

@@ -11,6 +11,9 @@ with respect to its command line interface and HTTP interface
 * Both: Update how server errors get passed to client, if not json make more
   readable.
 
+### Added
+* Client: 'sous artifact add' command.
+* Server: GET /artifact handler.
 
 ## [0.5.109](//github.com/opentable/sous/compare/0.5.104...0.5.109)
 ### Added

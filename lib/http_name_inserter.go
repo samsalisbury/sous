@@ -2,6 +2,7 @@ package sous
 
 import (
 	"net/url"
+	"strings"
 	"sync"
 
 	multierror "github.com/hashicorp/go-multierror"
@@ -61,7 +62,10 @@ func (hni *HTTPNameInserter) Insert(sid SourceID, ba BuildArtifact) error {
 		go func(client restful.HTTPClient) {
 			defer wg.Done()
 			if _, err := client.Create("./artifact", simplifyQV(sid.QueryValues()), ba, nil); err != nil {
-				errs <- err
+				//TODO: Don't care about already existing (might be some other way to tell ./artifact that?)
+				if !strings.Contains(err.Error(), "412 Precondition Failed") {
+					errs <- err
+				}
 			}
 		}(cl)
 	}

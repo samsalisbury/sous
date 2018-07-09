@@ -5,18 +5,29 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/ext/docker"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
+	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
 )
 
 type (
+
 	// ArtifactResource provides the /artifact endpoint
 	ArtifactResource struct {
 		restful.QueryParser
 		context ComponentLocator
+	}
+
+	// GETArtifactHandler is an injectable request handler
+	GETArtifactHandler struct {
+		logging.LogSink
+		*http.Request
+		restful.QueryValues
+		sous.Registry
 	}
 
 	// PUTArtifactHandler handles PUT requests to /artifact
@@ -29,6 +40,35 @@ type (
 
 func newArtifactResource(ctx ComponentLocator) *ArtifactResource {
 	return &ArtifactResource{context: ctx}
+}
+
+// Get implements Getable on GDMResource
+func (ar *ArtifactResource) Get(_ *restful.RouteMap, ls logging.LogSink, writer http.ResponseWriter, req *http.Request, _ httprouter.Params) restful.Exchanger {
+	return &GETArtifactHandler{
+		Request:     req,
+		LogSink:     ls,
+		QueryValues: ar.ParseQuery(req),
+		Registry:    ar.context.Registry,
+	}
+}
+
+// Exchange implements the Handler interface
+func (gh *GETArtifactHandler) Exchange() (interface{}, int) {
+	sid, err := sourceIDFromValues(gh.QueryValues)
+	if err != nil {
+		return err, http.StatusNotAcceptable
+	}
+
+	ba, err := gh.GetArtifact(sid)
+	if _, ok := errors.Cause(err).(docker.NoImageNameFound); ok {
+		return nil, http.StatusNotFound
+	}
+
+	if err != nil {
+		return err, http.StatusNotAcceptable
+	}
+
+	return ba, http.StatusOK
 }
 
 // Put implements Putable on ArtifactResource, which marks it as accepting PUT requests

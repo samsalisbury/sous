@@ -10,7 +10,7 @@ import (
 
 func TestAddArtifact_Help(t *testing.T) {
 
-	p := &SousAddArtifact{}
+	p := &SousArtifactAdd{}
 
 	help := p.Help()
 
@@ -23,7 +23,7 @@ func TestAddArtifact_Execute(t *testing.T) {
 	gr := graph.DefaultTestGraph(t)
 
 	require := require.New(t)
-	a := &SousAddArtifact{SousGraph: gr}
+	a := &SousArtifactAdd{SousGraph: gr}
 
 	args := []string{"", ""}
 
