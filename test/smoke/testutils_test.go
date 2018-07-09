@@ -42,17 +42,17 @@ func getEnvDesc() desc.EnvDesc {
 	return envDesc
 }
 
-func getSousBin(t *testing.T) string {
+func mustGetSousBin() string {
 	sousBin := os.Getenv("SMOKE_TEST_BINARY")
 	if sousBin != "" {
-		t.Logf("Using sous binary %q (from $SMOKE_TEST_BINARY)", sousBin)
+		log.Printf("Using sous binary %q (from $SMOKE_TEST_BINARY)", sousBin)
 		return sousBin
 	}
 	sousBin, err := exec.LookPath("sous")
 	if err != nil {
-		t.Fatalf("sous not found in path")
+		log.Panicf("sous not found in path and $SMOKE_TEST_BINARY not set")
 	}
-	t.Logf("Using sous binary %q (from $PATH)", sousBin)
+	log.Printf("Using sous binary %q (from $PATH)", sousBin)
 	return sousBin
 }
 
@@ -182,7 +182,7 @@ func getDataDir(t *testing.T) string {
 		t.Fatalf("Test data dir already exists and is not empty: %q", baseDir)
 	}
 
-	t.Logf("Writing test data to %q (from %s)", baseDir, from)
+	log.Printf("Test data in %q (from %s)", baseDir, from)
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		t.Fatalf("Failed to create smoke test data dir %q: %s", baseDir, err)
 	}

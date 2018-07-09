@@ -3,6 +3,7 @@ package sous
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -19,7 +20,7 @@ func SetupDB(t *testing.T, optidx ...int) *sql.DB {
 	//t.Helper()
 	name := dbNameRoot(t, optidx...)
 
-	t.Logf("Creating DB for %s called %s ...", t.Name(), name)
+	log.Printf("Creating DB for %s called %s", t.Name(), name)
 	db, err := setupDBErr(name)
 	if err != nil {
 		if os.Getenv("SOUS_TEST_NODB") != "" {
@@ -28,7 +29,6 @@ func SetupDB(t *testing.T, optidx ...int) *sql.DB {
 		}
 		t.Fatalf("Error creating test DB %q: %v (Set SOUS_TEST_NODB=yes) to skip tests that rely on the DB", name, err)
 	}
-	t.Logf("Created %s.", name)
 	return db
 }
 
