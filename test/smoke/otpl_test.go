@@ -28,6 +28,9 @@ func dockerBuildAddArtifact(t *testing.T, f *TestFixture, client *TestClient, fl
 }
 
 func TestOTPLInitToDeploy(t *testing.T) {
+
+	t.Skipf("WIP Test")
+
 	pf := pfs.newParallelTestFixture(t)
 
 	fixtureConfigs := []fixtureConfig{
