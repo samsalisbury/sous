@@ -19,7 +19,7 @@ func TestMetadataDockerfile(t *testing.T) {
 
 	bp := sous.BuildProduct{
 		ID:         "identifier",
-		Advisories: []string{`something is horribly wrong`},
+		Advisories: sous.Advisories{`something is horribly wrong`},
 		Source:     sous.MakeSourceID("github.com/opentable/test", "sub", "2.3.7+abcd"),
 	}
 	mddf, err := ioutil.ReadAll(b.metadataDockerfile(&bp))

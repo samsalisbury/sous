@@ -17,86 +17,7 @@ type (
 		Context                     *BuildContext
 		LogSink                     logging.LogSink
 	}
-
-	// An AdvisoryName is the type for advisory tokens.
-	AdvisoryName string
-	// Advisories are the advisory tokens that apply to a build
-	Advisories []AdvisoryName
 )
-
-const (
-	// NotService is an advisory that this container is not a service, but
-	// instead a support container of some kind and should not itself be
-	// deployed.
-	NotService = AdvisoryName(`support container`)
-	// IsBuilder is an advisory that this container was used to build a finished
-	// image, and should not itself be deployed.
-	IsBuilder = AdvisoryName(`is a build image`)
-	// UnknownRepo is an advisory that the source workspace is not a repo.
-	// TODO: Disambiguate text from NoRepoAdv, they seem like the same thing.
-	UnknownRepo = AdvisoryName(`source workspace lacked repo`)
-	// NoRepoAdv means there is no repository.
-	// TODO: Disambiguate text from UnknownRepo.
-	NoRepoAdv = AdvisoryName(`no repository`)
-	// NotRequestedRevision means that a different revision was built from that
-	// which was requested.
-	NotRequestedRevision = AdvisoryName(`requested revision not built`)
-	// Unversioned means that there was no tag at the currently checked out
-	// revision, or that the tag was not a semver tag, or the tag was 0.0.0.
-	Unversioned = AdvisoryName(`no versioned tag`)
-	// TagMismatch means that a different tag to the one which was requested was
-	// built.
-	TagMismatch = AdvisoryName(`tag mismatch`)
-	// TagNotHead means that the requested tag exists in the history, but there
-	// were more commits since, which were part of this build.
-	TagNotHead = AdvisoryName(`tag not on built revision`)
-	// EphemeralTag means the tag was an ephemeral tag rather than an annotated
-	// tag.
-	EphemeralTag = AdvisoryName(`ephemeral tag`)
-	// UnpushedRev means the revision that was build is not pushed to any
-	// remote.
-	UnpushedRev = AdvisoryName(`unpushed revision`)
-	// BogusRev means that the revision was bogus.
-	// TODO: Find out what "bogus" means.
-	BogusRev = AdvisoryName(`bogus revision`)
-	// DirtyWS means that the workspace was dirty, which means there were
-	// untracked files present, or that one or more tracked files were modified
-	// since the last commit.
-	DirtyWS = AdvisoryName(`dirty workspace`)
-	// DeveloperBuild, image was built with the dev flag true, only enables local image
-	// detection at the moment.
-	DeveloperBuild = AdvisoryName(`developer build`)
-)
-
-// AllAdvisories returns all advisories.
-func AllAdvisories() []AdvisoryName {
-	return []AdvisoryName{
-		NotService,
-		IsBuilder,
-		UnknownRepo,
-		NoRepoAdv,
-		NotRequestedRevision,
-		Unversioned,
-		TagMismatch,
-		TagNotHead,
-		EphemeralTag,
-		UnpushedRev,
-		BogusRev,
-		DirtyWS,
-		DeveloperBuild,
-	}
-}
-
-// AllAdvisoryStrings is similar to AllAdvisories except it casts them to
-// strings.
-func AllAdvisoryStrings() []string {
-	as := AllAdvisories()
-	s := make([]string, len(as))
-	for i, a := range as {
-		s[i] = string(a)
-	}
-	return s
-}
 
 // NewContext returns a new BuildContext updated based on the user's intent as expressed in the Config
 func (c *BuildConfig) NewContext() *BuildContext {
@@ -182,7 +103,7 @@ func (c *BuildConfig) GuardStrict(bc *BuildContext) error {
 	}
 	as := bc.Advisories
 	if len(as) > 0 {
-		return fmt.Errorf("Strict built encountered advisories:\n  %s", strings.Join(as, "  \n"))
+		return fmt.Errorf("Strict built encountered advisories:\n  %s", strings.Join(as.Strings(), "  \n"))
 	}
 	return nil
 }
@@ -205,8 +126,8 @@ func (c *BuildConfig) GuardRegister(br *BuildResult) error {
 }
 
 // Advisories returns a list of advisories that apply to ctx.
-func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
-	advs := []string{}
+func (c *BuildConfig) Advisories(ctx *BuildContext) Advisories {
+	advs := Advisories{}
 	s := ctx.Source
 	knowsRepo := false
 	for _, r := range s.RemoteURLs {
@@ -216,19 +137,19 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
 		}
 	}
 	if !knowsRepo {
-		advs = append(advs, string(UnknownRepo))
+		advs = append(advs, UnknownRepo)
 	}
 
 	if s.RemoteURL == "" {
-		advs = append(advs, string(NoRepoAdv))
+		advs = append(advs, NoRepoAdv)
 	}
 
 	if c.Revision != "" && c.Revision != s.Revision {
-		advs = append(advs, string(NotRequestedRevision))
+		advs = append(advs, NotRequestedRevision)
 	}
 
 	if c.Context.Source.Version().Version.Format(`M.m.p`) == `0.0.0` {
-		advs = append(advs, string(Unversioned))
+		advs = append(advs, Unversioned)
 	}
 
 	if c.Tag != "" {
@@ -240,23 +161,23 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
 			}
 		}
 		if !hasTag {
-			advs = append(advs, string(EphemeralTag))
+			advs = append(advs, EphemeralTag)
 		} else if s.NearestTagRevision != s.Revision {
 			messages.ReportLogFieldsMessage("NearestTagRevision != Revision", logging.DebugLevel, c.LogSink, s.NearestTagRevision, s.Revision)
-			advs = append(advs, string(TagNotHead))
+			advs = append(advs, TagNotHead)
 		}
 	}
 
 	if s.DirtyWorkingTree {
-		advs = append(advs, string(DirtyWS))
+		advs = append(advs, DirtyWS)
 	}
 
 	if s.RevisionUnpushed {
-		advs = append(advs, string(UnpushedRev))
+		advs = append(advs, UnpushedRev)
 	}
 
 	if c.Dev {
-		advs = append(advs, string(DeveloperBuild))
+		advs = append(advs, DeveloperBuild)
 	}
 
 	return advs
