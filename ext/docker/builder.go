@@ -71,6 +71,10 @@ func (b *Builder) ApplyMetadata(br *sous.BuildResult) error {
 // Register registers the build artifact to the the registry
 func (b *Builder) Register(br *sous.BuildResult) error {
 	for _, prod := range br.Products {
+		if prod.Advisories.Contains(sous.IsBuilder) {
+			messages.ReportLogFieldsMessage("not pushing builder image", logging.DebugLevel, b.log, prod)
+			continue
+		}
 		err := b.pushToRegistry(prod)
 		if err != nil {
 			return err
