@@ -66,7 +66,7 @@ func TestMissingExplicitRepo(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Equal(`github.com/opentable/present`, ctx.Source.RemoteURL)
-	assert.Contains(ctx.Advisories, string(UnknownRepo))
+	assert.Contains(ctx.Advisories, UnknownRepo)
 }
 
 // If --repo is absent, guess the repo from the
@@ -113,7 +113,7 @@ func TestNoRepo(t *testing.T) {
 	}
 
 	ctx := bc.NewContext()
-	assert.Contains(ctx.Advisories, string(NoRepoAdv))
+	assert.Contains(ctx.Advisories, NoRepoAdv)
 }
 
 // If a revision is specified, but that's not what's checked out,
@@ -134,7 +134,7 @@ func TestNotRequestedRevision(t *testing.T) {
 
 	ctx := bc.NewContext()
 	assert.Equal(`100100100`, ctx.Source.Revision)
-	assert.Contains(ctx.Advisories, string(NotRequestedRevision))
+	assert.Contains(ctx.Advisories, NotRequestedRevision)
 
 }
 
@@ -173,7 +173,7 @@ func TestAdvisesOfDefaultVersion(t *testing.T) {
 	ctx := bc.NewContext()
 	// 991
 	assert.Equal(`0.0.0-unversioned`, ctx.Source.Version().Version.String())
-	assert.Contains(ctx.Advisories, string(Unversioned))
+	assert.Contains(ctx.Advisories, Unversioned)
 }
 
 func TestTagNotHead(t *testing.T) {
@@ -198,8 +198,8 @@ func TestTagNotHead(t *testing.T) {
 	ctx := bc.NewContext()
 	// 991
 	assert.Equal(`1.2.3`, ctx.Source.Version().Version.String())
-	assert.Contains(ctx.Advisories, string(TagNotHead))
-	assert.NotContains(ctx.Advisories, string(EphemeralTag))
+	assert.Contains(ctx.Advisories, TagNotHead)
+	assert.NotContains(ctx.Advisories, EphemeralTag)
 }
 
 func TestEphemeralTag(t *testing.T) {
@@ -247,8 +247,8 @@ func TestEphemeralTag(t *testing.T) {
 	br := contextualizedResults(ctx)
 	// 991
 	assert.Equal(`1.2.3`, ctx.Source.Version().Version.String())
-	assert.Contains(ctx.Advisories, string(EphemeralTag))
-	assert.NotContains(ctx.Advisories, string(TagNotHead))
+	assert.Contains(ctx.Advisories, EphemeralTag)
+	assert.NotContains(ctx.Advisories, TagNotHead)
 	assert.NoError(bc.GuardRegister(br))
 }
 
@@ -334,7 +334,7 @@ func TestDirtyWorkspaceAdvisory(t *testing.T) {
 	}
 
 	ctx := bc.NewContext()
-	assert.Contains(ctx.Advisories, string(DirtyWS))
+	assert.Contains(ctx.Advisories, DirtyWS)
 	assert.Error(bc.GuardRegister(contextualizedResults(ctx)))
 }
 
@@ -353,7 +353,7 @@ func TestUnpushedRevisionAdvisory(t *testing.T) {
 	}
 
 	ctx := bc.NewContext()
-	assert.Contains(ctx.Advisories, string(UnpushedRev))
+	assert.Contains(ctx.Advisories, UnpushedRev)
 	assert.Error(bc.GuardStrict(ctx))
 }
 
@@ -372,7 +372,7 @@ func TestPermissiveGuard(t *testing.T) {
 	}
 
 	ctx := bc.NewContext()
-	assert.Contains(ctx.Advisories, string(UnpushedRev))
+	assert.Contains(ctx.Advisories, UnpushedRev)
 	assert.NoError(bc.GuardStrict(ctx))
 }
 
@@ -413,7 +413,7 @@ func TestBuildConfig_GuardRegister(t *testing.T) {
 		LogSink: logging.SilentLogSet(),
 	}
 	bc := &BuildContext{}
-	bc.Advisories = []string{"dirty workspace"}
+	bc.Advisories = Advisories{"dirty workspace"}
 	err := c.GuardRegister(contextualizedResults(bc))
 	expected := "build may not be deployable in all clusters due to advisories:\n  ,0.0.0-unversioned: dirty workspace"
 	if err == nil {

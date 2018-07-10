@@ -15,7 +15,7 @@ type (
 		Machine    Machine
 		User       user.User
 		Changes    Changes
-		Advisories []string
+		Advisories Advisories
 	}
 
 	// ScratchContext represents an isolated copy of a project's source code
@@ -37,11 +37,12 @@ type (
 	}
 )
 
-// Version returns the SourceID for this build
+// Version returns the SourceID for this build.
 func (bc *BuildContext) Version() SourceID {
 	return bc.Source.Version()
 }
 
+// RevID returns bc.Source.Revision.
 func (bc *BuildContext) RevID() string {
 	return bc.Source.Revision
 }

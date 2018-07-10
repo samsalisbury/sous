@@ -103,7 +103,7 @@ func (c *BuildConfig) GuardStrict(bc *BuildContext) error {
 	}
 	as := bc.Advisories
 	if len(as) > 0 {
-		return fmt.Errorf("Strict built encountered advisories:\n  %s", strings.Join(as, "  \n"))
+		return fmt.Errorf("Strict built encountered advisories:\n  %s", strings.Join(as.Strings(), "  \n"))
 	}
 	return nil
 }
@@ -126,8 +126,8 @@ func (c *BuildConfig) GuardRegister(br *BuildResult) error {
 }
 
 // Advisories returns a list of advisories that apply to ctx.
-func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
-	advs := []string{}
+func (c *BuildConfig) Advisories(ctx *BuildContext) Advisories {
+	advs := Advisories{}
 	s := ctx.Source
 	knowsRepo := false
 	for _, r := range s.RemoteURLs {
@@ -137,19 +137,19 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
 		}
 	}
 	if !knowsRepo {
-		advs = append(advs, string(UnknownRepo))
+		advs = append(advs, UnknownRepo)
 	}
 
 	if s.RemoteURL == "" {
-		advs = append(advs, string(NoRepoAdv))
+		advs = append(advs, NoRepoAdv)
 	}
 
 	if c.Revision != "" && c.Revision != s.Revision {
-		advs = append(advs, string(NotRequestedRevision))
+		advs = append(advs, NotRequestedRevision)
 	}
 
 	if c.Context.Source.Version().Version.Format(`M.m.p`) == `0.0.0` {
-		advs = append(advs, string(Unversioned))
+		advs = append(advs, Unversioned)
 	}
 
 	if c.Tag != "" {
@@ -161,23 +161,23 @@ func (c *BuildConfig) Advisories(ctx *BuildContext) []string {
 			}
 		}
 		if !hasTag {
-			advs = append(advs, string(EphemeralTag))
+			advs = append(advs, EphemeralTag)
 		} else if s.NearestTagRevision != s.Revision {
 			messages.ReportLogFieldsMessage("NearestTagRevision != Revision", logging.DebugLevel, c.LogSink, s.NearestTagRevision, s.Revision)
-			advs = append(advs, string(TagNotHead))
+			advs = append(advs, TagNotHead)
 		}
 	}
 
 	if s.DirtyWorkingTree {
-		advs = append(advs, string(DirtyWS))
+		advs = append(advs, DirtyWS)
 	}
 
 	if s.RevisionUnpushed {
-		advs = append(advs, string(UnpushedRev))
+		advs = append(advs, UnpushedRev)
 	}
 
 	if c.Dev {
-		advs = append(advs, string(DeveloperBuild))
+		advs = append(advs, DeveloperBuild)
 	}
 
 	return advs

@@ -92,7 +92,7 @@ type (
 		// Advisories contain the QA advisories determined on the build, and convey
 		// prescriptive advice about how the image might be deployed.
 		ID         string // was ImageID
-		Advisories []string
+		Advisories Advisories
 
 		// VersionName and RevisionName cache computations about how to refer to the image.
 		VersionName  string
@@ -117,7 +117,7 @@ func (br *BuildResult) Contextualize(c *BuildContext) {
 			prdt.Source = c.Version() // ugh, yeah - Source and Version are both SourceID
 		}
 		if prdt.Advisories == nil {
-			prdt.Advisories = make([]string, 0, len(advs))
+			prdt.Advisories = make(Advisories, 0, len(advs))
 		}
 		prdt.Advisories = append(prdt.Advisories, advs...)
 		prdt.RevID = c.RevID()
@@ -135,7 +135,7 @@ func (br *BuildResult) String() string {
 func (bp *BuildProduct) String() string {
 	str := fmt.Sprintf("Built: %q %q", bp.VersionName, bp.Kind)
 	if len(bp.Advisories) > 0 {
-		str = str + "\nAdvisories:\n  " + strings.Join(bp.Advisories, "  \n")
+		str = str + "\nAdvisories:\n  " + strings.Join(bp.Advisories.Strings(), "  \n")
 	}
 	return str
 }
@@ -149,7 +149,7 @@ func (bp BuildProduct) BuildArtifact() BuildArtifact {
 		Qualities:       make(Qualities, 0, len(bp.Advisories)),
 	}
 	for _, adv := range bp.Advisories {
-		ba.Qualities = append(ba.Qualities, Quality{Name: adv, Kind: "advisory"})
+		ba.Qualities = append(ba.Qualities, Quality{Name: string(adv), Kind: "advisory"})
 	}
 	return ba
 }

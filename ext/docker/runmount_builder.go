@@ -263,7 +263,7 @@ func products(ctx sous.BuildContext, runnableBuilders []*runnableBuilder) []*sou
 func product(ctx sous.BuildContext, builder *runnableBuilder) *sous.BuildProduct {
 	advisories := ctx.Advisories
 	if builder.RunSpec.Kind != "" {
-		advisories = append(advisories, string(sous.NotService))
+		advisories = append(advisories, sous.NotService)
 	}
 	sid := ctx.Version()
 	sid.Location.Dir = builder.RunSpec.Offset

@@ -185,7 +185,7 @@ func (sb *splitBuilder) result() *sous.BuildResult {
 		Products: append(
 			sb.products(),
 			&sous.BuildProduct{ID: sb.buildImageID, Kind: "builder",
-				Advisories: append(sb.context.Advisories, string(sous.IsBuilder), string(sous.NotService))}),
+				Advisories: append(sb.context.Advisories, sous.IsBuilder, sous.NotService)}),
 	}
 }
 

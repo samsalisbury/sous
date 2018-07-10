@@ -125,7 +125,7 @@ func (FakeRegistrar) Register(*BuildResult) error { return nil }
 
 func TestBuildManager_RegisterAndWarnAdvisories_withAdvisories(t *testing.T) {
 	bc := &BuildContext{
-		Advisories: []string{"dirty workspace"},
+		Advisories: Advisories{"dirty workspace"},
 	}
 	br := contextualizedResults(bc)
 	m := &BuildManager{
@@ -139,7 +139,7 @@ func TestBuildManager_RegisterAndWarnAdvisories_withAdvisories(t *testing.T) {
 
 func TestBuildManager_RegisterAndWarnAdvisories_noAdvisories(t *testing.T) {
 	bc := &BuildContext{
-		Advisories: []string{},
+		Advisories: Advisories{},
 	}
 	br := contextualizedResults(bc)
 	m := &BuildManager{

@@ -14,7 +14,7 @@ func TestBuildResultString(t *testing.T) {
 	br := &BuildResult{
 		Elapsed: time.Second * 5,
 		Products: []*BuildProduct{{
-			Advisories:  []string{"ephemeral tag"},
+			Advisories:  Advisories{"ephemeral tag"},
 			VersionName: "something-something-2.3.4",
 		}},
 	}

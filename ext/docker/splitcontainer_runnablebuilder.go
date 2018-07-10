@@ -108,7 +108,7 @@ func (rb *runnableBuilder) build() error {
 func (rb *runnableBuilder) product() *sous.BuildProduct {
 	advisories := rb.splitBuilder.context.Advisories
 	if rb.RunSpec.Kind != "" {
-		advisories = append(advisories, string(sous.NotService))
+		advisories = append(advisories, sous.NotService)
 	}
 	sid := rb.splitBuilder.context.Version()
 	sid.Location.Dir = rb.RunSpec.Offset

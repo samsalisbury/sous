@@ -7,6 +7,16 @@ type (
 	Advisories []AdvisoryName
 )
 
+// Contains returns true if as contains a.
+func (as Advisories) Contains(a AdvisoryName) bool {
+	for _, b := range as {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
 const (
 	// NotService is an advisory that this container is not a service, but
 	// instead a support container of some kind and should not itself be
@@ -52,8 +62,8 @@ const (
 )
 
 // AllAdvisories returns all advisories.
-func AllAdvisories() []AdvisoryName {
-	return []AdvisoryName{
+func AllAdvisories() Advisories {
+	return Advisories{
 		NotService,
 		IsBuilder,
 		UnknownRepo,
@@ -73,7 +83,11 @@ func AllAdvisories() []AdvisoryName {
 // AllAdvisoryStrings is similar to AllAdvisories except it casts them to
 // strings.
 func AllAdvisoryStrings() []string {
-	as := AllAdvisories()
+	return AllAdvisories().Strings()
+}
+
+// Strings returns as as a slice of strings.
+func (as Advisories) Strings() []string {
 	s := make([]string, len(as))
 	for i, a := range as {
 		s[i] = string(a)
