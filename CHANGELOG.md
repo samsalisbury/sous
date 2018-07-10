@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.111...master)
+### Changed
+* Client: when receiving bad content type print the HTTP status code and
+  text along with that error message.
 
 ## [0.5.111](//github.com/opentable/sous/compare/0.5.110...0.5.111)
 ### Fixed

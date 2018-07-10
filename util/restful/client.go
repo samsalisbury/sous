@@ -378,7 +378,7 @@ func (client *LiveHTTPClient) extractBody(rz *http.Response, rzBody interface{},
 	defer rz.Body.Close()
 
 	if err := checkContentType(rz.Header.Get("Content-Type")); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s (status %s)", err, rz.Status)
 	}
 
 	b, e := ioutil.ReadAll(rz.Body)
