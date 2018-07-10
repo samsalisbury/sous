@@ -192,7 +192,7 @@ func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfi
 		return deploySpec
 	}
 	if err := wd.JSON(&request, "cat", "singularity-request.json"); err != nil {
-		messages.ReportLogFieldsMessageToConsole("failed to read singularity-request.json", logging.WarningLevel,
+		messages.ReportLogFieldsMessageToConsole("failed to read singularity-request.json: "+err.Error(), logging.WarningLevel,
 			mp.Log, err)
 		return deploySpec
 	}

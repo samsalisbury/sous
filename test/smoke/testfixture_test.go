@@ -28,13 +28,14 @@ type TestFixture struct {
 	knownToFail   bool
 }
 
+var sousBin = mustGetSousBin()
+
 func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) *TestFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {
 		t.Skipf("-short flag present")
 	}
-	sousBin := getSousBin(t)
 	baseDir := getDataDir(t)
 
 	clusterSuffix := strings.Replace(t.Name(), "/", "_", -1)

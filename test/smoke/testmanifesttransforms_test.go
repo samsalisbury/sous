@@ -4,6 +4,8 @@ package smoke
 
 import sous "github.com/opentable/sous/lib"
 
+type ManifestTransform func(sous.Manifest) sous.Manifest
+
 func setMemAndCPUForAll(ds sous.DeploySpecs) sous.DeploySpecs {
 	for c := range ds {
 		d := ds[c]
