@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.110...master)
+### Fixed
+* Client: builds using split container strategy were broken due to unique
+  constraint violation when builder image was pushed using same SourceID as
+  the runnable image. We no longer push the builder image to avoid this
+  conflict. In future we may reinstate pushing builders if there is a use case
+  for it.
+
 ## [0.5.110](//github.com/opentable/sous/compare/0.5.109...0.5.110)
 ### Fixed
 * Both: Update how server errors get passed to client, if not json make more
