@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/ext/singularity"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
@@ -112,9 +113,19 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(400, "Cannot deploy, current num instances set to zero, please update manifest.")
 	}
 
+	baseURL := h.GDM.Defs.Clusters[did.Cluster].BaseURL
+	singularityRequestID := dep.DeployConfig.SingularityRequestID
+	if len(singularityRequestID) == 0 {
+		singularityRequestID, _ = singularity.MakeRequestID(did)
+	}
+	singularityURL := fmt.Sprintf("%s/request/%s", baseURL, singularityRequestID)
+	//TODO LH need to check if adding it to links is likely to break anything
+	links := make(map[string]string)
+	links["SingularityURL"] = singularityURL
+
 	h.Body.Deployment = &dep
 
-	return h.ok(200, nil)
+	return h.ok(200, links)
 }
 
 // err returns the current Body of psd and the provided status code.

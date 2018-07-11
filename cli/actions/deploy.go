@@ -51,6 +51,11 @@ func (sd *Deploy) Do() error {
 		logging.ExtraDebug1Level, sd.LogSink, d)
 
 	d.Deployment.Version = newVersion
+	messages.ReportLogFieldsMessageToConsole(
+		fmt.Sprintf("\nSingularity URL : %s\n", d.Meta.Links["SingularityURL"]),
+		logging.InformationLevel,
+		sd.LogSink,
+	)
 
 	updateResponse, err := updater.Update(d, sd.User.HTTPHeaders())
 	if err != nil {
