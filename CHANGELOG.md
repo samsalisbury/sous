@@ -32,7 +32,8 @@ with respect to its command line interface and HTTP interface
 ### Added
 * Singularity request ID is now configurable per-deployment in the manifest.
   Changing SingularityRequestID results in the next deployment being done to
-  the new SingularityRequestID, and the old singularity request being deleted.
+  the new SingularityRequestID, and the old request being orphaned, requiring
+  manual cleanup.
 * Client: New command to add artifact image to sous.
 
 ## [0.5.105](//github.com/opentable/sous/compare/0.5.102...0.5.105)
