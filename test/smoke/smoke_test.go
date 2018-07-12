@@ -3,75 +3,10 @@
 package smoke
 
 import (
-	"flag"
-	"os"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/filemap"
 )
-
-// Define some Dockerfiles for use in tests.
-const (
-	simpleServer = `
-FROM alpine:3.7
-CMD if [ -z "$T" ]; then T=2; fi; echo -n "Sleeping ${T}s..."; sleep $T; echo "Done"; echo "Listening on :$PORT0"; while true; do echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0; done
-`
-	sleeper = `
-FROM alpine:3.7
-CMD echo -n Sleeping for 10s...; sleep 10; echo Done
-`
-	failer = `
-FROM alpine:3.7
-CMD echo -n Failing in 10s...; sleep 10; echo Failed; exit 1
-`
-)
-
-// setupProject creates a brand new git repo containing the provided Dockerfile,
-// commits that Dockerfile, runs 'sous version' and 'sous config', and returns a
-// sous TestClient in the project directory.
-func setupProjectSingleDockerfile(t *testing.T, f *TestFixture, dockerfile string) *TestClient {
-	return setupProject(t, f, filemap.FileMap{"Dockerfile": dockerfile})
-}
-
-func setupProject(t *testing.T, f *TestFixture, fm filemap.FileMap) *TestClient {
-	t.Helper()
-	// Setup project git repo.
-	projectDir := makeGitRepo(t, f.Client.BaseDir, "projects/project1", GitRepoSpec{
-		UserName:  "Sous User 1",
-		UserEmail: "sous-user1@example.com",
-		OriginURL: "git@github.com:user1/repo1.git",
-	})
-	if err := fm.Write(projectDir); err != nil {
-		t.Fatalf("filemap.Write: %s", err)
-	}
-	for filePath := range fm {
-		mustDoCMD(t, projectDir, "git", "add", filePath)
-	}
-	mustDoCMD(t, projectDir, "git", "commit", "-m", "Initial Commit")
-
-	client := f.Client
-
-	// cd into project dir
-	client.Dir = projectDir
-
-	// Dump sous version & config.
-	t.Logf("Sous version: %s", client.MustRun(t, "version", nil))
-	client.MustRun(t, "config", nil)
-
-	return client
-}
-
-var pfs = newParallelTestFixtureSet(PTFOpts{
-	NumFreeAddrs: 128,
-})
-
-func TestMain(m *testing.M) {
-	flag.Parse()
-	exitCode := m.Run()
-	pfs.PrintSummary()
-	os.Exit(exitCode)
-}
 
 // initBuild is a macro to fast-forward to tests to a point where we have
 // initialised the project, transformed the manifest, and performed a build.
