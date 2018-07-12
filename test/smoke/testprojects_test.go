@@ -4,6 +4,7 @@ package smoke
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"testing"
 
@@ -74,12 +75,17 @@ func failer() filemap.FileMap {
 	return singleDockerfile(failImmediately)
 }
 
+// String returns p as a string with spaces trimmed.
+func (p Program) String() string {
+	return strings.TrimSpace(string(p))
+}
+
 func (p Program) FormatForDockerfile() string {
-	return strings.Replace(string(p), "\n", "\\\n", -1)
+	return strings.Replace(p.String(), "\n", " \\\n", -1)
 }
 
 func (p Program) FormatAsShellFile() string {
-	return fmt.Sprintf("#!/usr/bin/env sh\n%s", p)
+	return fmt.Sprintf("#!/usr/bin/env sh\n\n%s", p)
 }
 
 func singleDockerfile(p Program) filemap.FileMap {
@@ -179,8 +185,10 @@ func setupProject(t *testing.T, f *TestFixture, fm filemap.FileMap) *TestClient 
 	client.Dir = projectDir
 
 	// Dump sous version & config.
-	t.Logf("Sous version: %s", client.MustRun(t, "version", nil))
-	client.MustRun(t, "config", nil)
+	if testing.Verbose() {
+		log.Printf("Sous version: %s", client.MustRun(t, "version", nil))
+		client.MustRun(t, "config", nil)
+	}
 
 	return client
 }
