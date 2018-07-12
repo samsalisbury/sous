@@ -113,19 +113,32 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(400, "Cannot deploy, current num instances set to zero, please update manifest.")
 	}
 
+	links := make(map[string]string)
 	baseURL := h.GDM.Defs.Clusters[did.Cluster].BaseURL
 	singularityRequestID := dep.DeployConfig.SingularityRequestID
-	if len(singularityRequestID) == 0 {
-		singularityRequestID, _ = singularity.MakeRequestID(did)
+	singularityURL := makeSingularityURL(baseURL, singularityRequestID, did)
+	if len(singularityURL) > 0 {
+		links["SingularityURL"] = singularityURL
 	}
-	singularityURL := fmt.Sprintf("%s/request/%s", baseURL, singularityRequestID)
-	//TODO LH need to check if adding it to links is likely to break anything
-	links := make(map[string]string)
-	links["SingularityURL"] = singularityURL
 
 	h.Body.Deployment = &dep
 
 	return h.ok(200, links)
+}
+
+func makeSingularityURL(baseURL string, singularityRequestID string, deploymentID sous.DeploymentID) string {
+	var err error
+	if len(singularityRequestID) == 0 {
+		singularityRequestID, err = singularity.MakeRequestID(deploymentID)
+		if err != nil {
+			return ""
+		}
+	}
+	singularityURL, err := singularity.MakeRequestURL(baseURL, singularityRequestID)
+	if err != nil {
+		singularityURL = ""
+	}
+	return singularityURL
 }
 
 // err returns the current Body of psd and the provided status code.
