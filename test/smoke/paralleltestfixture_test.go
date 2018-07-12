@@ -9,8 +9,6 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
-
-	sous "github.com/opentable/sous/lib"
 )
 
 type (
@@ -19,11 +17,6 @@ type (
 		// NumFreeAddrs determines how many free addresses are guaranteed by this
 		// test fixture.
 		NumFreeAddrs int
-	}
-
-	fixtureConfig struct {
-		dbPrimary  bool
-		startState *sous.State
 	}
 
 	ParallelTestFixture struct {
@@ -88,13 +81,6 @@ func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T) *Paralle
 	defer pfs.mu.Unlock()
 	pfs.fixtures[t.Name()] = pf
 	return pf
-}
-
-func (fcfg fixtureConfig) Desc() string {
-	if fcfg.dbPrimary {
-		return "DB"
-	}
-	return "GIT"
 }
 
 func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {

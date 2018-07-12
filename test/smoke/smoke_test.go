@@ -27,15 +27,10 @@ func initBuildDeploy(t *testing.T, client *TestClient, flags *sousFlags, transfo
 func TestInitToDeploy(t *testing.T) {
 	pf := pfs.newParallelTestFixture(t)
 
-	fixtureConfigs := []fixtureConfig{
-		{dbPrimary: false},
-		{dbPrimary: true},
-	}
-
-	pf.RunMatrix(fixtureConfigs,
+	pf.RunMatrix(fixtureConfigs(),
 
 		PTest{Name: "simple", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, simpleServer)
+			client := setupProject(t, f, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 
@@ -57,7 +52,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "fail-zero-instances", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, simpleServer)
+			client := setupProject(t, f, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
 
@@ -67,7 +62,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "fail-container-crash", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, failer)
+			client := setupProject(t, f, f.Projects.Failer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
 
@@ -91,7 +86,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "flavors", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, simpleServer)
+			client := setupProject(t, f, f.Projects.HTTPServer())
 
 			flags := &sousFlags{
 				kind: "http-service", tag: "1.2.3", cluster: "cluster1",
@@ -117,7 +112,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "pause-unpause", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, simpleServer)
+			client := setupProject(t, f, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1", cluster: "cluster1"}
 
@@ -149,7 +144,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "scheduled", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, sleeper)
+			client := setupProject(t, f, f.Projects.Sleeper())
 
 			flags := &sousFlags{kind: "scheduled", tag: "1.2.3", cluster: "cluster1"}
 
@@ -181,7 +176,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "custom-reqid-first-deploy", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, simpleServer)
+			client := setupProject(t, f, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 
@@ -198,7 +193,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "custom-reqid-second-deploy", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, simpleServer)
+			client := setupProject(t, f, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 
@@ -235,7 +230,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "change-reqid", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, simpleServer)
+			client := setupProject(t, f, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 

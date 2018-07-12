@@ -23,6 +23,21 @@ func (f FileMap) Mine(dir, path string) bool {
 	return ok
 }
 
+// Merge attempts to merge 2 filemaps, if any keys conflict it panics.
+func (f FileMap) Merge(o FileMap) FileMap {
+	n := FileMap{}
+	for k, v := range f {
+		n[k] = v
+	}
+	for k, v := range o {
+		if _, exists := n[k]; exists {
+			panic(fmt.Sprintf("merging filemaps failed: duplicate key: %q", k))
+		}
+		n[k] = v
+	}
+	return n
+}
+
 // Clean deletes each file defined in f, it leaves any created directories
 // in place. If you want to nuke everything, just use os.RemoveAll(dir).
 func (f FileMap) Clean(dir string) error {
