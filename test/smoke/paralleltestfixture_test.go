@@ -137,7 +137,7 @@ func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 
 	statusString := "UNKNOWN"
 	status := &statusString
-	defer alwaysPrintf("Finished running %s: %s", name, *status)
+	defer func() { alwaysPrintf("Finished running %s: %s", name, *status) }()
 
 	if !started {
 		t.Fatalf("test %q reported as finished, but not started", name)
