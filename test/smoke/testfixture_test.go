@@ -103,6 +103,20 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 	return tf
 }
 
+func (f *TestFixture) DIDAndDefaultReqID(t *testing.T, repo, offset, flavor, cluster string) (sous.DeploymentID, string) {
+	did := sous.DeploymentID{
+		ManifestID: sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: repo,
+				Dir:  offset,
+			},
+			Flavor: flavor,
+		},
+		Cluster: cluster,
+	}
+	return did, f.Singularity.DefaultReqID(t, did)
+}
+
 // IsolatedClusterName returns a cluster name unique to this test fixture.
 func (f *TestFixture) IsolatedClusterName(baseName string) string {
 	return baseName + f.ClusterSuffix

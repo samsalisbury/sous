@@ -30,29 +30,21 @@ func TestInitToDeploy(t *testing.T) {
 	pf.RunMatrix(fixtureConfigs(),
 
 		PTest{Name: "simple", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer())
+			_, reqID := f.DIDAndDefaultReqID(t, "github.com/user1/repo1", "", "", "cluster1")
+
+			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 
 			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-			did := sous.DeploymentID{
-				ManifestID: sous.ManifestID{
-					Source: sous.SourceLocation{
-						Repo: "github.com/user1/repo1",
-					},
-				},
-				Cluster: "cluster1",
-			}
-
-			reqID := f.Singularity.DefaultReqID(t, did)
 			assertActiveStatus(t, f, reqID)
 			assertSingularityRequestTypeService(t, f, reqID)
 			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
 		PTest{Name: "fail-zero-instances", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer())
+			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
 
@@ -62,7 +54,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "fail-container-crash", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.Failer())
+			client := f.setupProject(t, f.Projects.Failer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
 
@@ -86,7 +78,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "flavors", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer())
+			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{
 				kind: "http-service", tag: "1.2.3", cluster: "cluster1",
@@ -112,7 +104,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "pause-unpause", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer())
+			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1", cluster: "cluster1"}
 
@@ -144,7 +136,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "scheduled", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.Sleeper())
+			client := f.setupProject(t, f.Projects.Sleeper())
 
 			flags := &sousFlags{kind: "scheduled", tag: "1.2.3", cluster: "cluster1"}
 
@@ -176,7 +168,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "custom-reqid-first-deploy", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer())
+			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 
@@ -193,7 +185,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "custom-reqid-second-deploy", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer())
+			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 
@@ -230,7 +222,7 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "change-reqid", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer())
+			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
 

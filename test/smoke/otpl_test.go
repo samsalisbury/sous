@@ -41,7 +41,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 	pf.RunMatrix(fixtureConfigs,
 
 		PTest{Name: "artifact-add", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer())
+			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{tag: "1.2.3"}
 
@@ -50,7 +50,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "build-init-deploy", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer().Merge(filemap.FileMap{
+			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 				"config/cluster1/singularity.json": `
 				{
 					"requestId": "request1",
@@ -86,7 +86,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, f.Projects.HTTPServer().Merge(filemap.FileMap{
+			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 				"config/cluster1/singularity.json": `
 				{
 					"requestId": "request1",

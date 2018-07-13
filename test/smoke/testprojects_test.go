@@ -157,14 +157,7 @@ func splitBuild(p Program) filemap.FileMap {
 	}
 }
 
-// setupProject creates a brand new git repo containing the provided Dockerfile,
-// commits that Dockerfile, runs 'sous version' and 'sous config', and returns a
-// sous TestClient in the project directory.
-func setupProjectSingleDockerfile(t *testing.T, f *TestFixture, dockerfile string) *TestClient {
-	return setupProject(t, f, filemap.FileMap{"Dockerfile": dockerfile})
-}
-
-func setupProject(t *testing.T, f *TestFixture, fm filemap.FileMap) *TestClient {
+func (f *TestFixture) setupProject(t *testing.T, fm filemap.FileMap) *TestClient {
 	t.Helper()
 	// Setup project git repo.
 	projectDir := makeGitRepo(t, f.Client.BaseDir, "projects/project1", GitRepoSpec{
