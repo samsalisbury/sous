@@ -45,7 +45,7 @@ var stdout = os.NewFile(uintptr(syscall.Stdout), "/dev/stdout")
 var stderr = os.NewFile(uintptr(syscall.Stdout), "/dev/stderr")
 
 func alwaysPrintf(format string, a ...interface{}) {
-	fmt.Fprintf(stderr, format, a...)
+	fmt.Fprintf(stderr, format+"\n", a...)
 }
 
 func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
@@ -135,29 +135,30 @@ func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 	_, started := pf.testNames[name]
 	pf.testNamesMu.RUnlock()
 
-	var status string
-	defer alwaysPrintf("Finished running %s: %s", name, status)
+	statusString := "UNKNOWN"
+	status := &statusString
+	defer alwaysPrintf("Finished running %s: %s", name, *status)
 
 	if !started {
 		t.Fatalf("test %q reported as finished, but not started", name)
-		status = "ERROR: Not Started"
+		*status = "ERROR: Not Started"
 		return
 	}
 	switch {
 	default:
-		status = "PASSED"
+		*status = "PASSED"
 		pf.testNamesPassedMu.Lock()
 		pf.testNamesPassed[name] = struct{}{}
 		pf.testNamesPassedMu.Unlock()
 		return
 	case t.Skipped():
-		status = "SKIPPED"
+		*status = "SKIPPED"
 		pf.testNamesSkippedMu.Lock()
 		pf.testNamesSkipped[name] = struct{}{}
 		pf.testNamesSkippedMu.Unlock()
 		return
 	case t.Failed():
-		status = "FAILED"
+		*status = "FAILED"
 		pf.testNamesFailedMu.Lock()
 		pf.testNamesFailed[name] = struct{}{}
 		pf.testNamesFailedMu.Unlock()

@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	ps "github.com/mitchellh/go-ps"
 )
@@ -25,7 +26,15 @@ func writePID(t *testing.T, pid int) {
 		t.Fatalf("cannot inspect proc %d: %s", pid, err)
 	}
 	if psProc == nil {
-		t.Fatal("psProc is nil")
+		time.Sleep(time.Second)
+		psProc, err := ps.FindProcess(pid)
+		if err != nil {
+			t.Fatalf("cannot inspect proc %d: %s", pid, err)
+		}
+		if psProc == nil {
+			t.Logf("Warning! Possibly orphaned PID: %d", pid)
+			return
+		}
 	}
 
 	var f *os.File
