@@ -24,6 +24,9 @@ func writePID(t *testing.T, pid int) {
 	if err != nil {
 		t.Fatalf("cannot inspect proc %d: %s", pid, err)
 	}
+	if psProc == nil {
+		t.Fatal("psProc is nil")
+	}
 
 	var f *os.File
 	if s, err := os.Stat(pidFile); err != nil {

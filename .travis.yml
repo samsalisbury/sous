@@ -11,7 +11,7 @@ install:
 - "./bin/vendor-check"
 script:
 - bundle exec danger
-- make test-smoke
+- SMOKE_TEST_QUIET=YES make test-smoke
 - make -j3 test
 - make reject-wip
 after_script:

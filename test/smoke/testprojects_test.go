@@ -5,6 +5,7 @@ package smoke
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 	"testing"
 
@@ -185,10 +186,14 @@ func setupProject(t *testing.T, f *TestFixture, fm filemap.FileMap) *TestClient 
 	client.Dir = projectDir
 
 	// Dump sous version & config.
-	if testing.Verbose() {
+	if !quiet() {
 		log.Printf("Sous version: %s", client.MustRun(t, "version", nil))
 		client.MustRun(t, "config", nil)
 	}
 
 	return client
+}
+
+func quiet() bool {
+	return os.Getenv("SMOKE_TEST_QUIET") == "YES"
 }
