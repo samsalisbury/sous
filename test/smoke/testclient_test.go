@@ -281,7 +281,7 @@ func (c *TestClient) ConfigureCommand(t *testing.T, subcmd string, f *sousFlags,
 	if !quiet() {
 		stdout, stderr := prefixWithTestName(t, clientName)
 		stdoutWriters = append(stdoutWriters, stdout)
-		stderrWriters = append(stdoutWriters, stderr)
+		stderrWriters = append(stderrWriters, stderr)
 	}
 
 	cmd.Stdout = io.MultiWriter(stdoutWriters...)
