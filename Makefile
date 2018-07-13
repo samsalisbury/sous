@@ -502,7 +502,7 @@ local-server:
 
 .PHONY: provision-docker-machine
 provision-docker-machine:
-	docker-machine create -d virtualbox --virtualbox-memory "2048" default
+	docker-machine create -d virtualbox --virtualbox-memory "4096" default
 
 .PHONY: artifactory clean clean-containers clean-container-certs \
 	clean-running-containers clean-container-images coverage deb-build \

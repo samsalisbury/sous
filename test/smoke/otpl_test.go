@@ -41,7 +41,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 	pf.RunMatrix(fixtureConfigs,
 
 		PTest{Name: "artifact-add", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProjectSingleDockerfile(t, f, simpleServer)
+			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{tag: "1.2.3"}
 
@@ -50,8 +50,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "build-init-deploy", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, filemap.FileMap{
-				"Dockerfile": simpleServer,
+			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 				"config/cluster1/singularity.json": `
 				{
 					"requestId": "request1",
@@ -70,7 +69,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 					],
 					"instances": 3
 				}`,
-			})
+			}))
 
 			flags := &sousFlags{
 				kind:    "http-service",
@@ -87,8 +86,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
-			client := setupProject(t, f, filemap.FileMap{
-				"Dockerfile": simpleServer,
+			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 				"config/cluster1/singularity.json": `
 				{
 					"requestId": "request1",
@@ -110,7 +108,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 					"rackSensitive": false,
 					"loadBalanced": false
 				}`,
-			})
+			}))
 			client.MustRun(t, "version", nil)
 		}},
 	)

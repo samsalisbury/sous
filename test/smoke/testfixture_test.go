@@ -25,7 +25,22 @@ type TestFixture struct {
 	Parent        *ParallelTestFixture
 	TestName      string
 	UserEmail     string
+	Projects      ProjectList
 	knownToFail   bool
+}
+
+type fixtureConfig struct {
+	dbPrimary  bool
+	startState *sous.State
+	projects   ProjectList
+}
+
+func (fcfg fixtureConfig) Desc() string {
+	store := "GIT"
+	if fcfg.dbPrimary {
+		store = "DB"
+	}
+	return fmt.Sprintf("%s/%s", store, fcfg.projects.GroupName)
 }
 
 var sousBin = mustGetSousBin()
@@ -78,6 +93,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 		Parent:        parent,
 		TestName:      t.Name(),
 		UserEmail:     userEmail,
+		Projects:      fcfg.projects,
 	}
 	client := makeClient(tf, baseDir, sousBin)
 	if err := client.Configure(primaryServer, envDesc.RegistryName(), userEmail); err != nil {
@@ -85,6 +101,20 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 	}
 	tf.Client = client
 	return tf
+}
+
+func (f *TestFixture) DIDAndDefaultReqID(t *testing.T, repo, offset, flavor, cluster string) (sous.DeploymentID, string) {
+	did := sous.DeploymentID{
+		ManifestID: sous.ManifestID{
+			Source: sous.SourceLocation{
+				Repo: repo,
+				Dir:  offset,
+			},
+			Flavor: flavor,
+		},
+		Cluster: cluster,
+	}
+	return did, f.Singularity.DefaultReqID(t, did)
 }
 
 // IsolatedClusterName returns a cluster name unique to this test fixture.

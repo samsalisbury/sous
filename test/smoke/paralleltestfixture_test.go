@@ -4,13 +4,13 @@ package smoke
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"testing"
-
-	sous "github.com/opentable/sous/lib"
 )
 
 type (
@@ -19,11 +19,6 @@ type (
 		// NumFreeAddrs determines how many free addresses are guaranteed by this
 		// test fixture.
 		NumFreeAddrs int
-	}
-
-	fixtureConfig struct {
-		dbPrimary  bool
-		startState *sous.State
 	}
 
 	ParallelTestFixture struct {
@@ -45,6 +40,13 @@ type (
 		fixtures map[string]*ParallelTestFixture
 	}
 )
+
+var stdout = os.NewFile(uintptr(syscall.Stdout), "/dev/stdout")
+var stderr = os.NewFile(uintptr(syscall.Stdout), "/dev/stderr")
+
+func alwaysPrintf(format string, a ...interface{}) {
+	fmt.Fprintf(stderr, format+"\n", a...)
+}
 
 func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
 	resetSingularity()
@@ -74,8 +76,10 @@ func resetSingularity() {
 }
 
 func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T) *ParallelTestFixture {
+	alwaysPrintf("Registering %s", t.Name())
 	t.Helper()
 	t.Parallel()
+	alwaysPrintf("Running     %s", t.Name())
 	pf := &ParallelTestFixture{
 		T:                t,
 		NextAddr:         pfs.NextAddr,
@@ -88,13 +92,6 @@ func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T) *Paralle
 	defer pfs.mu.Unlock()
 	pfs.fixtures[t.Name()] = pf
 	return pf
-}
-
-func (fcfg fixtureConfig) Desc() string {
-	if fcfg.dbPrimary {
-		return "DB"
-	}
-	return "GIT"
 }
 
 func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
@@ -137,22 +134,31 @@ func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 	pf.testNamesMu.RLock()
 	_, started := pf.testNames[name]
 	pf.testNamesMu.RUnlock()
+
+	statusString := "UNKNOWN"
+	status := &statusString
+	defer func() { alwaysPrintf("Finished running %s: %s", name, *status) }()
+
 	if !started {
 		t.Fatalf("test %q reported as finished, but not started", name)
+		*status = "ERROR: Not Started"
 		return
 	}
 	switch {
 	default:
+		*status = "PASSED"
 		pf.testNamesPassedMu.Lock()
 		pf.testNamesPassed[name] = struct{}{}
 		pf.testNamesPassedMu.Unlock()
 		return
 	case t.Skipped():
+		*status = "SKIPPED"
 		pf.testNamesSkippedMu.Lock()
 		pf.testNamesSkipped[name] = struct{}{}
 		pf.testNamesSkippedMu.Unlock()
 		return
 	case t.Failed():
+		*status = "FAILED"
 		pf.testNamesFailedMu.Lock()
 		pf.testNamesFailed[name] = struct{}{}
 		pf.testNamesFailedMu.Unlock()
@@ -201,7 +207,7 @@ func (pf *ParallelTestFixture) PrintSummary() (total, passed, skipped, failed, m
 		for t := range pf.testNames {
 			missingTests = append(missingTests, t)
 		}
-		t.Fatalf("Some tests did not report status: %s", strings.Join(missingTests, ", "))
+		log.Panicf("Some tests did not report status: %s", strings.Join(missingTests, ", "))
 	}
 	return total, passed, skipped, failed, missing
 }

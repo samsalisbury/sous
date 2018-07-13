@@ -261,23 +261,35 @@ func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...stri
 func (c *TestClient) ConfigureCommand(t *testing.T, subcmd string, f *sousFlags, args ...string) *CmdWithHooks {
 	t.Helper()
 	cmd, cancel := c.Cmd(t, subcmd, f, args...)
-	stdout, stderr := prefixWithTestName(t, "client1")
 
 	qArgs := quotedArgs(args)
+
 	outFile, errFile, combinedFile :=
 		openFileAppendOnly(t, c.LogDir, "stdout"),
 		openFileAppendOnly(t, c.LogDir, "stderr"),
 		openFileAppendOnly(t, c.LogDir, "combined")
+
 	allFiles := io.MultiWriter(outFile, errFile, combinedFile)
 
 	executed := newExecutedCMD(subcmd, qArgs)
 
-	cmd.Stdout = io.MultiWriter(stdout, outFile, combinedFile, executed.Stdout, executed.Combined)
-	cmd.Stderr = io.MultiWriter(stderr, errFile, combinedFile, executed.Stderr, executed.Combined)
+	stdoutWriters := []io.Writer{outFile, combinedFile, executed.Stdout, executed.Combined}
+	stderrWriters := []io.Writer{errFile, combinedFile, executed.Stderr, executed.Combined}
+
+	clientName := "client1"
+
+	if !quiet() {
+		stdout, stderr := prefixWithTestName(t, clientName)
+		stdoutWriters = append(stdoutWriters, stdout)
+		stderrWriters = append(stderrWriters, stderr)
+	}
+
+	cmd.Stdout = io.MultiWriter(stdoutWriters...)
+	cmd.Stderr = io.MultiWriter(stderrWriters...)
 
 	preRun := func() {
 		prettyCmd := fmt.Sprintf("$ sous %s\n", strings.Join(allArgs(subcmd, f, qArgs), " "))
-		fmt.Fprintf(os.Stderr, "==> %s", prettyCmd)
+		fmt.Fprintf(os.Stderr, "%s:%s:command > %s\n", t.Name(), clientName, prettyCmd)
 		relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
 		fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
 	}
