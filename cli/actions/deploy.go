@@ -52,6 +52,15 @@ func (sd *Deploy) Do() error {
 
 	d.Deployment.Version = newVersion
 
+	defer func() {
+		messages.ReportLogFieldsMessageToConsole(
+			fmt.Sprintf("\nSingularity URL : %s\n", d.Meta.Links["SingularityURL"]),
+			logging.InformationLevel,
+			sd.LogSink,
+		)
+
+	}()
+
 	updateResponse, err := updater.Update(d, sd.User.HTTPHeaders())
 	if err != nil {
 		return errors.Wrap(err, "Failed to update deployment")
@@ -101,11 +110,6 @@ func (sd *Deploy) Do() error {
 			p.RemoveBar(bar)
 		}
 
-		messages.ReportLogFieldsMessageToConsole(
-			fmt.Sprintf("\nSingularity URL : %s\n", d.Meta.Links["SingularityURL"]),
-			logging.InformationLevel,
-			sd.LogSink,
-		)
 		return result
 	}
 	messages.ReportLogFieldsMessageToConsole(
