@@ -10,7 +10,7 @@ with respect to its command line interface and HTTP interface
 ### Changed
 * Client: when receiving bad content type print the HTTP status code and
   text along with that error message.
-* Both: Send the singularity request URL back to the client and print to
+* Both: Send the request URL back to the client and print to
 	console on deploy
 	
 ## [0.5.111](//github.com/opentable/sous/compare/0.5.110...0.5.111)
