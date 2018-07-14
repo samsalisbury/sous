@@ -9,7 +9,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"testing"
 )
 
@@ -41,15 +40,11 @@ type (
 	}
 )
 
-var stdout = os.NewFile(uintptr(syscall.Stdout), "/dev/stdout")
-var stderr = os.NewFile(uintptr(syscall.Stdout), "/dev/stderr")
-
-func alwaysPrintf(format string, a ...interface{}) {
-	fmt.Fprintf(stderr, format+"\n", a...)
+func rtLog(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", a...)
 }
 
 func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
-	resetSingularity()
 	if err := stopPIDs(); err != nil {
 		panic(err)
 	}
@@ -69,17 +64,11 @@ func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
 	}
 }
 
-func resetSingularity() {
-	envDesc := getEnvDesc()
-	singularity := NewSingularity(envDesc.SingularityURL())
-	singularity.Reset()
-}
-
 func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T) *ParallelTestFixture {
-	alwaysPrintf("Registering %s", t.Name())
+	rtLog("Registering %s", t.Name())
 	t.Helper()
 	t.Parallel()
-	alwaysPrintf("Running     %s", t.Name())
+	rtLog("Running     %s", t.Name())
 	pf := &ParallelTestFixture{
 		T:                t,
 		NextAddr:         pfs.NextAddr,
@@ -137,7 +126,7 @@ func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 
 	statusString := "UNKNOWN"
 	status := &statusString
-	defer func() { alwaysPrintf("Finished running %s: %s", name, *status) }()
+	defer func() { rtLog("Finished running %s: %s", name, *status) }()
 
 	if !started {
 		t.Fatalf("test %q reported as finished, but not started", name)
