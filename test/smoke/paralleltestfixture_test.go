@@ -4,7 +4,6 @@ package smoke
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"sync"
@@ -205,7 +204,7 @@ func (pf *ParallelTestFixture) PrintSummary() (total, passed, skipped, failed, m
 		for t := range pf.testNames {
 			missingTests = append(missingTests, t)
 		}
-		log.Panicf("Some tests did not report status: %s", strings.Join(missingTests, ", "))
+		t.Errorf("Some tests did not report status: %s", strings.Join(missingTests, ", "))
 	}
 	return total, passed, skipped, failed, missing
 }
