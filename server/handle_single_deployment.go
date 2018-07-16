@@ -131,12 +131,12 @@ func makeSingularityURL(baseURL string, singularityRequestID string, deploymentI
 	if len(singularityRequestID) == 0 {
 		singularityRequestID, err = singularity.MakeRequestID(deploymentID)
 		if err != nil {
-			return ""
+			return fmt.Sprintf("Unable to determine SingularityRequest URL : %s", err)
 		}
 	}
 	singularityURL, err := singularity.MakeRequestURL(baseURL, singularityRequestID)
 	if err != nil {
-		singularityURL = ""
+		singularityURL = fmt.Sprintf("Unable to determine SingularityRequest URL : %s", err)
 	}
 	return singularityURL
 }

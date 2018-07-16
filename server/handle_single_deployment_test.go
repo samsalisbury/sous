@@ -388,9 +388,9 @@ func TestMakeSingularityURL_invalid(t *testing.T) {
 	var deploymentID sous.DeploymentID
 
 	url := makeSingularityURL(baseURL, requestID, deploymentID)
-	assert.Empty(t, url)
+	assert.Equal(t, "Unable to determine SingularityRequest URL : baseURL can not be empty : ", url)
 	url = makeSingularityURL(baseURL, "", deploymentID)
-	assert.Empty(t, url)
+	assert.Equal(t, "Unable to determine SingularityRequest URL : string \"\" does not represent a repo", url)
 	url = makeSingularityURL("", "", deploymentID)
-	assert.Empty(t, url)
+	assert.Equal(t, "Unable to determine SingularityRequest URL : string \"\" does not represent a repo", url)
 }

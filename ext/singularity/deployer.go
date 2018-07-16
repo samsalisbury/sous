@@ -342,7 +342,7 @@ func MakeRequestID(depID sous.DeploymentID) (string, error) {
 // MakeRequestURL creates a singularity request url
 func MakeRequestURL(baseURL string, requestID string) (string, error) {
 	if len(baseURL) == 0 {
-		return "", errors.Errorf("baseURL can not be empty : %s", requestID)
+		return "", errors.Errorf("baseURL can not be empty : %s", baseURL)
 	}
 	if len(requestID) == 0 {
 		return "", errors.Errorf("requestID can not be empty : %s", requestID)
