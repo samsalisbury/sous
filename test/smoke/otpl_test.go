@@ -31,14 +31,9 @@ func TestOTPLInitToDeploy(t *testing.T) {
 
 	t.Skipf("WIP Test")
 
-	pf := pfs.newParallelTestFixture(t)
+	pf := pfs.newParallelTestFixture(t, Matrix())
 
-	fixtureConfigs := []fixtureConfig{
-		{dbPrimary: false},
-		{dbPrimary: true},
-	}
-
-	pf.RunMatrix(fixtureConfigs,
+	pf.RunMatrix(
 
 		PTest{Name: "artifact-add", Test: func(t *testing.T, f *TestFixture) {
 			client := f.setupProject(t, f.Projects.HTTPServer())

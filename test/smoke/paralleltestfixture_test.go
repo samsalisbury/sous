@@ -4,12 +4,10 @@ package smoke
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"testing"
 )
 
@@ -23,6 +21,7 @@ type (
 
 	ParallelTestFixture struct {
 		T                  *testing.T
+		Matrix             MatrixDef
 		NextAddr           func() string
 		testNames          map[string]struct{}
 		testNamesMu        sync.RWMutex
@@ -41,15 +40,11 @@ type (
 	}
 )
 
-var stdout = os.NewFile(uintptr(syscall.Stdout), "/dev/stdout")
-var stderr = os.NewFile(uintptr(syscall.Stdout), "/dev/stderr")
-
-func alwaysPrintf(format string, a ...interface{}) {
-	fmt.Fprintf(stderr, format+"\n", a...)
+func rtLog(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", a...)
 }
 
 func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
-	resetSingularity()
 	if err := stopPIDs(); err != nil {
 		panic(err)
 	}
@@ -69,19 +64,21 @@ func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
 	}
 }
 
-func resetSingularity() {
-	envDesc := getEnvDesc()
-	singularity := NewSingularity(envDesc.SingularityURL())
-	singularity.Reset()
-}
-
-func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T) *ParallelTestFixture {
-	alwaysPrintf("Registering %s", t.Name())
+func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m MatrixDef) *ParallelTestFixture {
+	if flags.printMatrix {
+		matrix := m.FixtureConfigs()
+		for _, m := range matrix {
+			fmt.Printf("%s/%s\n", t.Name(), m.Desc)
+		}
+		t.Skip("Just printing test matrix (-ls-matrix flag set)")
+	}
+	rtLog("Registering %s", t.Name())
 	t.Helper()
 	t.Parallel()
-	alwaysPrintf("Running     %s", t.Name())
+	rtLog("Running     %s", t.Name())
 	pf := &ParallelTestFixture{
 		T:                t,
+		Matrix:           m,
 		NextAddr:         pfs.NextAddr,
 		testNames:        map[string]struct{}{},
 		testNamesPassed:  map[string]struct{}{},
@@ -111,9 +108,9 @@ type PTest struct {
 	Test func(*testing.T, *TestFixture)
 }
 
-func (pf *ParallelTestFixture) RunMatrix(m []fixtureConfig, tests ...PTest) {
-	for _, c := range m {
-		pf.T.Run(c.Desc(), func(t *testing.T) {
+func (pf *ParallelTestFixture) RunMatrix(tests ...PTest) {
+	for _, c := range pf.Matrix.FixtureConfigs() {
+		pf.T.Run(c.Desc, func(t *testing.T) {
 			c := c
 			t.Parallel()
 			for _, pt := range tests {
@@ -137,7 +134,7 @@ func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 
 	statusString := "UNKNOWN"
 	status := &statusString
-	defer func() { alwaysPrintf("Finished running %s: %s", name, *status) }()
+	defer func() { rtLog("Finished running %s: %s", name, *status) }()
 
 	if !started {
 		t.Fatalf("test %q reported as finished, but not started", name)
@@ -207,7 +204,7 @@ func (pf *ParallelTestFixture) PrintSummary() (total, passed, skipped, failed, m
 		for t := range pf.testNames {
 			missingTests = append(missingTests, t)
 		}
-		log.Panicf("Some tests did not report status: %s", strings.Join(missingTests, ", "))
+		t.Errorf("Some tests did not report status: %s", strings.Join(missingTests, ", "))
 	}
 	return total, passed, skipped, failed, missing
 }

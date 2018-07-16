@@ -61,6 +61,11 @@ func writePID(t *testing.T, pid int) {
 		}
 		defer closeFile(t, f)
 	}
+	if psProc == nil {
+		t.Logf("Warning! Unable to write PID %d to pidfile: psProc became nil all of a sudden", pid)
+		return
+
+	}
 	if _, err := fmt.Fprintf(f, "%d\t%s\n", pid, psProc.Executable()); err != nil {
 		t.Fatalf("could not write PID %d (exe %s) to file %q: %s",
 			pid, psProc.Executable(), pidFile, err)

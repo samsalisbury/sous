@@ -383,7 +383,7 @@ test-smoke-compiles: ## Checks that the smoke tests compile.
 .PHONY: test-smoke-all
 test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TEST_LATEST_LINK) postgres-clean-restart
 	@echo "Smoke tests running; time out in $(SMOKE_TEST_TIMEOUT)..."
-	ulimit -n 2048 && \
+	ulimit -n 4096 && \
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
 	SOUS_PG_HOST=$(PGHOST) \
@@ -398,6 +398,10 @@ test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TE
 .PHONY: test-smoke
 test-smoke:
 	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
+
+.PHONY: test-smoke-ls
+test-smoke-ls:
+	@go test -v -tags smoke ./test/smoke -ls -dimensions | grep -E '(^Dimension |^Matrix dimensions|^Test[A-Za-z0-9_]+/)'
 
 .PHONY: docker-is-working
 docker-is-working:
