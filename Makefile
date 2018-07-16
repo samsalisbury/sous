@@ -399,6 +399,16 @@ test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TE
 test-smoke:
 	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
 
+.PHONY: test-smoke-ls
+test-smoke-ls:
+	@echo "Top-level tests (for use with 'GO_TEST_RUN=? make test-smoke'." 1>&2
+	@echo "Format is <top-level-test>/<matrix combination>" 1>&2
+	@echo "Omit any section to include all values for that part, e.g.:"
+	@echo "    GO_TEST_RUN=/DB make test-smoke to run all DB tests"
+	@echo "    GO_TEST_RUN=//simple  make test-smoke to run all simple build tests."
+	@echo "" 1>&2
+	@go test -v -tags smoke ./test/smoke -ls-matrix | grep -E '^Test[A-Za-z0-9_]+/'
+
 .PHONY: docker-is-working
 docker-is-working:
 	@docker ps > /dev/null || { echo "'docker ps' failed; please ensure it succeeds and try again."; exit 1; } # Only redirects stdout to dev/null so we still see error messages.

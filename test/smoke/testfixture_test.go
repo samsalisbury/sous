@@ -29,20 +29,6 @@ type TestFixture struct {
 	knownToFail   bool
 }
 
-type fixtureConfig struct {
-	dbPrimary  bool
-	startState *sous.State
-	projects   ProjectList
-}
-
-func (fcfg fixtureConfig) Desc() string {
-	store := "GIT"
-	if fcfg.dbPrimary {
-		store = "DB"
-	}
-	return fmt.Sprintf("%s/%s", store, fcfg.projects.GroupName)
-}
-
 var sousBin = mustGetSousBin()
 
 func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) *TestFixture {

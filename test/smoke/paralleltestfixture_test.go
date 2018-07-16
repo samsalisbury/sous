@@ -22,6 +22,7 @@ type (
 
 	ParallelTestFixture struct {
 		T                  *testing.T
+		Matrix             MatrixDef
 		NextAddr           func() string
 		testNames          map[string]struct{}
 		testNamesMu        sync.RWMutex
@@ -64,13 +65,21 @@ func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
 	}
 }
 
-func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T) *ParallelTestFixture {
+func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m MatrixDef) *ParallelTestFixture {
+	if flags.printMatrix {
+		matrix := m.FixtureConfigs()
+		for _, m := range matrix {
+			fmt.Printf("%s/%s\n", t.Name(), m.Desc)
+		}
+		t.Skip("Just printing test matrix (-ls-matrix flag set)")
+	}
 	rtLog("Registering %s", t.Name())
 	t.Helper()
 	t.Parallel()
 	rtLog("Running     %s", t.Name())
 	pf := &ParallelTestFixture{
 		T:                t,
+		Matrix:           m,
 		NextAddr:         pfs.NextAddr,
 		testNames:        map[string]struct{}{},
 		testNamesPassed:  map[string]struct{}{},
@@ -100,9 +109,9 @@ type PTest struct {
 	Test func(*testing.T, *TestFixture)
 }
 
-func (pf *ParallelTestFixture) RunMatrix(m []fixtureConfig, tests ...PTest) {
-	for _, c := range m {
-		pf.T.Run(c.Desc(), func(t *testing.T) {
+func (pf *ParallelTestFixture) RunMatrix(tests ...PTest) {
+	for _, c := range pf.Matrix.FixtureConfigs() {
+		pf.T.Run(c.Desc, func(t *testing.T) {
 			c := c
 			t.Parallel()
 			for _, pt := range tests {

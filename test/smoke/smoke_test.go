@@ -25,9 +25,9 @@ func initBuildDeploy(t *testing.T, client *TestClient, flags *sousFlags, transfo
 }
 
 func TestInitToDeploy(t *testing.T) {
-	pf := pfs.newParallelTestFixture(t)
+	pf := pfs.newParallelTestFixture(t, Matrix())
 
-	pf.RunMatrix(fixtureConfigs(),
+	pf.RunMatrix(
 
 		PTest{Name: "simple", Test: func(t *testing.T, f *TestFixture) {
 			_, reqID := f.DIDAndDefaultReqID(t, "github.com/user1/repo1", "", "", "cluster1")

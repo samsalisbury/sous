@@ -8,14 +8,9 @@ import (
 
 func TestSplitContainer(t *testing.T) {
 
-	pf := pfs.newParallelTestFixture(t)
+	pf := pfs.newParallelTestFixture(t, Matrix())
 
-	fixtureConfigs := []fixtureConfig{
-		{dbPrimary: false},
-		{dbPrimary: true},
-	}
-
-	pf.RunMatrix(fixtureConfigs,
+	pf.RunMatrix(
 		PTest{Name: "simple-splitcontainer", Test: func(t *testing.T, f *TestFixture) {
 			client := f.setupProject(t, simpleServerSplitContainer())
 			client.MustRun(t, "init", nil, "-kind", "http-service")
