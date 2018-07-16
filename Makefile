@@ -401,13 +401,7 @@ test-smoke:
 
 .PHONY: test-smoke-ls
 test-smoke-ls:
-	@echo "Top-level tests (for use with 'GO_TEST_RUN=? make test-smoke'." 1>&2
-	@echo "Format is <top-level-test>/<matrix combination>" 1>&2
-	@echo "Omit any section to include all values for that part, e.g.:"
-	@echo "    GO_TEST_RUN=/DB make test-smoke to run all DB tests"
-	@echo "    GO_TEST_RUN=//simple  make test-smoke to run all simple build tests."
-	@echo "" 1>&2
-	@go test -v -tags smoke ./test/smoke -ls-matrix | grep -E '^Test[A-Za-z0-9_]+/'
+	@go test -v -tags smoke ./test/smoke -ls -dimensions | grep -E '(^Dimension |^Matrix dimensions|^Test[A-Za-z0-9_]+/)'
 
 .PHONY: docker-is-working
 docker-is-working:

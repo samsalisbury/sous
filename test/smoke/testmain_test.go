@@ -15,7 +15,8 @@ var pfs = newParallelTestFixtureSet(PTFOpts{
 })
 
 var flags = struct {
-	printMatrix bool
+	printMatrix     bool
+	printDimensions bool
 }{}
 
 type fixtureConfig struct {
@@ -27,11 +28,11 @@ type fixtureConfig struct {
 
 func Matrix() MatrixDef {
 	m := NewMatrix()
-	m.AddDimension("store", map[string]interface{}{
+	m.AddDimension("store", "GDM storage to use", map[string]interface{}{
 		"db":  true,
 		"git": false,
 	})
-	m.AddDimension("builder", map[string]interface{}{
+	m.AddDimension("project", "type of project to build", map[string]interface{}{
 		"simple": projects.SingleDockerfile,
 		"split":  projects.SplitBuild,
 	})
@@ -39,11 +40,20 @@ func Matrix() MatrixDef {
 }
 
 func TestMain(m *testing.M) {
-	flag.BoolVar(&flags.printMatrix, "ls-matrix", false, "list test matrix names")
+	flag.BoolVar(&flags.printMatrix, "ls", false, "list test matrix names")
+	flag.BoolVar(&flags.printDimensions, "dimensions", false, "list test matrix dimensions")
 	flag.Parse()
+
+	runRealTests := !(flags.printMatrix || flags.printDimensions)
+
+	if flags.printDimensions {
+		Matrix().PrintDimensions()
+	}
 	if flags.printMatrix {
 
-	} else {
+	}
+
+	if runRealTests {
 		resetSingularity()
 	}
 	exitCode := m.Run()

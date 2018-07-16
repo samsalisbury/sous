@@ -6,17 +6,49 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"testing"
 )
 
-func TestMatrix(t *testing.T) {
-	m := Matrix()
-	for _, c := range m.Combinations() {
-		fmt.Println(c)
-	}
-	m.FixtureConfigs()
+type MatrixDef struct {
+	OrderedDimensionNames []string
+	OrderedDimensionDescs []string
+	Dimensions            map[string]map[string]interface{}
 }
 
+type Combination []Particle
+
+type Particle struct {
+	Dimension, Name string
+	Value           interface{}
+}
+
+func NewMatrix() MatrixDef {
+	return MatrixDef{Dimensions: map[string]map[string]interface{}{}}
+}
+
+func (m MatrixDef) PrintDimensions() {
+	var out []string
+	for _, name := range m.OrderedDimensionNames {
+		out = append(out, "<"+name+">")
+	}
+	fmt.Printf("Matrix dimensions: <top-level>/%s\n", strings.Join(out, "/"))
+	for i, name := range m.OrderedDimensionNames {
+		desc := m.OrderedDimensionDescs[i]
+		fmt.Printf("Dimension %s: %s (", name, desc)
+		d := m.Dimensions[name]
+		for valueName := range d {
+			fmt.Printf(" %s", valueName)
+		}
+		fmt.Print(" )\n")
+	}
+}
+
+func (m *MatrixDef) AddDimension(name, desc string, values map[string]interface{}) {
+	m.OrderedDimensionNames = append(m.OrderedDimensionNames, name)
+	m.OrderedDimensionDescs = append(m.OrderedDimensionDescs, desc)
+	m.Dimensions[name] = values
+}
+
+// TODO SS: Remove this from MatrixDef and write a helper func to do the same.
 func (m *MatrixDef) FixtureConfigs() []fixtureConfig {
 	cs := m.Combinations()
 	fcfgs := make([]fixtureConfig, len(cs))
@@ -25,7 +57,7 @@ func (m *MatrixDef) FixtureConfigs() []fixtureConfig {
 		fcfgs[i] = fixtureConfig{
 			Desc:      c.String(),
 			dbPrimary: m["store"].(bool),
-			projects:  m["builder"].(ProjectList),
+			projects:  m["project"].(ProjectList),
 		}
 	}
 	return fcfgs
@@ -42,10 +74,6 @@ func (m *MatrixDef) Combinations() []Combination {
 		}
 		sort.Strings(valNames)
 		for _, name := range valNames {
-			v := dim[name]
-			if v == nil {
-				panic("nil value")
-			}
 			c = append(c, Combination{
 				Particle{
 					Dimension: d,
@@ -90,27 +118,6 @@ func concat(combos []Combination) Combination {
 	}
 	return res
 }
-
-type MatrixDef struct {
-	OrderedDimensionNames []string
-	Dimensions            map[string]map[string]interface{}
-}
-
-func NewMatrix() MatrixDef {
-	return MatrixDef{Dimensions: map[string]map[string]interface{}{}}
-}
-
-func (m *MatrixDef) AddDimension(name string, values map[string]interface{}) {
-	m.OrderedDimensionNames = append(m.OrderedDimensionNames, name)
-	m.Dimensions[name] = values
-}
-
-type Particle struct {
-	Dimension, Name string
-	Value           interface{}
-}
-
-type Combination []Particle
 
 func (c Combination) String() string {
 	var names []string
