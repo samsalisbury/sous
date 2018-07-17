@@ -49,7 +49,7 @@ func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
 		panic(err)
 	}
 	numFreeAddrs := opts.NumFreeAddrs
-	freeAddrs := freePortAddrs("127.0.0.1", numFreeAddrs, 6601, 9000)
+	freeAddrs := freePortAddrs("127.0.0.1", numFreeAddrs, 49152, 65535)
 	var nextAddrIndex int64
 	nextAddr := func() string {
 		i := atomic.AddInt64(&nextAddrIndex, 1)
