@@ -136,18 +136,25 @@ func (f *TestFixture) Clean(t *testing.T) {
 	}
 }
 
-func (f *TestFixture) DIDAndDefaultReqID(t *testing.T, repo, offset, flavor, cluster string) (sous.DeploymentID, string) {
+func (f *TestFixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
+	t.Helper()
+	if flags.repo == "" {
+		t.Fatalf("flags.repo empty")
+	}
+	if flags.cluster == "" {
+		t.Fatalf("flags.cluster empty")
+	}
 	did := sous.DeploymentID{
 		ManifestID: sous.ManifestID{
 			Source: sous.SourceLocation{
-				Repo: repo,
-				Dir:  offset,
+				Repo: flags.repo,
+				Dir:  flags.offset,
 			},
-			Flavor: flavor,
+			Flavor: flags.flavor,
 		},
-		Cluster: cluster,
+		Cluster: flags.cluster,
 	}
-	return did, f.Singularity.DefaultReqID(t, did)
+	return f.Singularity.DefaultReqID(t, did)
 }
 
 // IsolatedClusterName returns a cluster name unique to this test fixture.

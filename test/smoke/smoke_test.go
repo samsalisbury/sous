@@ -30,11 +30,11 @@ func TestInitToDeploy(t *testing.T) {
 	pf.RunMatrix(
 
 		PTest{Name: "simple", Test: func(t *testing.T, f *TestFixture) {
-			_, reqID := f.DIDAndDefaultReqID(t, "github.com/user1/repo1", "", "", "cluster1")
 
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
-			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1"}
+			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
+			reqID := f.DefaultSingReqID(t, flags)
 
 			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
 

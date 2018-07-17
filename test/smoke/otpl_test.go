@@ -86,8 +86,12 @@ func TestOTPLInitToDeploy(t *testing.T) {
 			dockerBuildAddArtifact(t, f, client, flags)
 
 			client.MustRun(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
-
 			client.MustRun(t, "deploy", flags.SousDeployFlags())
+
+			reqID := f.DefaultSingReqID(t, flags)
+			assertActiveStatus(t, f, reqID)
+			assertSingularityRequestTypeService(t, f, reqID)
+			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
 		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
