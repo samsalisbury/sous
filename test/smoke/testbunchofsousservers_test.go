@@ -3,8 +3,10 @@
 package smoke
 
 import (
+	"fmt"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -21,6 +23,7 @@ type TestBunchOfSousServers struct {
 	RemoteGDMDir string
 	Count        int
 	Instances    []*Instance
+	Stop         func() error
 }
 
 func newBunchOfSousServers(t *testing.T, baseDir string, nextFreeAddr func() string, fcfg fixtureConfig) (*TestBunchOfSousServers, error) {
@@ -50,6 +53,9 @@ func newBunchOfSousServers(t *testing.T, baseDir string, nextFreeAddr func() str
 		RemoteGDMDir: gdmDir,
 		Count:        count,
 		Instances:    instances,
+		Stop: func() error {
+			return fmt.Errorf("cannot stop bunch of sous servers (not started)")
+		},
 	}, nil
 }
 
@@ -136,10 +142,25 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, f
 }
 
 func (c *TestBunchOfSousServers) Start(t *testing.T, sousBin string) error {
+	var started []*Instance
+	// Set the stop func first in case starting returns early.
+	c.Stop = func() error {
+		var errs []string
+		for j, i := range started {
+			if err := i.Stop(); err != nil {
+				errs = append(errs, fmt.Sprintf(`"could not stop instance%d: %s"`, j, err))
+			}
+		}
+		if len(errs) == 0 {
+			return nil
+		}
+		return fmt.Errorf("could not stop all instances: %s", strings.Join(errs, ", "))
+	}
 	for j, i := range c.Instances {
 		if err := i.Start(t, sousBin); err != nil {
-			return errors.Wrapf(err, "instance%d", j)
+			return errors.Wrapf(err, "could not start instance%d", j)
 		}
+		started = append(started, i)
 	}
 	return nil
 }

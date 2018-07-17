@@ -122,7 +122,10 @@ func (i *Instance) RunCmd(t *testing.T, binPath string, args ...string) (*exec.C
 
 func (i *Instance) Start(t *testing.T, binPath string) error {
 
-	fmt.Fprintf(os.Stderr, "==> Instance %q config:\n", i.ClusterName)
+	if !quiet() {
+		fmt.Fprintf(os.Stderr, "==> Instance %q config:\n", i.ClusterName)
+	}
+	// Always run 'sous config' even when quiet to validate it.
 	configCMD, err := i.RunCmd(t, binPath, "config")
 	if err != nil {
 		t.Fatalf("setting up 'sous config': %s", err)
@@ -142,6 +145,16 @@ func (i *Instance) Start(t *testing.T, binPath string) error {
 
 	i.Proc = cmd.Process
 	writePID(t, i.Proc.Pid)
+	return nil
+}
+
+func (i *Instance) Stop() error {
+	if i.Proc == nil {
+		return fmt.Errorf("cannot stop instance %q (not started)", i.Num)
+	}
+	if err := i.Proc.Kill(); err != nil {
+		return fmt.Errorf("cannot kill instance %q: %s", i.Num, err)
+	}
 	return nil
 }
 

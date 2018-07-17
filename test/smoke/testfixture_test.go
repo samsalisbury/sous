@@ -4,7 +4,9 @@ package smoke
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -87,6 +89,51 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 	}
 	tf.Client = client
 	return tf
+}
+
+func (f *TestFixture) Teardown(t *testing.T) {
+	t.Helper()
+	if shouldStopServers(t) {
+		if err := f.Cluster.Stop(); err != nil {
+			t.Errorf("failed to stop cluster: %s", err)
+		}
+	}
+	if shouldCleanFiles(t) {
+		f.Clean(t)
+	}
+}
+
+func shouldStopServers(t *testing.T) bool {
+	// TODO SS: Make this configurable.
+	return !t.Failed()
+}
+
+func shouldCleanFiles(t *testing.T) bool {
+	// TODO SS: Make this configurable.
+	return !t.Failed()
+}
+
+func (f *TestFixture) Clean(t *testing.T) {
+	t.Helper()
+	contents, err := ioutil.ReadDir(f.BaseDir)
+	if err != nil {
+		t.Errorf("failed to clean up: read dir: %s", err)
+		return
+	}
+	for _, file := range contents {
+		filePath := filepath.Join(f.BaseDir, file.Name())
+		if err := os.RemoveAll(filePath); err != nil {
+			t.Errorf("failed to clean up: deleting %s: %s", file, err)
+		}
+		fileName := "FAILED"
+		if !t.Failed() {
+			fileName = "PASSED"
+		}
+		passFailPath := filepath.Join(f.BaseDir, fileName)
+		if err := ioutil.WriteFile(passFailPath, nil, os.ModePerm); err != nil {
+			t.Errorf("cleaned up but failed to to write passFailPath: %s", err)
+		}
+	}
 }
 
 func (f *TestFixture) DIDAndDefaultReqID(t *testing.T, repo, offset, flavor, cluster string) (sous.DeploymentID, string) {
