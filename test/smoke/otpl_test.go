@@ -95,6 +95,9 @@ func TestOTPLInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
+
+			t.Skipf("WIP")
+
 			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 				"config/cluster1/singularity.json": `
 				{
