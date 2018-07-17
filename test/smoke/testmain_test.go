@@ -11,7 +11,7 @@ import (
 )
 
 var pfs = newParallelTestFixtureSet(PTFOpts{
-	NumFreeAddrs: 128,
+	NumFreeAddrs: 256,
 })
 
 var flags = struct {
