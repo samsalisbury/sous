@@ -403,6 +403,10 @@ test-smoke:
 test-smoke-ls:
 	@go test -v -tags smoke ./test/smoke -ls -dimensions | grep -E '(^Dimension |^Matrix dimensions|^Test[A-Za-z0-9_]+/)'
 
+.PHONY: test-smoke-quiet
+test-smoke-quiet:
+	QUIET_SMOKE_TEST=YES $(MAKE) test-smoke
+
 .PHONY: docker-is-working
 docker-is-working:
 	@docker ps > /dev/null || { echo "'docker ps' failed; please ensure it succeeds and try again."; exit 1; } # Only redirects stdout to dev/null so we still see error messages.
