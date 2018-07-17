@@ -2,6 +2,7 @@ package actions
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
@@ -44,6 +45,8 @@ func (a *GetArtifact) Do() error {
 		logging.ExtraDebug1Level, a.LogSink, ba)
 
 	a.BuildArtifact = ba
+
+	fmt.Fprintf(os.Stdout, "name: %s\ndigest: %s\ntype: %s\n", ba.VersionName, ba.DigestReference, ba.Type)
 
 	return nil
 }
