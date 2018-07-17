@@ -54,6 +54,9 @@ func TestInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "fail-container-crash", Test: func(t *testing.T, f *TestFixture) {
+
+			// TODO SS: Remove this once fail-container-crash-rafactor works.
+
 			client := f.setupProject(t, f.Projects.Failer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
@@ -72,6 +75,25 @@ func TestInitToDeploy(t *testing.T) {
 			}
 
 			reqID := f.Singularity.DefaultReqID(t, did)
+			assertActiveStatus(t, f, reqID)
+			assertSingularityRequestTypeService(t, f, reqID)
+			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+		}},
+
+		PTest{Name: "fail-container-crash-rafactor", Test: func(t *testing.T, f *TestFixture) {
+
+			// TODO SS: Fix this test.
+			t.Skipf("This test fails, figure out why it's not equivalent to test above.")
+
+			client := f.setupProject(t, f.Projects.Failer())
+
+			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
+
+			initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
+
+			client.MustFail(t, "deploy", flags)
+
+			reqID := f.DefaultSingReqID(t, flags)
 			assertActiveStatus(t, f, reqID)
 			assertSingularityRequestTypeService(t, f, reqID)
 			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
