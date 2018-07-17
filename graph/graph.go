@@ -792,7 +792,9 @@ func newServerInserter(nc lazyNameCache) (serverInserter, error) {
 
 func newClientInserter(cfg LocalSousConfig, tid sous.TraceID, log LogSink) (sous.ClientInserter, error) {
 	cl, err := restful.NewClient(cfg.Server, log.Child("http-client"), map[string]string{"OT-RequestId": string(tid)})
-	return sous.ClientInserter{sous.NewHTTPNameInserter(cl, tid, log.LogSink)}, err
+	return sous.ClientInserter{
+		Inserter: sous.NewHTTPNameInserter(cl, tid, log.LogSink),
+	}, err
 }
 
 // initErr returns nil if error is nil, otherwise an initialisation error.
