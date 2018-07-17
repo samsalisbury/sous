@@ -12,6 +12,7 @@ import (
 )
 
 func assertActiveStatus(t *testing.T, f *TestFixture, reqID string) {
+	t.Helper()
 	req := f.Singularity.MustGetRequestForDeployment(t, reqID)
 	gotStatus := req.State
 	wantStatus := dtos.SingularityRequestParentRequestStateACTIVE
