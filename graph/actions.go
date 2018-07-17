@@ -129,7 +129,7 @@ func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (actions.Action, error) {
 		User       sous.User
 		LocalShell LocalWorkDirShell
 		Config     LocalSousConfig
-		HTTP       *ClusterSpecificHTTPClient
+		HTTP       HTTPClient
 	}{}
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
