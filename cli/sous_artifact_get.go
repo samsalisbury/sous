@@ -13,7 +13,7 @@ type SousArtifactGet struct {
 	opts      graph.ArtifactOpts
 }
 
-func init() { AddSubcommands["get"] = &SousArtifactGet{} }
+func init() { ArtifactSubcommands["get"] = &SousArtifactGet{} }
 
 // Help prints the help.
 func (*SousArtifactGet) Help() string {
