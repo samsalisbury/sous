@@ -136,6 +136,10 @@ func (f *TestFixture) Clean(t *testing.T) {
 	}
 }
 
+// DefaultSingReqID returns the default singularity request ID for the\
+// DeploymentID derived from the passed flags. If flags do not have both
+// repo and cluster set this task is impossible and thus fails the test
+// immediately.
 func (f *TestFixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
 	t.Helper()
 	if flags.repo == "" {
