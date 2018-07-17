@@ -205,7 +205,7 @@ func (pf *ParallelTestFixture) PrintSummary() (total, passed, skipped, failed, m
 		for t := range pf.testNames {
 			missingTests = append(missingTests, t)
 		}
-		t.Errorf("Some tests did not report status: %s", strings.Join(missingTests, ", "))
+		rtLog("Warning! Some tests did not report status: %s", strings.Join(missingTests, ", "))
 	}
 	return total, passed, skipped, failed, missing
 }
