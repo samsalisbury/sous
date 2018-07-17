@@ -56,11 +56,11 @@ func TestInitToDeploy(t *testing.T) {
 		PTest{Name: "fail-container-crash", Test: func(t *testing.T, f *TestFixture) {
 			client := f.setupProject(t, f.Projects.Failer())
 
-			flags := &sousFlags{kind: "http-service", tag: "1.2.3", repo: "github.com/user1/repo1"}
+			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
 			initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-			client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+			client.MustFail(t, "deploy", flags)
 
 			reqID := f.DefaultSingReqID(t, flags)
 			assertActiveStatus(t, f, reqID)
