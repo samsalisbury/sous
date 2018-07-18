@@ -9,20 +9,20 @@ import (
 )
 
 type (
-	defaultResource struct {
-		locator ComponentLocator
-	}
+	defaultResource struct{}
+
 	getDefaultHandler struct {
 		routeMap restful.RouteMap
 	}
 
+	// Default data to send back no the default get request
 	Default struct {
 		Paths []string
 	}
 )
 
-func newDefaultResource(loc ComponentLocator) *defaultResource {
-	return &defaultResource{locator: loc}
+func newDefaultResource(ComponentLocator) *defaultResource {
+	return &defaultResource{}
 }
 
 func (dr *defaultResource) Get(rm *restful.RouteMap, ls logging.LogSink, rw http.ResponseWriter, r *http.Request, p httprouter.Params) restful.Exchanger {
