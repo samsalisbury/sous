@@ -289,7 +289,7 @@ func (c *TestClient) ConfigureCommand(t *testing.T, subcmd string, f *sousFlags,
 
 	preRun := func() {
 		prettyCmd := fmt.Sprintf("$ sous %s", strings.Join(allArgs(subcmd, f, qArgs), " "))
-		fmt.Fprintf(os.Stderr, "%s:%s:command > %s\n", t.Name(), clientName, prettyCmd)
+		fmt.Fprintf(os.Stderr, "%s:%s:command> %s\n", t.Name(), clientName, prettyCmd)
 		relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
 		fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
 	}
