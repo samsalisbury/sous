@@ -25,6 +25,43 @@ pipeline {
     }
     stage('Test'){
       parallel {
+        stage('Static') {
+  				agent { label 'mesos-qa-uswest2' }
+          steps {
+            echo "static test step"
+            sh '''#!/usr/bin/env bash
+set -x
+
+
+echo "Setting up git identity for test"
+git config --global user.email "sous-internal@opentable.onmicrosoft.com"
+git config --global user.name "Jenkins Run"
+
+
+echo $PATH
+PATH=$PATH:/usr/local/go/bin export PATH
+echo $PATH
+
+
+echo "Setting up GOPATH"
+
+mkdir -p godir/src/github.com/opentable
+ln -s $PWD ./godir/src/github.com/opentable/sous
+export GOPATH=$GOPATH:$PWD/godir
+cd $PWD/godir/src/github.com/opentable/sous
+echo $GOPATH
+
+
+echo $PATH
+PATH=$PATH:$WORKSPACE/godir/bin export PATH
+echo $PATH
+
+echo "Running Tests"
+VERBOSE=1 make test-staticcheck
+
+            '''
+          }
+        }
         stage('Unit') {
   				agent { label 'mesos-qa-uswest2' }
           steps {
