@@ -30,6 +30,7 @@ pipeline {
           steps {
             echo "unit test step"
             sh '''#!/usr/bin/env bash
+set -x
 echo $PATH
 PATH=$PATH:/usr/local/go/bin export PATH
 echo $PATH
@@ -93,6 +94,7 @@ make test-smoke
           steps {
             echo "integration test"
             sh '''#!/usr/bin/env bash
+set -x
 echo $PATH
 PATH=$PATH:/usr/local/go/bin export PATH
 echo $PATH
