@@ -48,6 +48,27 @@ func (m *MatrixDef) AddDimension(name, desc string, values map[string]interface{
 	m.Dimensions[name] = values
 }
 
+func (m MatrixDef) FixedDimension(dimensionName, valueName string) MatrixDef {
+	return m.Clone(func(dimension, value string) bool {
+		return dimension != dimensionName || value == valueName
+	})
+}
+
+func (m MatrixDef) Clone(include func(dimension, value string) bool) MatrixDef {
+	n := m
+	n.Dimensions = map[string]map[string]interface{}{}
+	for name, values := range m.Dimensions {
+		nv := map[string]interface{}{}
+		for vn, v := range values {
+			if include(name, vn) {
+				nv[vn] = v
+			}
+		}
+		n.Dimensions[name] = nv
+	}
+	return n
+}
+
 // TODO SS: Remove this from MatrixDef and write a helper func to do the same.
 func (m *MatrixDef) FixtureConfigs() []fixtureConfig {
 	cs := m.Combinations()

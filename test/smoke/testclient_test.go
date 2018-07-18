@@ -356,9 +356,10 @@ func (c *TestClient) MustFail(t *testing.T, subcmd string, f *sousFlags, args ..
 
 // TransformManifest applies each of transforms in order to the retrieved
 // manifest, then calls 'sous manifest set' to apply them. Any failure is fatal.
-func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, transforms ...ManifestTransform) {
+func (c *TestClient) TransformManifest(t *testing.T, flags *sousFlags, transforms ...ManifestTransform) {
 	t.Helper()
-	manifest := c.MustRun(t, "manifest get", getSetFlags)
+	flags = flags.ManifestIDFlags()
+	manifest := c.MustRun(t, "manifest get", flags.ManifestIDFlags())
 	var m sous.Manifest
 	if err := yaml.Unmarshal([]byte(manifest), &m); err != nil {
 		t.Fatalf("manifest get returned invalid YAML: %s\nInvalid YAML was:\n%s", err, manifest)
@@ -370,7 +371,7 @@ func (c *TestClient) TransformManifest(t *testing.T, getSetFlags *sousFlags, tra
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
-	manifestSetCmd := c.ConfigureCommand(t, "manifest set", getSetFlags)
+	manifestSetCmd := c.ConfigureCommand(t, "manifest set", flags)
 	defer manifestSetCmd.Cancel()
 	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
 	if err := manifestSetCmd.runWithTimeout(3 * time.Minute); err != nil {

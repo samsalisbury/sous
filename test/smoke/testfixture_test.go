@@ -123,7 +123,7 @@ func (f *TestFixture) Clean(t *testing.T) {
 	for _, file := range contents {
 		filePath := filepath.Join(f.BaseDir, file.Name())
 		if err := os.RemoveAll(filePath); err != nil {
-			t.Errorf("failed to clean up: deleting %s: %s", file, err)
+			t.Errorf("failed to clean up: deleting %s: %s", filePath, err)
 		}
 		fileName := "FAILED"
 		if !t.Failed() {
@@ -131,7 +131,7 @@ func (f *TestFixture) Clean(t *testing.T) {
 		}
 		passFailPath := filepath.Join(f.BaseDir, fileName)
 		if err := ioutil.WriteFile(passFailPath, nil, os.ModePerm); err != nil {
-			t.Errorf("cleaned up but failed to to write passFailPath: %s", err)
+			t.Errorf("cleaned up but failed to to write %s: %s", passFailPath, err)
 		}
 	}
 }

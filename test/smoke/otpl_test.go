@@ -10,6 +10,16 @@ import (
 	"github.com/opentable/sous/util/filemap"
 )
 
+func dockerBuildAddArtifactInit(t *testing.T, f *TestFixture, client *TestClient, flags *sousFlags, transforms ...ManifestTransform) (dockerRef string) {
+	t.Helper()
+
+	dockerRef = dockerBuildAddArtifact(t, f, client, flags)
+
+	client.MustRun(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
+	client.TransformManifest(t, flags, transforms...)
+
+	return dockerRef
+}
 func dockerBuildAddArtifact(t *testing.T, f *TestFixture, client *TestClient, flags *sousFlags) (dockerRef string) {
 	t.Helper()
 	tag := flags.tag
@@ -26,12 +36,15 @@ func dockerBuildAddArtifact(t *testing.T, f *TestFixture, client *TestClient, fl
 	mustDoCMD(t, client.Dir, "docker", "push", dockerRef)
 
 	client.MustRun(t, "artifact add", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
+
 	return dockerRef
 }
 
 func TestOTPLInitToDeploy(t *testing.T) {
 
-	pf := pfs.newParallelTestFixture(t, Matrix())
+	// FixedDimension is because otpl deploy can only work with simple dockerfile
+	// projects, not split build projects. This "project", "simple".
+	pf := pfs.newParallelTestFixture(t, Matrix().FixedDimension("project", "simple"))
 
 	pf.RunMatrix(
 
@@ -55,6 +68,7 @@ func TestOTPLInitToDeploy(t *testing.T) {
 		}},
 
 		PTest{Name: "build-init-deploy", Test: func(t *testing.T, f *TestFixture) {
+
 			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 				"config/cluster1/singularity.json": `
 				{
@@ -83,9 +97,8 @@ func TestOTPLInitToDeploy(t *testing.T) {
 				cluster: "cluster1",
 			}
 
-			dockerBuildAddArtifact(t, f, client, flags)
+			dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
 
-			client.MustRun(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
 			client.MustRun(t, "deploy", flags.SousDeployFlags())
 
 			reqID := f.DefaultSingReqID(t, flags)

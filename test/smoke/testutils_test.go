@@ -328,7 +328,7 @@ func prefixWithTestName(t *testing.T, label string) (prefixedOut, prefixedErr io
 			if err := scanner.Err(); err != nil {
 				t.Fatalf("Error prefixing stdout: %s", err)
 			}
-			fmt.Fprintf(os.Stdout, "%s:%s:stdout > %s\n", t.Name(), label, scanner.Text())
+			fmt.Fprintf(os.Stdout, "%s:%s:stdout> %s\n", t.Name(), label, scanner.Text())
 		}
 	}()
 	go func() {
@@ -345,7 +345,7 @@ func prefixWithTestName(t *testing.T, label string) (prefixedOut, prefixedErr io
 			if err := scanner.Err(); err != nil {
 				t.Fatalf("Error prefixing stderr: %s", err)
 			}
-			fmt.Fprintf(os.Stderr, "%s:%s:stderr > %s\n", t.Name(), label, scanner.Text())
+			fmt.Fprintf(os.Stderr, "%s:%s:stderr> %s\n", t.Name(), label, scanner.Text())
 		}
 	}()
 	return outWriter, errWriter
