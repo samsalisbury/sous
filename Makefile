@@ -393,7 +393,7 @@ test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TE
 	SOUS_QA_DESC=$(QA_DESC) \
 	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
 	SOUS_TERSE_LOGGING=$(SOUS_TERSE_LOGGING) \
-	QUIET_SMOKE_TEST=$(QUIET_SMOKE_TEST) \
+	SMOKE_TEST_QUIET=$(SMOKE_TEST_QUIET) \
 	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags 'smoke netcgo' -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
 .PHONY: test-smoke
@@ -406,7 +406,7 @@ test-smoke-ls:
 
 .PHONY: test-smoke-quiet
 test-smoke-quiet:
-	QUIET_SMOKE_TEST=YES $(MAKE) test-smoke
+	SMOKE_TEST_QUIET=YES $(MAKE) test-smoke
 
 .PHONY: docker-is-working
 docker-is-working:
