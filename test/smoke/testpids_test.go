@@ -109,7 +109,9 @@ func stopPIDs() error {
 			return fmt.Errorf("cannot inspect proc %d: %s", pid, err)
 		}
 		if psProc == nil {
-			log.Printf("skipping cleanup of %d (already stopped)", pid)
+			if !quiet() {
+				log.Printf("skipping cleanup of %d (already stopped)", pid)
+			}
 			continue
 		}
 
