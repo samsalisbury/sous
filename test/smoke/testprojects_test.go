@@ -137,6 +137,7 @@ func splitBuild(p Program) filemap.FileMap {
 			COPY image-spec.json /
 			RUN mkdir /server
 			COPY server.sh /server/
+			CMD echo This is a builder image.
 			`,
 		"image-spec.json": `
 			{
