@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -16,6 +17,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestSingleDeploymentResource(t *testing.T) {
@@ -355,4 +357,40 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 			"sous.example.com/deploy-queue-item?action=actionid1&cluster=cluster1&flavor=flavor1&offset=dir1&repo=github.com%2Fuser1%2Frepo1")
 	})
 
+}
+
+func TestMakeSingularityURL_valid(t *testing.T) {
+	baseURL := "http://a.b"
+	requestID := "123-4"
+	var deploymentID sous.DeploymentID
+
+	url := makeSingularityURL(baseURL, requestID, deploymentID)
+	assert.Equal(t, "http://a.b/request/123-4", url, "url's should match")
+
+	deploymentID = sous.DeploymentID{
+		ManifestID: sous.ManifestID{
+			Source: sous.SourceLocation{
+				Dir:  "test-dir",
+				Repo: "github.com/opentable/test.git",
+			},
+			Flavor: "test-flavor",
+		},
+		Cluster: "test-cluster",
+	}
+	expectedURL := fmt.Sprintf("http://a.b/request/test_git-test_dir-test_flavor-test_cluster-%x", deploymentID.Digest())
+	url = makeSingularityURL(baseURL, "", deploymentID)
+	assert.Equal(t, expectedURL, url, "url's should match")
+}
+
+func TestMakeSingularityURL_invalid(t *testing.T) {
+	baseURL := ""
+	requestID := "123-4"
+	var deploymentID sous.DeploymentID
+
+	url := makeSingularityURL(baseURL, requestID, deploymentID)
+	assert.Equal(t, "Unable to determine SingularityRequest URL : baseURL can not be empty : ", url)
+	url = makeSingularityURL(baseURL, "", deploymentID)
+	assert.Equal(t, "Unable to determine SingularityRequest URL : string \"\" does not represent a repo", url)
+	url = makeSingularityURL("", "", deploymentID)
+	assert.Equal(t, "Unable to determine SingularityRequest URL : string \"\" does not represent a repo", url)
 }

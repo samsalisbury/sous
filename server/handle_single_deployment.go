@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/opentable/sous/ext/singularity"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
@@ -112,9 +113,32 @@ func (h *GETSingleDeploymentHandler) Exchange() (interface{}, int) {
 		return h.err(400, "Cannot deploy, current num instances set to zero, please update manifest.")
 	}
 
+	links := make(map[string]string)
+	baseURL := h.GDM.Defs.Clusters[did.Cluster].BaseURL
+	singularityRequestID := dep.DeployConfig.SingularityRequestID
+	singularityURL := makeSingularityURL(baseURL, singularityRequestID, did)
+	if len(singularityURL) > 0 {
+		links["SingularityURL"] = singularityURL
+	}
+
 	h.Body.Deployment = &dep
 
-	return h.ok(200, nil)
+	return h.ok(200, links)
+}
+
+func makeSingularityURL(baseURL string, singularityRequestID string, deploymentID sous.DeploymentID) string {
+	var err error
+	if len(singularityRequestID) == 0 {
+		singularityRequestID, err = singularity.MakeRequestID(deploymentID)
+		if err != nil {
+			return fmt.Sprintf("Unable to determine SingularityRequest URL : %s", err)
+		}
+	}
+	singularityURL, err := singularity.MakeRequestURL(baseURL, singularityRequestID)
+	if err != nil {
+		singularityURL = fmt.Sprintf("Unable to determine SingularityRequest URL : %s", err)
+	}
+	return singularityURL
 }
 
 // err returns the current Body of psd and the provided status code.
