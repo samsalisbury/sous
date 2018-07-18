@@ -22,6 +22,7 @@ Clusters:
     - bogus revision
     - dirty workspace
     - developer build
+    - added artifact
   other-cluster:
     Name: ""
     Kind: singularity
@@ -44,6 +45,7 @@ Clusters:
     - bogus revision
     - dirty workspace
     - developer build
+    - added artifact
 EnvVars: []
 Resources: []
 Metadata: []
