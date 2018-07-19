@@ -30,7 +30,7 @@ func makeClient(fixture *TestFixture, baseDir, sousBin string) *TestClient {
 	baseDir = path.Join(baseDir, "client1")
 	c := &TestClient{
 		Bin: Bin{
-			Name:      "sous",
+			Name:      "client1",
 			BaseDir:   baseDir,
 			BinPath:   sousBin,
 			ConfigDir: path.Join(baseDir, "config"),

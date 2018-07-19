@@ -31,7 +31,9 @@ func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, add
 	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i+1))
 	stateDir := path.Join(baseDir, "state")
 
-	bin := NewBin(binPath, "sous", baseDir)
+	name := fmt.Sprintf("instance%d_%s", i, clusterName)
+
+	bin := NewBin(binPath, name, baseDir)
 	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
 
 	return &Instance{

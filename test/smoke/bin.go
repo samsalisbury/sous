@@ -19,6 +19,7 @@ import (
 // Bin represents a binary under test.
 type Bin struct {
 	Name      string
+	BinName   string
 	BaseDir   string
 	BinPath   string
 	ConfigDir string
@@ -30,20 +31,24 @@ type Bin struct {
 	// MassageArgs is called on the total set of args passed to the command,
 	// prior to execution; the args it returns are what is finally used.
 	MassageArgs func(*testing.T, []string) []string
-	// IncludeOSEnv adds all current OS env vars to each invocation.
-	IncludeOSEnv bool
 }
 
-// NewBin returns a new minimal Bin.
+// NewBin returns a new minimal Bin, all files will be created in subdirectories
+// of baseDir.
 func NewBin(path, name, baseDir string) Bin {
+	binName := filepath.Base(path)
+	if name == "" {
+		name = binName
+	}
 	return Bin{
 		BinPath:   path,
 		Name:      name,
+		BinName:   binName,
 		BaseDir:   baseDir,
 		Env:       map[string]string{},
 		ConfigDir: filepath.Join(baseDir, "config"),
 		LogDir:    filepath.Join(baseDir, "logs"),
-		Dir:       filepath.Join(baseDir, "work"),
+		//Dir:       filepath.Join(baseDir, "work"),
 	}
 }
 
@@ -159,7 +164,7 @@ func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*Execut
 
 // Command returns the prepared command.
 func (c *Bin) Command(t *testing.T, subcmd string, f Flags, args ...string) *PreparedCmd {
-	i := invocation{name: c.Name, subcmd: subcmd, flags: f, args: args}
+	i := invocation{name: c.BinName, subcmd: subcmd, flags: f, args: args}
 	return c.configureCommand(t, i)
 }
 
@@ -204,8 +209,11 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 
 	preRun := func() {
 		fmt.Fprintf(os.Stderr, "%s:%s:command> %s\n", t.Name(), clientName, i)
-		relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
-		fmt.Fprintf(allFiles, "%s %s", relPath, i)
+		var relPath string
+		if cmd.Dir != "" {
+			relPath = " " + mustGetRelPath(t, c.BaseDir, cmd.Dir)
+		}
+		fmt.Fprintf(allFiles, "%s> %s", relPath, i)
 	}
 	postRun := func() {
 		cancel()

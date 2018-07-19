@@ -158,10 +158,8 @@ func (c *TestBunchOfSousServers) Start(t *testing.T, sousBin string) error {
 		}
 		return fmt.Errorf("could not stop all instances: %s", strings.Join(errs, ", "))
 	}
-	for j, i := range c.Instances {
-		if err := i.Start(t, sousBin); err != nil {
-			return errors.Wrapf(err, "could not start instance%d", j)
-		}
+	for _, i := range c.Instances {
+		i.Start(t)
 		started = append(started, i)
 	}
 	return nil
