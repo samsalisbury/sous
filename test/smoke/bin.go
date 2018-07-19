@@ -18,6 +18,7 @@ import (
 
 // Bin represents a binary under test.
 type Bin struct {
+	Name      string
 	BaseDir   string
 	BinPath   string
 	ConfigDir string
@@ -68,17 +69,17 @@ func flagArgs(f Flags) []string {
 
 // allArgs produces a []string representing all args determined by the sous
 // subcommand, sous flags and any other args.
-func allArgs(subcmd string, f Flags, args []string) []string {
-	all := strings.Split(subcmd, " ")
-	all = append(all, flagArgs(f)...)
-	all = append(all, args...)
+func (i invocation) allArgs() []string {
+	all := strings.Split(i.subcmd, " ")
+	all = append(all, flagArgs(i.flags)...)
+	all = append(all, i.args...)
 	return all
 }
 
 // Cmd generates an *exec.Cmd and cancellation func.
-func (c *Bin) Cmd(t *testing.T, subcmd string, f Flags, args ...string) (*exec.Cmd, context.CancelFunc) {
+func (c *Bin) Cmd(t *testing.T, i invocation) (*exec.Cmd, context.CancelFunc) {
 	t.Helper()
-	args = allArgs(subcmd, f, args)
+	args := i.allArgs()
 	if c.MassageArgs != nil {
 		args = c.MassageArgs(t, args)
 	}
@@ -108,27 +109,21 @@ func quotedArgsString(args []string) string {
 
 // ExecutedCMD represents the reasult of a command having been run.
 type ExecutedCMD struct {
-	Subcmd                   string
-	Args                     []string
+	invocation
 	Stdout, Stderr, Combined *bytes.Buffer
 }
 
-// String returns something looking like a shell invocation of this command.
-func (e *ExecutedCMD) String() string {
-	return fmt.Sprintf("sous %s %s", e.Subcmd, quotedArgsString(e.Args))
-}
-
-func newExecutedCMD(subcmd string, args []string) *ExecutedCMD {
+func newExecutedCMD(i invocation) *ExecutedCMD {
 	return &ExecutedCMD{
-		Subcmd:   subcmd,
-		Args:     args,
-		Stdout:   &bytes.Buffer{},
-		Stderr:   &bytes.Buffer{},
-		Combined: &bytes.Buffer{},
+		invocation: i,
+		Stdout:     &bytes.Buffer{},
+		Stderr:     &bytes.Buffer{},
+		Combined:   &bytes.Buffer{},
 	}
 }
 
 type cmdWithHooks struct {
+	invocation
 	Cmd      *exec.Cmd
 	Cancel   func()
 	PreRun   func()
@@ -138,7 +133,8 @@ type cmdWithHooks struct {
 
 // Run runs the command.
 func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*ExecutedCMD, error) {
-	cmd := c.configureCommand(t, subcmd, f, args...)
+	i := invocation{name: c.Name, subcmd: subcmd, flags: f, args: args}
+	cmd := c.configureCommand(t, i)
 	err := cmd.runWithTimeout(3 * time.Minute)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -146,11 +142,21 @@ func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*Execut
 	return cmd.executed, err
 }
 
-func (c *Bin) configureCommand(t *testing.T, subcmd string, f Flags, args ...string) *cmdWithHooks {
-	t.Helper()
-	cmd, cancel := c.Cmd(t, subcmd, f, args...)
+// invocation is the invocation directly from the test, without any formatting
+// or manipulation.
+type invocation struct {
+	name, subcmd string
+	flags        Flags
+	args         []string
+}
 
-	qArgs := quotedArgs(args)
+func (i invocation) String() string {
+	return fmt.Sprintf("%s %s", i.name, strings.Join(i.allArgs(), " "))
+}
+
+func (c *Bin) configureCommand(t *testing.T, i invocation) *cmdWithHooks {
+	t.Helper()
+	cmd, cancel := c.Cmd(t, i)
 
 	outFile, errFile, combinedFile :=
 		openFileAppendOnly(t, c.LogDir, "stdout"),
@@ -159,7 +165,7 @@ func (c *Bin) configureCommand(t *testing.T, subcmd string, f Flags, args ...str
 
 	allFiles := io.MultiWriter(outFile, errFile, combinedFile)
 
-	executed := newExecutedCMD(subcmd, qArgs)
+	executed := newExecutedCMD(i)
 
 	stdoutWriters := []io.Writer{outFile, combinedFile, executed.Stdout, executed.Combined}
 	stderrWriters := []io.Writer{errFile, combinedFile, executed.Stderr, executed.Combined}
@@ -176,10 +182,9 @@ func (c *Bin) configureCommand(t *testing.T, subcmd string, f Flags, args ...str
 	cmd.Stderr = io.MultiWriter(stderrWriters...)
 
 	preRun := func() {
-		prettyCmd := fmt.Sprintf("$ sous %s", strings.Join(allArgs(subcmd, f, qArgs), " "))
-		fmt.Fprintf(os.Stderr, "%s:%s:command> %s\n", t.Name(), clientName, prettyCmd)
+		fmt.Fprintf(os.Stderr, "%s:%s:command> %s\n", t.Name(), clientName, i)
 		relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
-		fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
+		fmt.Fprintf(allFiles, "%s %s", relPath, i)
 	}
 	postRun := func() {
 		cancel()
@@ -187,11 +192,12 @@ func (c *Bin) configureCommand(t *testing.T, subcmd string, f Flags, args ...str
 	}
 
 	return &cmdWithHooks{
-		Cmd:      cmd,
-		Cancel:   cancel,
-		PreRun:   preRun,
-		PostRun:  postRun,
-		executed: executed,
+		Cmd:        cmd,
+		Cancel:     cancel,
+		PreRun:     preRun,
+		PostRun:    postRun,
+		executed:   executed,
+		invocation: i,
 	}
 }
 
@@ -204,8 +210,7 @@ func (c *cmdWithHooks) runWithTimeout(timeout time.Duration) error {
 	}()
 	go func() {
 		<-time.After(timeout)
-		errCh <- fmt.Errorf("command timed out after %s:\nsous %s", timeout,
-			quotedArgsString(c.Cmd.Args[1:]))
+		errCh <- fmt.Errorf("command timed out after %s: %s", timeout, c)
 	}()
 	return <-errCh
 }

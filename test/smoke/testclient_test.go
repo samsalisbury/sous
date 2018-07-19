@@ -30,6 +30,7 @@ func makeClient(fixture *TestFixture, baseDir, sousBin string) *TestClient {
 	baseDir = path.Join(baseDir, "client1")
 	c := &TestClient{
 		Bin: Bin{
+			Name:      "sous",
 			BaseDir:   baseDir,
 			BinPath:   sousBin,
 			ConfigDir: path.Join(baseDir, "config"),
@@ -107,7 +108,9 @@ func (c *TestClient) TransformManifest(t *testing.T, flags *sousFlags, transform
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
-	manifestSetCmd := c.configureCommand(t, "manifest set", flags)
+	// TODO SS: remove below invocation, make a top-level RunWithStdin or something.
+	i := invocation{name: "sous", subcmd: "manifest set", flags: flags}
+	manifestSetCmd := c.configureCommand(t, i)
 	defer manifestSetCmd.Cancel()
 	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
 	if err := manifestSetCmd.runWithTimeout(3 * time.Minute); err != nil {
