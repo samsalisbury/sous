@@ -1,5 +1,3 @@
-//+build smoke
-
 package smoke
 
 import (
@@ -25,6 +23,10 @@ import (
 // timeGoTestInvoked is used to group test data for tests run
 // via the same go test invocation.
 var timeGoTestInvoked = time.Now().Format(time.RFC3339)
+
+func quiet() bool {
+	return os.Getenv("SMOKE_TEST_QUIET") == "YES"
+}
 
 func getEnvDesc() desc.EnvDesc {
 	descPath := os.Getenv("SOUS_QA_DESC")

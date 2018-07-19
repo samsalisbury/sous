@@ -20,6 +20,7 @@ func dockerBuildAddArtifactInit(t *testing.T, f *TestFixture, client *TestClient
 
 	return dockerRef
 }
+
 func dockerBuildAddArtifact(t *testing.T, f *TestFixture, client *TestClient, flags *sousFlags) (dockerRef string) {
 	t.Helper()
 	tag := flags.tag

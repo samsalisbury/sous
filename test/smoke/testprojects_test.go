@@ -5,7 +5,6 @@ package smoke
 import (
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"testing"
 
@@ -186,8 +185,4 @@ func (f *TestFixture) setupProject(t *testing.T, fm filemap.FileMap) *TestClient
 	}
 
 	return client
-}
-
-func quiet() bool {
-	return os.Getenv("SMOKE_TEST_QUIET") == "YES"
 }

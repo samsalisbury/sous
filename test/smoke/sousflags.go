@@ -62,28 +62,34 @@ func (f *sousFlags) SourceIDFlags() *sousFlags {
 	return sidFlags
 }
 
-func (f *sousFlags) Args() []string {
+// Map returns a map of flag names to values.
+// Any flags which have an empty string value are omitted from the map entirely.
+func (f *sousFlags) FlagMap() map[string]string {
+	m := map[string]string{}
 	if f == nil {
-		return nil
+		return m
 	}
-	var out []string
 	if f.kind != "" {
-		out = append(out, "-kind", f.kind)
+		m["kind"] = f.kind
 	}
 	if f.flavor != "" {
-		out = append(out, "-flavor", f.flavor)
+		m["flavor"] = f.flavor
 	}
 	if f.cluster != "" {
-		out = append(out, "-cluster", f.cluster)
+		m["cluster"] = f.cluster
 	}
 	if f.repo != "" {
-		out = append(out, "-repo", f.repo)
+		m["repo"] = f.repo
 	}
 	if f.offset != "" {
-		out = append(out, "-offset", f.offset)
+		m["offset"] = f.offset
 	}
 	if f.tag != "" {
-		out = append(out, "-tag", f.tag)
+		m["tag"] = f.tag
 	}
-	return out
+	return m
+}
+
+func (f *sousFlags) FlagPrefix() string {
+	return "-"
 }

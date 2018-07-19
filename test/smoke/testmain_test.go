@@ -10,9 +10,7 @@ import (
 	sous "github.com/opentable/sous/lib"
 )
 
-var pfs = newParallelTestFixtureSet(PTFOpts{
-	NumFreeAddrs: 256,
-})
+var pfs *ParallelTestFixtureSet
 
 var flags = struct {
 	printMatrix     bool
@@ -49,11 +47,11 @@ func TestMain(m *testing.M) {
 	if flags.printDimensions {
 		Matrix().PrintDimensions()
 	}
-	if flags.printMatrix {
-
-	}
 
 	if runRealTests {
+		pfs = newParallelTestFixtureSet(PTFOpts{
+			NumFreeAddrs: 256,
+		})
 		resetSingularity()
 	}
 	exitCode := m.Run()

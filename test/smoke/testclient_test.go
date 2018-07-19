@@ -4,14 +4,9 @@ package smoke
 
 import (
 	"bytes"
-	"context"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -19,16 +14,12 @@ import (
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/filemap"
 	"github.com/opentable/sous/util/yaml"
 )
 
 type TestClient struct {
-	BaseDir   string
-	BinPath   string
-	ConfigDir string
-	LogDir    string
-	// Dir is the working directory.
-	Dir string
+	Bin
 	// Config is set after calling Configure()
 	Config config.Config
 	// Fixture is the test fixture this client belongs to.
@@ -37,22 +28,21 @@ type TestClient struct {
 
 func makeClient(fixture *TestFixture, baseDir, sousBin string) *TestClient {
 	baseDir = path.Join(baseDir, "client1")
-	return &TestClient{
-		BaseDir:   baseDir,
-		BinPath:   sousBin,
-		ConfigDir: path.Join(baseDir, "config"),
-		LogDir:    path.Join(baseDir, "logs"),
-		Fixture:   fixture,
+	c := &TestClient{
+		Bin: Bin{
+			BaseDir:   baseDir,
+			BinPath:   sousBin,
+			ConfigDir: path.Join(baseDir, "config"),
+			LogDir:    path.Join(baseDir, "logs"),
+			Env:       map[string]string{},
+		},
+		Fixture: fixture,
 	}
+	c.Bin.MassageArgs = c.insertClusterSuffix
+	return c
 }
 
 func (c *TestClient) Configure(server, dockerReg, userEmail string) error {
-	if err := os.MkdirAll(c.ConfigDir, 0777); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(c.LogDir, 0777); err != nil {
-		return err
-	}
 	user := strings.Split(userEmail, "@")
 	conf := config.Config{
 		Server: server,
@@ -74,24 +64,17 @@ func (c *TestClient) Configure(server, dockerReg, userEmail string) error {
 		conf.Logging.Basic.ExtraConsole = true
 	}
 
-	y, err := yaml.Marshal(conf)
+	c.Config = conf
+
+	configYAML, err := yaml.Marshal(conf)
 	if err != nil {
 		return err
 	}
-	if err := ioutil.WriteFile(path.Join(c.ConfigDir, "config.yaml"), y, os.ModePerm); err != nil {
-		return err
-	}
-	c.Config = conf
-	return nil
-}
+	c.Env["SOUS_CONFIG_DIR"] = c.Bin.ConfigDir
 
-// allArgs produces a []string representing all args determined by the sous
-// subcommand, sous flags and any other args.
-func allArgs(subcmd string, f *sousFlags, args []string) []string {
-	allArgs := strings.Split(subcmd, " ")
-	allArgs = append(allArgs, f.Args()...)
-	allArgs = append(allArgs, args...)
-	return allArgs
+	return c.Bin.Configure(filemap.FileMap{
+		"config.yaml": string(configYAML),
+	})
 }
 
 func (c *TestClient) insertClusterSuffix(t *testing.T, args []string) []string {
@@ -105,165 +88,6 @@ func (c *TestClient) insertClusterSuffix(t *testing.T, args []string) []string {
 		}
 	}
 	return args
-}
-
-func (c *TestClient) Cmd(t *testing.T, subcmd string, f *sousFlags, args ...string) (*exec.Cmd, context.CancelFunc) {
-	t.Helper()
-	args = c.insertClusterSuffix(t, allArgs(subcmd, f, args))
-	cmd, cancel := mkCMD(c.Dir, c.BinPath, args...)
-	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", c.ConfigDir))
-	return cmd, cancel
-}
-
-// Add quotes to args with spaces for printing.
-func quotedArgs(args []string) []string {
-	out := make([]string, len(args))
-	for i, a := range args {
-		if strings.Contains(a, " ") {
-			out[i] = `"` + a + `"`
-		} else {
-			out[i] = a
-		}
-	}
-	return out
-}
-
-func quotedArgsString(args []string) string {
-	return strings.Join(quotedArgs(args), " ")
-}
-
-type ExecutedCMD struct {
-	Subcmd                   string
-	Args                     []string
-	Stdout, Stderr, Combined *bytes.Buffer
-}
-
-// String returns something looking like a shell invocation of this command.
-func (e *ExecutedCMD) String() string {
-	return fmt.Sprintf("sous %s %s", e.Subcmd, quotedArgsString(e.Args))
-}
-
-func newExecutedCMD(subcmd string, args []string) *ExecutedCMD {
-	return &ExecutedCMD{
-		Subcmd:   subcmd,
-		Args:     args,
-		Stdout:   &bytes.Buffer{},
-		Stderr:   &bytes.Buffer{},
-		Combined: &bytes.Buffer{},
-	}
-}
-
-type CmdWithHooks struct {
-	Cmd      *exec.Cmd
-	Cancel   func()
-	PreRun   func()
-	PostRun  func()
-	executed *ExecutedCMD
-}
-
-func (c *TestClient) Run(t *testing.T, subcmd string, f *sousFlags, args ...string) (*ExecutedCMD, error) {
-	cmd := c.ConfigureCommand(t, subcmd, f, args...)
-	err := cmd.runWithTimeout(3 * time.Minute)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-	}
-	return cmd.executed, err
-}
-
-func (c *TestClient) ConfigureCommand(t *testing.T, subcmd string, f *sousFlags, args ...string) *CmdWithHooks {
-	t.Helper()
-	cmd, cancel := c.Cmd(t, subcmd, f, args...)
-
-	qArgs := quotedArgs(args)
-
-	outFile, errFile, combinedFile :=
-		openFileAppendOnly(t, c.LogDir, "stdout"),
-		openFileAppendOnly(t, c.LogDir, "stderr"),
-		openFileAppendOnly(t, c.LogDir, "combined")
-
-	allFiles := io.MultiWriter(outFile, errFile, combinedFile)
-
-	executed := newExecutedCMD(subcmd, qArgs)
-
-	stdoutWriters := []io.Writer{outFile, combinedFile, executed.Stdout, executed.Combined}
-	stderrWriters := []io.Writer{errFile, combinedFile, executed.Stderr, executed.Combined}
-
-	clientName := "client1"
-
-	if !quiet() {
-		stdout, stderr := prefixWithTestName(t, clientName)
-		stdoutWriters = append(stdoutWriters, stdout)
-		stderrWriters = append(stderrWriters, stderr)
-	}
-
-	cmd.Stdout = io.MultiWriter(stdoutWriters...)
-	cmd.Stderr = io.MultiWriter(stderrWriters...)
-
-	preRun := func() {
-		prettyCmd := fmt.Sprintf("$ sous %s", strings.Join(allArgs(subcmd, f, qArgs), " "))
-		fmt.Fprintf(os.Stderr, "%s:%s:command> %s\n", t.Name(), clientName, prettyCmd)
-		relPath := mustGetRelPath(t, c.BaseDir, cmd.Dir)
-		fmt.Fprintf(allFiles, "%s %s", relPath, prettyCmd)
-	}
-	postRun := func() {
-		cancel()
-		closeFiles(t, outFile, errFile, combinedFile)
-	}
-
-	return &CmdWithHooks{
-		Cmd:      cmd,
-		Cancel:   cancel,
-		PreRun:   preRun,
-		PostRun:  postRun,
-		executed: executed,
-	}
-}
-
-func (c *CmdWithHooks) runWithTimeout(timeout time.Duration) error {
-	defer c.PostRun()
-	c.PreRun()
-	errCh := make(chan error, 1)
-	go func() {
-		errCh <- c.Cmd.Run()
-	}()
-	go func() {
-		<-time.After(timeout)
-		errCh <- fmt.Errorf("command timed out after %s:\nsous %s", timeout,
-			quotedArgsString(c.Cmd.Args[1:]))
-	}()
-	return <-errCh
-}
-
-func mustGetRelPath(t *testing.T, base, target string) string {
-	t.Helper()
-	relPath, err := filepath.Rel(base, target)
-	if err != nil {
-		t.Fatalf("getting relative dir: %s", err)
-	}
-	return relPath
-}
-
-// MustRun fails the test if the command fails; else returns the stdout from the command.
-func (c *TestClient) MustRun(t *testing.T, subcmd string, f *sousFlags, args ...string) string {
-	t.Helper()
-	executed, err := c.Run(t, subcmd, f, args...)
-	if err != nil {
-		t.Logf("Command failed: %s; output:\n%s", executed, executed.Combined)
-		t.Fatal(err)
-	}
-	return executed.Stdout.String()
-}
-
-func (c *TestClient) MustFail(t *testing.T, subcmd string, f *sousFlags, args ...string) {
-	t.Helper()
-	_, err := c.Run(t, subcmd, f, args...)
-	if err == nil {
-		t.Fatalf("command should have failed: sous %s", args)
-	}
-	_, ok := err.(*exec.ExitError)
-	if !ok {
-		t.Fatalf("want non-zero exit code (exec.ExecError); was a %T: %s", err, err)
-	}
 }
 
 // TransformManifest applies each of transforms in order to the retrieved
@@ -283,7 +107,7 @@ func (c *TestClient) TransformManifest(t *testing.T, flags *sousFlags, transform
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
-	manifestSetCmd := c.ConfigureCommand(t, "manifest set", flags)
+	manifestSetCmd := c.configureCommand(t, "manifest set", flags)
 	defer manifestSetCmd.Cancel()
 	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
 	if err := manifestSetCmd.runWithTimeout(3 * time.Minute); err != nil {
