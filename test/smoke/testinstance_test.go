@@ -128,7 +128,9 @@ func (i *Instance) Start(t *testing.T) {
 				return
 			}
 			if !ps.Exited() {
-				rtLog("SERVER DID NOT EXIT: %s", id) // TODO SS: Remove this condition.
+				// NOTE SS: This condition should not be possible, since after
+				// calling Wait, the process should have exited. But it hasn't.
+				rtLog("SERVER DID NOT EXIT: %s", id)
 				return
 			}
 			if ps.Success() {
