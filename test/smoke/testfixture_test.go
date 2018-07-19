@@ -29,6 +29,7 @@ type TestFixture struct {
 	UserEmail     string
 	Projects      ProjectList
 	knownToFail   bool
+	Finished      chan struct{}
 }
 
 var sousBin = mustGetSousBin()
@@ -57,7 +58,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 
 	fcfg.startState = state
 
-	c, err := newBunchOfSousServers(t, baseDir, nextAddr, fcfg)
+	c, err := newBunchOfSousServers(t, baseDir, nextAddr, fcfg, finished)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}
@@ -82,6 +83,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 		TestName:      t.Name(),
 		UserEmail:     userEmail,
 		Projects:      fcfg.projects,
+		Finished:      make(chan struct{}),
 	}
 	client := makeClient(tf, baseDir, sousBin)
 	if err := client.Configure(primaryServer, envDesc.RegistryName(), userEmail); err != nil {
@@ -93,6 +95,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 
 func (f *TestFixture) Teardown(t *testing.T) {
 	t.Helper()
+	close(f.Finished)
 	if shouldStopServers(t) {
 		if err := f.Cluster.Stop(); err != nil {
 			t.Errorf("failed to stop cluster: %s", err)

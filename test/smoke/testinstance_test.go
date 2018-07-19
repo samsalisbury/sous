@@ -27,13 +27,13 @@ type Instance struct {
 	Num int
 }
 
-func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, addr string) (*Instance, error) {
+func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, addr string, finished <-chan struct{}) (*Instance, error) {
 	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i+1))
 	stateDir := path.Join(baseDir, "state")
 
 	name := fmt.Sprintf("instance%d_%s", i, clusterName)
 
-	bin := NewBin(binPath, name, baseDir)
+	bin := NewBin(binPath, name, baseDir, finished)
 	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
 
 	return &Instance{
@@ -109,6 +109,23 @@ func (i *Instance) Start(t *testing.T) {
 	if cmd.Process == nil {
 		panic("cmd.Process nil after cmd.Start")
 	}
+
+	go func() {
+		select {
+		// In this case the process ended before the test finished.
+		case err := <-func() <-chan error {
+			_, err := cmd.Process.Wait()
+			c := make(chan error, 1)
+			c <- err
+			return c
+		}():
+			rtLog("SERVER CRASHED: %s", err)
+			// TODO SS: Dump log tail here as well for analysis.
+		// In this case the process is still running.
+		case <-i.TestFinished:
+			// Do nothing.
+		}
+	}()
 
 	i.Proc = cmd.Process
 	writePID(t, i.Proc.Pid)

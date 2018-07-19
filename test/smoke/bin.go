@@ -30,12 +30,13 @@ type Bin struct {
 	Env map[string]string
 	// MassageArgs is called on the total set of args passed to the command,
 	// prior to execution; the args it returns are what is finally used.
-	MassageArgs func(*testing.T, []string) []string
+	MassageArgs  func(*testing.T, []string) []string
+	TestFinished <-chan struct{}
 }
 
 // NewBin returns a new minimal Bin, all files will be created in subdirectories
 // of baseDir.
-func NewBin(path, name, baseDir string) Bin {
+func NewBin(path, name, baseDir string, finished <-chan struct{}) Bin {
 	binName := filepath.Base(path)
 	if name == "" {
 		name = binName
@@ -49,6 +50,7 @@ func NewBin(path, name, baseDir string) Bin {
 		ConfigDir: filepath.Join(baseDir, "config"),
 		LogDir:    filepath.Join(baseDir, "logs"),
 		//Dir:       filepath.Join(baseDir, "work"),
+		TestFinished: finished,
 	}
 }
 
