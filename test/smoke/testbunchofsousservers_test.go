@@ -38,11 +38,13 @@ func newBunchOfSousServers(t *testing.T, baseDir string, nextFreeAddr func() str
 		return nil, err
 	}
 
+	binPath := sousBin
+
 	count := len(state.Defs.Clusters)
 	instances := make([]*Instance, count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
-		inst, err := makeInstance(t, i, clusterName, baseDir, nextFreeAddr())
+		inst, err := makeInstance(t, binPath, i, clusterName, baseDir, nextFreeAddr())
 		if err != nil {
 			return nil, errors.Wrapf(err, "making test instance %d", i)
 		}

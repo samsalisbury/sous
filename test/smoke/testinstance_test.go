@@ -4,21 +4,20 @@ package smoke
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
-	"os/exec"
 	"path"
 	"testing"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/storage"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/filemap"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 )
 
 type Instance struct {
+	Bin
 	Addr                string
 	StateDir, ConfigDir string
 	ClusterName         string
@@ -28,18 +27,18 @@ type Instance struct {
 	Num int
 }
 
-func makeInstance(t *testing.T, i int, clusterName, baseDir, addr string) (*Instance, error) {
+func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, addr string) (*Instance, error) {
 	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i+1))
 	stateDir := path.Join(baseDir, "state")
-	configDir := path.Join(baseDir, "config")
-	logDir := path.Join(baseDir, "logs")
+
+	bin := NewBin(binPath, "sous", baseDir)
+	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
 
 	return &Instance{
+		Bin:         bin,
 		Addr:        addr,
 		ClusterName: clusterName,
 		StateDir:    stateDir,
-		ConfigDir:   configDir,
-		LogDir:      logDir,
 		Num:         i + 1,
 	}, nil
 }
@@ -62,16 +61,15 @@ func (i *Instance) Configure(config *config.Config, remoteGDMDir string, fcfg fi
 	if err := os.MkdirAll(i.StateDir, 0777); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(i.ConfigDir, 0777); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(i.LogDir, 0777); err != nil {
-		return err
-	}
-	y, err := yaml.Marshal(config)
+
+	configYAML, err := yaml.Marshal(config)
 	if err != nil {
 		return err
 	}
+
+	i.Bin.Configure(filemap.FileMap{
+		"config.yaml": string(configYAML),
+	})
 
 	gdmDir := i.StateDir
 	if err := doCMD(gdmDir+"/..", "git", "clone", remoteGDMDir, gdmDir); err != nil {
@@ -86,66 +84,32 @@ func (i *Instance) Configure(config *config.Config, remoteGDMDir string, fcfg fi
 		return err
 	}
 
-	configFile := path.Join(i.ConfigDir, "config.yaml")
-	if err := ioutil.WriteFile(configFile, y, os.ModePerm); err != nil {
-		return err
-	}
 	return nil
 }
 
-func (i *Instance) RunCmd(t *testing.T, binPath string, args ...string) (*exec.Cmd, error) {
-
-	cmd := exec.Command(binPath, args...)
-	cmd.Env = os.Environ()
-	cmd.Env = append(cmd.Env, fmt.Sprintf("SOUS_CONFIG_DIR=%s", i.ConfigDir))
-	stderrFile, err := os.Create(path.Join(i.LogDir, "stderr"))
-	if err != nil {
-		return cmd, err
-	}
-	stdoutFile, err := os.Create(path.Join(i.LogDir, "stdout"))
-	if err != nil {
-		return cmd, err
-	}
-	combinedFile, err := os.Create(path.Join(i.LogDir, "combined"))
-	if err != nil {
-		return cmd, err
-	}
-
-	//stdout, stderr := prefixWithTestName(t, fmt.Sprintf("instance%d", i.Num))
-	stdout, stderr := ioutil.Discard, ioutil.Discard
-
-	cmd.Stdout = io.MultiWriter(stdout, stdoutFile, combinedFile)
-	cmd.Stderr = io.MultiWriter(stderr, stderrFile, combinedFile)
-
-	return cmd, cmd.Start()
-}
-
-func (i *Instance) Start(t *testing.T, binPath string) error {
+func (i *Instance) Start(t *testing.T) {
+	t.Helper()
 
 	if !quiet() {
 		fmt.Fprintf(os.Stderr, "==> Instance %q config:\n", i.ClusterName)
 	}
-	// Always run 'sous config' even when quiet to validate it.
-	configCMD, err := i.RunCmd(t, binPath, "config")
-	if err != nil {
-		t.Fatalf("setting up 'sous config': %s", err)
-	}
-	if err := configCMD.Wait(); err != nil {
-		t.Fatalf("running 'sous config': %s", err)
-	}
+	// Run 'sous config' to validate it.
+	i.Bin.MustRun(t, "config", nil)
 
 	serverDebug := os.Getenv("SOUS_SERVER_DEBUG") == "true"
-	cmd, err := i.RunCmd(t, binPath, "server", "-listen", i.Addr, "-cluster", i.ClusterName, "autoresolver=false", fmt.Sprintf("-d=%t", serverDebug))
-	if err != nil {
-		return err
+	prepared := i.Bin.Command(t, "server", nil, "-listen", i.Addr, "-cluster", i.ClusterName, "autoresolver=false", fmt.Sprintf("-d=%t", serverDebug))
+
+	cmd := prepared.Cmd
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("error starting server %q: %s", i.Name, err)
 	}
+
 	if cmd.Process == nil {
 		panic("cmd.Process nil after cmd.Start")
 	}
 
 	i.Proc = cmd.Process
 	writePID(t, i.Proc.Pid)
-	return nil
 }
 
 func (i *Instance) Stop() error {

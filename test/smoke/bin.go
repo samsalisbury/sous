@@ -30,6 +30,21 @@ type Bin struct {
 	// MassageArgs is called on the total set of args passed to the command,
 	// prior to execution; the args it returns are what is finally used.
 	MassageArgs func(*testing.T, []string) []string
+	// IncludeOSEnv adds all current OS env vars to each invocation.
+	IncludeOSEnv bool
+}
+
+// NewBin returns a new minimal Bin.
+func NewBin(path, name, baseDir string) Bin {
+	return Bin{
+		BinPath:   path,
+		Name:      name,
+		BaseDir:   baseDir,
+		Env:       map[string]string{},
+		ConfigDir: filepath.Join(baseDir, "config"),
+		LogDir:    filepath.Join(baseDir, "logs"),
+		Dir:       filepath.Join(baseDir, "work"),
+	}
 }
 
 // Configure writes fm files relative to c.ConfigPath and ensures the log
@@ -122,7 +137,8 @@ func newExecutedCMD(i invocation) *ExecutedCMD {
 	}
 }
 
-type cmdWithHooks struct {
+// PreparedCmd is a command ready to run.
+type PreparedCmd struct {
 	invocation
 	Cmd      *exec.Cmd
 	Cancel   func()
@@ -133,13 +149,18 @@ type cmdWithHooks struct {
 
 // Run runs the command.
 func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*ExecutedCMD, error) {
-	i := invocation{name: c.Name, subcmd: subcmd, flags: f, args: args}
-	cmd := c.configureCommand(t, i)
+	cmd := c.Command(t, subcmd, f, args...)
 	err := cmd.runWithTimeout(3 * time.Minute)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
 	return cmd.executed, err
+}
+
+// Command returns the prepared command.
+func (c *Bin) Command(t *testing.T, subcmd string, f Flags, args ...string) *PreparedCmd {
+	i := invocation{name: c.Name, subcmd: subcmd, flags: f, args: args}
+	return c.configureCommand(t, i)
 }
 
 // invocation is the invocation directly from the test, without any formatting
@@ -154,7 +175,7 @@ func (i invocation) String() string {
 	return fmt.Sprintf("%s %s", i.name, strings.Join(i.allArgs(), " "))
 }
 
-func (c *Bin) configureCommand(t *testing.T, i invocation) *cmdWithHooks {
+func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	t.Helper()
 	cmd, cancel := c.Cmd(t, i)
 
@@ -191,7 +212,7 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *cmdWithHooks {
 		closeFiles(t, outFile, errFile, combinedFile)
 	}
 
-	return &cmdWithHooks{
+	return &PreparedCmd{
 		Cmd:        cmd,
 		Cancel:     cancel,
 		PreRun:     preRun,
@@ -201,7 +222,7 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *cmdWithHooks {
 	}
 }
 
-func (c *cmdWithHooks) runWithTimeout(timeout time.Duration) error {
+func (c *PreparedCmd) runWithTimeout(timeout time.Duration) error {
 	defer c.PostRun()
 	c.PreRun()
 	errCh := make(chan error, 1)
