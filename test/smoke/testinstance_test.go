@@ -128,7 +128,7 @@ func (i *Instance) Start(t *testing.T) {
 				return
 			}
 			if !ps.Exited() {
-				rtLog("SERVER DID NOT EXIT: %s") // TODO SS: Remove this condition.
+				rtLog("SERVER DID NOT EXIT: %s", id) // TODO SS: Remove this condition.
 				return
 			}
 			if ps.Success() {
