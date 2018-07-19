@@ -206,11 +206,12 @@ func (c *cmdWithHooks) runWithTimeout(timeout time.Duration) error {
 	c.PreRun()
 	errCh := make(chan error, 1)
 	go func() {
-		errCh <- c.Cmd.Run()
-	}()
-	go func() {
-		<-time.After(timeout)
-		errCh <- fmt.Errorf("command timed out after %s: %s", timeout, c)
+		select {
+		case errCh <- c.Cmd.Run():
+		case <-time.After(timeout):
+			errCh <- fmt.Errorf("command timed out after %s: %s", timeout, c)
+			c.Cancel()
+		}
 	}()
 	return <-errCh
 }
