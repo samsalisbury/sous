@@ -111,18 +111,34 @@ func (i *Instance) Start(t *testing.T) {
 	}
 
 	go func() {
+		id := fmt.Sprintf("%s:%s", t.Name(), i.Name)
+
+		var ps *os.ProcessState
 		select {
 		// In this case the process ended before the test finished.
 		case err := <-func() <-chan error {
-			_, err := cmd.Process.Wait()
+			var err error
+			ps, err = cmd.Process.Wait()
 			c := make(chan error, 1)
 			c <- err
 			return c
 		}():
-			rtLog("SERVER CRASHED: %s", err)
+			if err != nil {
+				rtLog("SERVER CRASHED: %s: %s; process state: %s", id, err, ps)
+				return
+			}
+			if !ps.Exited() {
+				rtLog("SERVER DID NOT EXIT: %s") // TODO SS: Remove this condition.
+				return
+			}
+			if ps.Success() {
+				rtLog("SERVER STOPPED: %s (exit code 0)", id)
+			}
 			// TODO SS: Dump log tail here as well for analysis.
+			rtLog("SERVER CRASHED: TODO: get exit code and log tail")
 		// In this case the process is still running.
 		case <-i.TestFinished:
+			rtLog("OK: SERVER STILL RUNNING AFTER TEST %s", id)
 			// Do nothing.
 		}
 	}()

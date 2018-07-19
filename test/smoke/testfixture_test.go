@@ -58,6 +58,8 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 
 	fcfg.startState = state
 
+	finished := make(chan struct{})
+
 	c, err := newBunchOfSousServers(t, baseDir, nextAddr, fcfg, finished)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
@@ -83,7 +85,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 		TestName:      t.Name(),
 		UserEmail:     userEmail,
 		Projects:      fcfg.projects,
-		Finished:      make(chan struct{}),
+		Finished:      finished,
 	}
 	client := makeClient(tf, baseDir, sousBin)
 	if err := client.Configure(primaryServer, envDesc.RegistryName(), userEmail); err != nil {
