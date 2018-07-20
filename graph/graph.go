@@ -636,25 +636,15 @@ func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
 
 func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm distStateManager) (*ServerStateManager, error) {
 	var primary, secondary sous.StateManager
-	var perr, serr error
+	var perr error
 	primary = gm.StateManager
-	secondary = dm.StateManager
 	perr = gm.Error
-	serr = dm.Error
-
-	if c.DatabasePrimary {
-		primary, perr, secondary, serr = secondary, serr, primary, perr
-		logging.InfoMsg(log, "database is primary datastore")
-	} else {
-		logging.InfoMsg(log, "git is primary datastore")
-	}
 
 	if perr != nil {
 		return nil, perr
 	}
 
 	//Temorarily adding logger as secondary (TODO://Fix distributed state manager and timeouts associated with updates)
-	//logging.ReportError(log, errors.Wrapf(serr, "connecting to database with %#v", c.Database))
 	secondary = storage.NewLogOnlyStateManager(log.Child("secondary"))
 
 	duplex := storage.NewDuplexStateManager(primary, secondary, log.Child("duplex-state"))
