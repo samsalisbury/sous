@@ -653,10 +653,9 @@ func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, d
 		return nil, perr
 	}
 
-	if serr != nil { // because DB Err wasn't nil, or distributed didn't set up well
-		logging.ReportError(log, errors.Wrapf(serr, "connecting to database with %#v", c.Database))
-		secondary = storage.NewLogOnlyStateManager(log.Child("secondary"))
-	}
+	//Temorarily adding logger as secondary (TODO://Fix distributed state manager and timeouts associated with updates)
+	logging.ReportError(log, errors.Wrapf(serr, "connecting to database with %#v", c.Database))
+	secondary = storage.NewLogOnlyStateManager(log.Child("secondary"))
 
 	duplex := storage.NewDuplexStateManager(primary, secondary, log.Child("duplex-state"))
 	return &ServerStateManager{StateManager: duplex}, nil
