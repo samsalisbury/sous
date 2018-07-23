@@ -33,7 +33,7 @@ func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, add
 	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i+1))
 	stateDir := path.Join(baseDir, "state")
 
-	name := fmt.Sprintf("instance%d_%s", i, clusterName)
+	name := fmt.Sprintf("instance%d", i)
 
 	bin := NewBin(binPath, name, baseDir, finished)
 	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
@@ -171,6 +171,10 @@ func (i *Instance) DumpTail(t *testing.T, n int) {
 }
 
 func (i *Instance) Stop() error {
+
+	// TODO SS: Remove this line; it's for temporary debugging only.
+	return nil
+
 	if i.Proc == nil {
 		return fmt.Errorf("cannot stop instance %q (not started)", i.Num)
 	}
