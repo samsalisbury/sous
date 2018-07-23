@@ -28,6 +28,10 @@ func quiet() bool {
 	return os.Getenv("SMOKE_TEST_QUIET") == "YES"
 }
 
+func rtLog(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", a...)
+}
+
 func getEnvDesc() desc.EnvDesc {
 	descPath := os.Getenv("SOUS_QA_DESC")
 	if descPath == "" {
@@ -306,49 +310,44 @@ NEXT_PORT:
 	return addrs
 }
 
+func prefixedPipe(prefix string) (io.Writer, error) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	go func() {
+		defer func() {
+			if err := r.Close(); err != nil {
+				rtLog("Failed to close reader: %s", err)
+			}
+			if err := w.Close(); err != nil {
+				rtLog("Failed to close writer: %s", err)
+			}
+		}()
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			if err := scanner.Err(); err != nil {
+				rtLog("Error prefixing: %s", err)
+			}
+			fmt.Fprintf(os.Stdout, "%s%s\n", prefix, scanner.Text())
+		}
+	}()
+	return w, nil
+}
+
 func prefixWithTestName(t *testing.T, label string) (prefixedOut, prefixedErr io.Writer) {
 	t.Helper()
-	outReader, outWriter, err := os.Pipe()
+
+	outPrefix := fmt.Sprintf("%s:%s:stdout> ", t.Name(), label)
+	errPrefix := fmt.Sprintf("%s:%s:stderr> ", t.Name(), label)
+
+	stdout, err := prefixedPipe(outPrefix)
 	if err != nil {
 		t.Fatalf("Setting up output prefix: %s", err)
 	}
-	errReader, errWriter, err := os.Pipe()
+	stderr, err := prefixedPipe(errPrefix)
 	if err != nil {
 		t.Fatalf("Setting up output prefix: %s", err)
 	}
-	go func() {
-		defer func() {
-			if err := outReader.Close(); err != nil {
-				t.Fatalf("Failed to close outReader: %s", err)
-			}
-			if err := outWriter.Close(); err != nil {
-				t.Fatalf("Failed to close outWriter: %s", err)
-			}
-		}()
-		scanner := bufio.NewScanner(outReader)
-		for scanner.Scan() {
-			if err := scanner.Err(); err != nil {
-				t.Fatalf("Error prefixing stdout: %s", err)
-			}
-			fmt.Fprintf(os.Stdout, "%s:%s:stdout> %s\n", t.Name(), label, scanner.Text())
-		}
-	}()
-	go func() {
-		defer func() {
-			if err := errReader.Close(); err != nil {
-				t.Fatalf("Failed to close errReader: %s", err)
-			}
-			if err := errWriter.Close(); err != nil {
-				t.Fatalf("Failed to close errWriter: %s", err)
-			}
-		}()
-		scanner := bufio.NewScanner(errReader)
-		for scanner.Scan() {
-			if err := scanner.Err(); err != nil {
-				t.Fatalf("Error prefixing stderr: %s", err)
-			}
-			fmt.Fprintf(os.Stderr, "%s:%s:stderr> %s\n", t.Name(), label, scanner.Text())
-		}
-	}()
-	return outWriter, errWriter
+	return stdout, stderr
 }

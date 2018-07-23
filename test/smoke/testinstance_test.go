@@ -4,8 +4,11 @@ package smoke
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -118,9 +121,11 @@ func (i *Instance) Start(t *testing.T) {
 		// In this case the process ended before the test finished.
 		case err := <-func() <-chan error {
 			var err error
-			ps, err = cmd.Process.Wait()
 			c := make(chan error, 1)
-			c <- err
+			go func() {
+				ps, err = cmd.Process.Wait()
+				c <- err
+			}()
 			return c
 		}():
 			if err != nil {
@@ -137,7 +142,8 @@ func (i *Instance) Start(t *testing.T) {
 				rtLog("SERVER STOPPED: %s (exit code 0)", id)
 			}
 			// TODO SS: Dump log tail here as well for analysis.
-			rtLog("SERVER CRASHED: TODO: get exit code and log tail")
+			rtLog("SERVER CRASHED: %s; logs follow:", id)
+			i.DumpTail(t, 10)
 		// In this case the process is still running.
 		case <-i.TestFinished:
 			rtLog("OK: SERVER STILL RUNNING AFTER TEST %s", id)
@@ -147,6 +153,22 @@ func (i *Instance) Start(t *testing.T) {
 
 	i.Proc = cmd.Process
 	writePID(t, i.Proc.Pid)
+}
+
+func (i *Instance) DumpTail(t *testing.T, n int) {
+	path := filepath.Join(i.LogDir, "combined")
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		rtLog("ERROR unable to read log file %s: %s", path, err)
+	}
+	lines := strings.Split(string(b), "\n")
+	out := strings.Join(lines[len(lines)-n:], "\n") + "\n"
+	prefix := fmt.Sprintf("%s:%s:combined> ", t.Name(), i.Name)
+	outPipe, err := prefixedPipe(prefix)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Fprint(outPipe, out)
 }
 
 func (i *Instance) Stop() error {

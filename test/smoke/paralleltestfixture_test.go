@@ -40,10 +40,6 @@ type (
 	}
 )
 
-func rtLog(format string, a ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", a...)
-}
-
 func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
 	if err := stopPIDs(); err != nil {
 		panic(err)
