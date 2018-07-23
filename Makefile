@@ -396,17 +396,17 @@ test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TE
 	SMOKE_TEST_QUIET=$(SMOKE_TEST_QUIET) \
 	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags 'smoke netcgo' -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
-.PHONY: test-smoke
-test-smoke:
-	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
-
 .PHONY: test-smoke-ls
-test-smoke-ls:
+test-smoke-ls: ## List top-level smoke tests and matrix dimensions.
 	@go test -v -tags smoke ./test/smoke -ls -dimensions | grep -E '(^Dimension |^Matrix dimensions|^Test[A-Za-z0-9_]+/)'
 
-.PHONY: test-smoke-quiet
-test-smoke-quiet:
-	SMOKE_TEST_QUIET=YES $(MAKE) test-smoke
+.PHONY: test-smoke
+test-smoke: ## Run smoke tests (showing client commands run only).
+	SMOKE_TEST_QUIET=YES EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
+
+.PHONY: test-smoke-v
+test-smoke-v: ## Verbose smoke tests (print results of client commands).
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
 
 .PHONY: docker-is-working
 docker-is-working:
