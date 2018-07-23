@@ -25,7 +25,6 @@ type Instance struct {
 	StateDir, ConfigDir string
 	ClusterName         string
 	Proc                *os.Process
-	LogDir              string
 	// Num is the instance number for display purposes.
 	Num int
 }
