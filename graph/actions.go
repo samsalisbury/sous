@@ -193,15 +193,26 @@ func (di *SousGraph) GetDeploy(opts DeployActionOpts) (actions.Action, error) {
 		LogSink          LogSink
 		User             sous.User
 		Config           LocalSousConfig
+		TraceID          sous.TraceID
 	}{}
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
 	rf := (*sous.ResolveFilter)(scoop.ResolveFilter)
+
+	client := scoop.HTTP.HTTPClient
+	if len(os.Getenv("SOUS_USE_SOUS_SERVER")) > 0 {
+		c, err := restful.NewClient(scoop.Config.Config.Server, scoop.LogSink.LogSink.Child(opts.DFF.Cluster+".http-client"), map[string]string{"OT-RequestId": string(scoop.TraceID)})
+		if err != nil {
+			return nil, err
+		}
+		client = c
+	}
+
 	did := sous.DeploymentID(scoop.DeploymentID)
 	return &actions.Deploy{
 		ResolveFilter:      rf,
-		HTTPClient:         scoop.HTTP.HTTPClient,
+		HTTPClient:         client,
 		TargetDeploymentID: did,
 		StateReader:        scoop.HTTPStateManager,
 		LogSink:            scoop.LogSink.LogSink.Child("deploy", rf, did),
