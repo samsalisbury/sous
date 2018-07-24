@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 
 	if runRealTests {
 		pfs = newParallelTestFixtureSet(PTFOpts{
-			NumFreeAddrs: 256,
+			// TODO SS: Remove this?
 		})
 		resetSingularity()
 	}

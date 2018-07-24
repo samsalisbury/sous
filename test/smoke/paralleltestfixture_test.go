@@ -13,9 +13,7 @@ import (
 type (
 	// PTFOpts are options for a ParallelTestFixture.
 	PTFOpts struct {
-		// NumFreeAddrs determines how many free addresses are guaranteed by this
-		// test fixture.
-		NumFreeAddrs int
+		// TODO SS: Remove this?
 	}
 
 	ParallelTestFixture struct {
@@ -43,8 +41,6 @@ func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
 	if err := stopPIDs(); err != nil {
 		panic(err)
 	}
-	numFreeAddrs := opts.NumFreeAddrs
-	var nextAddrIndex int64
 	nextAddr := func(n int) []string {
 		return freePortAddrs("127.0.0.1", n, 49152, 65535)
 	}
