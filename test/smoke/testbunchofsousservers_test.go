@@ -1,5 +1,3 @@
-//+build smoke
-
 package smoke
 
 import (
