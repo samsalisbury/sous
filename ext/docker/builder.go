@@ -154,7 +154,11 @@ func (b *Builder) pushToRegistry(bp *sous.BuildProduct) error {
 func (b *Builder) recordName(bp *sous.BuildProduct) error {
 	sv := bp.Source
 	logging.DebugConsole(b.log, fmt.Sprintf("[recording \"%s\" as the docker name for \"%s\"]", bp.DigestName, sv.String()))
-	return b.ImageMapper.Insert(sv, bp.BuildArtifact())
+	if err := b.ImageMapper.Insert(sv, bp.BuildArtifact()); err != nil {
+		messages.ReportLogFieldsMessage(fmt.Sprintf("Failed to record docker image %s:%s in sous local name cache: %s", bp.Source.String(), bp.DigestName, err.Error()), logging.WarningLevel, b.log, bp, err)
+	}
+	//this is not a breaking error
+	return nil
 }
 
 // VersionTag computes an image tag from a SourceVersion's version
