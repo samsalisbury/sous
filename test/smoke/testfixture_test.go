@@ -34,7 +34,7 @@ type TestFixture struct {
 
 var sousBin = mustGetSousBin()
 
-func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixture, nextAddr func() string, fcfg fixtureConfig) *TestFixture {
+func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixture, getAddrs func(int) []string, fcfg fixtureConfig) *TestFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {
@@ -60,7 +60,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 
 	finished := make(chan struct{})
 
-	c, err := newBunchOfSousServers(t, baseDir, nextAddr, fcfg, finished)
+	c, err := newBunchOfSousServers(t, baseDir, getAddrs, fcfg, finished)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}

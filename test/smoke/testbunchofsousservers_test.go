@@ -26,7 +26,7 @@ type TestBunchOfSousServers struct {
 	Stop         func() error
 }
 
-func newBunchOfSousServers(t *testing.T, baseDir string, nextFreeAddr func() string, fcfg fixtureConfig, finished <-chan struct{}) (*TestBunchOfSousServers, error) {
+func newBunchOfSousServers(t *testing.T, baseDir string, getAddrs func(int) []string, fcfg fixtureConfig, finished <-chan struct{}) (*TestBunchOfSousServers, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
@@ -42,9 +42,10 @@ func newBunchOfSousServers(t *testing.T, baseDir string, nextFreeAddr func() str
 
 	count := len(state.Defs.Clusters)
 	instances := make([]*Instance, count)
+	addrs := getAddrs(count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
-		inst, err := makeInstance(t, binPath, i, clusterName, baseDir, nextFreeAddr(), finished)
+		inst, err := makeInstance(t, binPath, i, clusterName, baseDir, addrs[i], finished)
 		if err != nil {
 			return nil, errors.Wrapf(err, "making test instance %d", i)
 		}

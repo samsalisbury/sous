@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"testing"
 )
 
@@ -22,7 +21,7 @@ type (
 	ParallelTestFixture struct {
 		T                  *testing.T
 		Matrix             MatrixDef
-		NextAddr           func() string
+		GetAddrs           func(int) []string
 		testNames          map[string]struct{}
 		testNamesMu        sync.RWMutex
 		testNamesPassed    map[string]struct{}
@@ -34,7 +33,7 @@ type (
 	}
 
 	ParallelTestFixtureSet struct {
-		NextAddr func() string
+		GetAddrs func(int) []string
 		mu       sync.Mutex
 		fixtures map[string]*ParallelTestFixture
 	}
@@ -45,17 +44,12 @@ func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
 		panic(err)
 	}
 	numFreeAddrs := opts.NumFreeAddrs
-	freeAddrs := freePortAddrs("127.0.0.1", numFreeAddrs, 49152, 65535)
 	var nextAddrIndex int64
-	nextAddr := func() string {
-		i := atomic.AddInt64(&nextAddrIndex, 1)
-		if i == int64(numFreeAddrs) {
-			panic("ran out of free ports; increase numFreeAddrs")
-		}
-		return freeAddrs[i]
+	nextAddr := func(n int) []string {
+		return freePortAddrs("127.0.0.1", n, 49152, 65535)
 	}
 	return &ParallelTestFixtureSet{
-		NextAddr: nextAddr,
+		GetAddrs: nextAddr,
 		fixtures: map[string]*ParallelTestFixture{},
 	}
 }
@@ -75,7 +69,7 @@ func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m Matrix
 	pf := &ParallelTestFixture{
 		T:                t,
 		Matrix:           m,
-		NextAddr:         pfs.NextAddr,
+		GetAddrs:         pfs.GetAddrs,
 		testNames:        map[string]struct{}{},
 		testNamesPassed:  map[string]struct{}{},
 		testNamesSkipped: map[string]struct{}{},
@@ -210,5 +204,5 @@ func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConf
 	t.Helper()
 	pf.recordTestStarted(t)
 	envDesc := getEnvDesc()
-	return newTestFixture(t, envDesc, pf, pf.NextAddr, fcfg)
+	return newTestFixture(t, envDesc, pf, pf.GetAddrs, fcfg)
 }
