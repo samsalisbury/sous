@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
+## [Unreleased](//github.com/opentable/sous/compare/0.5.114...master)
+### Changed
+* Client: Create a way for deploy to bypass cluster configuration for http client
+  obtain url for server
+* Server: On sous build, don't treat failure to update name cache as an error, just log
+
 ## [0.5.114](//github.com/opentable/sous/compare/0.5.113...0.5.114)
 ### Changed
 * Server: Default endpoint / implemented
