@@ -9,12 +9,7 @@ import (
 )
 
 type (
-	// PTFOpts are options for a ParallelTestFixture.
-	PTFOpts struct {
-		// TODO SS: Remove this?
-	}
-
-	ParallelTestFixture struct {
+	parallelTestFixture struct {
 		T                  *testing.T
 		Matrix             matrixDef
 		GetAddrs           func(int) []string
@@ -28,27 +23,27 @@ type (
 		testNamesFailedMu  sync.Mutex
 	}
 
-	ParallelTestFixtureSet struct {
+	parallelTestFixtureSet struct {
 		GetAddrs func(int) []string
 		mu       sync.Mutex
-		fixtures map[string]*ParallelTestFixture
+		fixtures map[string]*parallelTestFixture
 	}
 )
 
-func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
+func newParallelTestFixtureSet() *parallelTestFixtureSet {
 	if err := stopPIDs(); err != nil {
 		panic(err)
 	}
-	nextAddr := func(n int) []string {
+	getAddrs := func(n int) []string {
 		return freePortAddrs("127.0.0.1", n, 49152, 65535)
 	}
-	return &ParallelTestFixtureSet{
-		GetAddrs: nextAddr,
-		fixtures: map[string]*ParallelTestFixture{},
+	return &parallelTestFixtureSet{
+		GetAddrs: getAddrs,
+		fixtures: map[string]*parallelTestFixture{},
 	}
 }
 
-func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrixDef) *ParallelTestFixture {
+func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrixDef) *parallelTestFixture {
 	if flags.printMatrix {
 		matrix := m.FixtureConfigs()
 		for _, m := range matrix {
@@ -60,7 +55,7 @@ func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 	t.Helper()
 	t.Parallel()
 	rtLog("Running     %s", t.Name())
-	pf := &ParallelTestFixture{
+	pf := &parallelTestFixture{
 		T:                t,
 		Matrix:           m,
 		GetAddrs:         pfs.GetAddrs,
@@ -75,7 +70,7 @@ func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 	return pf
 }
 
-func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
+func (pf *parallelTestFixture) recordTestStarted(t *testing.T) {
 	t.Helper()
 	name := t.Name()
 	pf.testNamesMu.Lock()
@@ -92,7 +87,7 @@ type PTest struct {
 	Test func(*testing.T, *testFixture)
 }
 
-func (pf *ParallelTestFixture) RunMatrix(tests ...PTest) {
+func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
 	for _, c := range pf.Matrix.FixtureConfigs() {
 		pf.T.Run(c.Desc, func(t *testing.T) {
 			c := c
@@ -110,7 +105,7 @@ func (pf *ParallelTestFixture) RunMatrix(tests ...PTest) {
 	}
 }
 
-func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
+func (pf *parallelTestFixture) recordTestStatus(t *testing.T) {
 	t.Helper()
 	name := t.Name()
 	pf.testNamesMu.RLock()
@@ -148,7 +143,7 @@ func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 	}
 }
 
-func (pfs *ParallelTestFixtureSet) PrintSummary() {
+func (pfs *parallelTestFixtureSet) PrintSummary() {
 	var total, passed, skipped, failed, missing int
 	for _, pf := range pfs.fixtures {
 		t, p, s, f, m := pf.PrintSummary()
@@ -162,7 +157,7 @@ func (pfs *ParallelTestFixtureSet) PrintSummary() {
 	fmt.Fprintln(os.Stdout, summary)
 }
 
-func (pf *ParallelTestFixture) PrintSummary() (total, passed, skipped, failed, missing int) {
+func (pf *parallelTestFixture) PrintSummary() (total, passed, skipped, failed, missing int) {
 	t := pf.T
 	t.Helper()
 	total = len(pf.testNames)
@@ -194,7 +189,7 @@ func (pf *ParallelTestFixture) PrintSummary() (total, passed, skipped, failed, m
 	return total, passed, skipped, failed, missing
 }
 
-func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {
+func (pf *parallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
 	envDesc := getEnvDesc()

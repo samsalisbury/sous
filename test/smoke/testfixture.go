@@ -22,7 +22,7 @@ type testFixture struct {
 	// ClusterSuffix is used to add a suffix to each generated cluster name.
 	// This can be used to segregate parallel tests.
 	ClusterSuffix string
-	Parent        *ParallelTestFixture
+	Parent        *parallelTestFixture
 	TestName      string
 	UserEmail     string
 	Projects      projectList
@@ -32,7 +32,7 @@ type testFixture struct {
 
 var sousBin = mustGetSousBin()
 
-func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixture, getAddrs func(int) []string, fcfg fixtureConfig) *testFixture {
+func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixture, getAddrs func(int) []string, fcfg fixtureConfig) *testFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {

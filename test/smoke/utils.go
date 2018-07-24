@@ -13,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -274,12 +275,16 @@ func closeFiles(t *testing.T, fs ...*os.File) {
 }
 
 var lastPort int
+var freePortsMu sync.Mutex
+var usedPorts = map[int]struct{}{}
 
 // freePortAddrs returns n listenable addresses on the ip provided in the
 // range min-max. Note that it does not guarantee they are still free by the
 // time you come to bind to them, but makes that more likely by binding and then
 // unbinding from them.
 func freePortAddrs(ip string, n, min, max int) []string {
+	freePortsMu.Lock()
+	defer freePortsMu.Unlock()
 	ports := make(map[int]net.Listener, n)
 	addrs := make([]string, n)
 	if lastPort < min || lastPort > max {
@@ -293,6 +298,7 @@ func freePortAddrs(ip string, n, min, max int) []string {
 		lastPort = p
 		addrs[i] = addr
 		ports[p] = listener
+		usedPorts[p] = struct{}{}
 	}
 	// Now release them all. It's now a race to get our desired things
 	// listening on these addresses.
@@ -311,9 +317,17 @@ func oneFreePort(ip string, start, min, max int) (int, string, net.Listener, err
 		if port > max {
 			port = min
 		}
+		if _, ok := usedPorts[port]; ok {
+			continue
+		}
 		addr := fmt.Sprintf("%s:%d", ip, port)
 		listener, err := net.Listen("tcp", addr)
 		if err != nil {
+			if listener != nil {
+				if err := listener.Close(); err != nil {
+					return 0, "", nil, fmt.Errorf("failed to close listener: %s", err)
+				}
+			}
 			continue
 		}
 		return port, addr, listener, nil

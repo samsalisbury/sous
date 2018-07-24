@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-var pfs *ParallelTestFixtureSet
+var pfs *parallelTestFixtureSet
 
 func Matrix() matrixDef {
 	m := newMatrix()
@@ -33,9 +33,7 @@ func TestMain(m *testing.M) {
 	}
 
 	if runRealTests {
-		pfs = newParallelTestFixtureSet(PTFOpts{
-			// TODO SS: Remove this?
-		})
+		pfs = newParallelTestFixtureSet()
 		resetSingularity()
 	}
 	exitCode := m.Run()
