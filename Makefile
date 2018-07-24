@@ -73,8 +73,12 @@ SMOKE_TEST_TIMEOUT ?= 30m
 
 # install-dev uses DEV_DESC and DATE to make a git described, timestamped dev build.
 DEV_DESC ?= $(shell git describe)
+ifeq ($(DEV_DESC),)
+DEV_DESC := 0.0.0-no-git-tags-found
+else
 ifneq ($(shell echo $(DEV_DESC) | grep -E '^\d+\.\d+\.\d+'),$(DEV_DESC))
 DEV_DESC := 0.0.0-$(DEV_DESC)
+endif
 endif
 
 DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
