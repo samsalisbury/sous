@@ -1,12 +1,15 @@
 package graph
 
 import (
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
@@ -201,7 +204,8 @@ func (di *SousGraph) GetDeploy(opts DeployActionOpts) (actions.Action, error) {
 	rf := (*sous.ResolveFilter)(scoop.ResolveFilter)
 
 	client := scoop.HTTP.HTTPClient
-	if len(os.Getenv("SOUS_USE_SOUS_SERVER")) > 0 {
+	if _, exists := os.LookupEnv("SOUS_USE_SOUS_SERVER"); exists == true {
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("TraceID: %s", scoop.TraceID), logging.DebugLevel, scoop.LogSink.LogSink, scoop.TraceID)
 		c, err := restful.NewClient(scoop.Config.Config.Server, scoop.LogSink.LogSink.Child(opts.DFF.Cluster+".http-client"), map[string]string{"OT-RequestId": string(scoop.TraceID)})
 		if err != nil {
 			return nil, err
