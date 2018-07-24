@@ -22,7 +22,7 @@ type TestBunchOfSousServers struct {
 	BaseDir      string
 	RemoteGDMDir string
 	Count        int
-	Instances    []*Instance
+	Instances    []*SousServer
 	Stop         func() error
 }
 
@@ -41,7 +41,7 @@ func newBunchOfSousServers(t *testing.T, baseDir string, getAddrs func(int) []st
 	binPath := sousBin
 
 	count := len(state.Defs.Clusters)
-	instances := make([]*Instance, count)
+	instances := make([]*SousServer, count)
 	addrs := getAddrs(count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
@@ -145,7 +145,7 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, f
 }
 
 func (c *TestBunchOfSousServers) Start(t *testing.T, sousBin string) error {
-	var started []*Instance
+	var started []*SousServer
 	// Set the stop func first in case starting returns early.
 	c.Stop = func() error {
 		var errs []string
