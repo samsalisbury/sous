@@ -171,10 +171,6 @@ func (i *Instance) DumpTail(t *testing.T, n int) {
 }
 
 func (i *Instance) Stop() error {
-
-	// TODO SS: Remove this line; it's for temporary debugging only.
-	return nil
-
 	if i.Proc == nil {
 		return fmt.Errorf("cannot stop instance %q (not started)", i.Num)
 	}
