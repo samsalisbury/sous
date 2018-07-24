@@ -105,7 +105,7 @@ func (i *Instance) Start(t *testing.T) {
 
 	cmd := prepared.Cmd
 	if err := cmd.Start(); err != nil {
-		t.Fatalf("error starting server %q: %s", i.Name, err)
+		t.Fatalf("error starting server %q: %s", i.InstanceName, err)
 	}
 
 	if cmd.Process == nil {
@@ -113,7 +113,7 @@ func (i *Instance) Start(t *testing.T) {
 	}
 
 	go func() {
-		id := fmt.Sprintf("%s:%s", t.Name(), i.Name)
+		id := fmt.Sprintf("%s:%s", t.Name(), i.InstanceName)
 
 		var ps *os.ProcessState
 		select {
@@ -142,7 +142,7 @@ func (i *Instance) Start(t *testing.T) {
 			}
 			// TODO SS: Dump log tail here as well for analysis.
 			rtLog("SERVER CRASHED: %s; logs follow:", id)
-			i.DumpTail(t, 10)
+			i.DumpTail(t, 50)
 		// In this case the process is still running.
 		case <-i.TestFinished:
 			rtLog("OK: SERVER STILL RUNNING AFTER TEST %s", id)
@@ -162,7 +162,7 @@ func (i *Instance) DumpTail(t *testing.T, n int) {
 	}
 	lines := strings.Split(string(b), "\n")
 	out := strings.Join(lines[len(lines)-n:], "\n") + "\n"
-	prefix := fmt.Sprintf("%s:%s:combined> ", t.Name(), i.Name)
+	prefix := fmt.Sprintf("%s:%s:combined> ", t.Name(), i.InstanceName)
 	outPipe, err := prefixedPipe(prefix)
 	if err != nil {
 		t.Fatal(err)

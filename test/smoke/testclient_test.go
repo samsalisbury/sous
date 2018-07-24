@@ -27,16 +27,10 @@ type TestClient struct {
 }
 
 func makeClient(fixture *TestFixture, baseDir, sousBin string) *TestClient {
-	baseDir = path.Join(baseDir, "client1")
+	clientName := "client1"
+	baseDir = path.Join(baseDir, clientName)
 	c := &TestClient{
-		Bin: Bin{
-			Name:      "client1",
-			BaseDir:   baseDir,
-			BinPath:   sousBin,
-			ConfigDir: path.Join(baseDir, "config"),
-			LogDir:    path.Join(baseDir, "logs"),
-			Env:       map[string]string{},
-		},
+		Bin:     NewBin(sousBin, clientName, baseDir, fixture.Finished),
 		Fixture: fixture,
 	}
 	c.Bin.MassageArgs = c.insertClusterSuffix

@@ -18,12 +18,12 @@ import (
 
 // Bin represents a binary under test.
 type Bin struct {
-	Name      string
-	BinName   string
-	BaseDir   string
-	BinPath   string
-	ConfigDir string
-	LogDir    string
+	InstanceName string
+	BinName      string
+	BaseDir      string
+	BinPath      string
+	ConfigDir    string
+	LogDir       string
 	// Dir is the working directory.
 	Dir string
 	// Env are persistent env vars to pass to invocations.
@@ -42,13 +42,13 @@ func NewBin(path, name, baseDir string, finished <-chan struct{}) Bin {
 		name = binName
 	}
 	return Bin{
-		BinPath:   path,
-		Name:      name,
-		BinName:   binName,
-		BaseDir:   baseDir,
-		Env:       map[string]string{},
-		ConfigDir: filepath.Join(baseDir, "config"),
-		LogDir:    filepath.Join(baseDir, "logs"),
+		BinPath:      path,
+		InstanceName: name,
+		BinName:      binName,
+		BaseDir:      baseDir,
+		Env:          map[string]string{},
+		ConfigDir:    filepath.Join(baseDir, "config"),
+		LogDir:       filepath.Join(baseDir, "logs"),
 		//Dir:       filepath.Join(baseDir, "work"),
 		TestFinished: finished,
 	}
@@ -198,10 +198,8 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	stdoutWriters := []io.Writer{outFile, combinedFile, executed.Stdout, executed.Combined}
 	stderrWriters := []io.Writer{errFile, combinedFile, executed.Stderr, executed.Combined}
 
-	clientName := "client1"
-
 	if !quiet() {
-		stdout, stderr := prefixWithTestName(t, clientName)
+		stdout, stderr := prefixWithTestName(t, c.InstanceName)
 		stdoutWriters = append(stdoutWriters, stdout)
 		stderrWriters = append(stderrWriters, stderr)
 	}
@@ -210,7 +208,7 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	cmd.Stderr = io.MultiWriter(stderrWriters...)
 
 	preRun := func() {
-		fmt.Fprintf(os.Stderr, "%s:%s:command> %s\n", t.Name(), clientName, i)
+		fmt.Fprintf(os.Stderr, "%s:%s:command> %s\n", t.Name(), c.InstanceName, i)
 		var relPath string
 		if cmd.Dir != "" {
 			relPath = " " + mustGetRelPath(t, c.BaseDir, cmd.Dir)
