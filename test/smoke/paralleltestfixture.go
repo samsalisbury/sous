@@ -96,8 +96,8 @@ func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
 				pt := pt
 				t.Run(pt.Name, func(t *testing.T) {
 					f := pf.NewIsolatedFixture(t, c)
-					defer f.ReportStatus(t)
 					defer f.Teardown(t)
+					defer f.ReportStatus(t)
 					pt.Test(t, f)
 				})
 			}
