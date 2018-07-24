@@ -13,26 +13,26 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-type TestFixture struct {
+type testFixture struct {
 	EnvDesc     desc.EnvDesc
-	Cluster     TestBunchOfSousServers
-	Client      *TestClient
+	Cluster     bunchOfSousServers
+	Client      *sousClient
 	BaseDir     string
-	Singularity *Singularity
+	Singularity *testSingularity
 	// ClusterSuffix is used to add a suffix to each generated cluster name.
 	// This can be used to segregate parallel tests.
 	ClusterSuffix string
 	Parent        *ParallelTestFixture
 	TestName      string
 	UserEmail     string
-	Projects      ProjectList
+	Projects      projectList
 	knownToFail   bool
 	Finished      chan struct{}
 }
 
 var sousBin = mustGetSousBin()
 
-func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixture, getAddrs func(int) []string, fcfg fixtureConfig) *TestFixture {
+func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixture, getAddrs func(int) []string, fcfg fixtureConfig) *testFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {
@@ -43,8 +43,8 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 	clusterSuffix := strings.Replace(t.Name(), "/", "_", -1)
 	fmt.Fprintf(os.Stdout, "Cluster suffix: %s", clusterSuffix)
 
-	singularity := NewSingularity(envDesc.SingularityURL())
-	singularity.ClusterSuffix = clusterSuffix
+	s9y := newSingularity(envDesc.SingularityURL())
+	s9y.ClusterSuffix = clusterSuffix
 
 	state := sous.StateFixture(sous.StateFixtureOpts{
 		ClusterCount:  3,
@@ -74,10 +74,10 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 	primaryServer := "http://" + c.Instances[0].Addr
 	userEmail := "sous_client1@example.com"
 
-	tf := &TestFixture{
+	tf := &testFixture{
 		Cluster:       *c,
 		BaseDir:       baseDir,
-		Singularity:   singularity,
+		Singularity:   s9y,
 		ClusterSuffix: clusterSuffix,
 		Parent:        parent,
 		TestName:      t.Name(),
@@ -93,7 +93,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *ParallelTestFixt
 	return tf
 }
 
-func (f *TestFixture) Teardown(t *testing.T) {
+func (f *testFixture) Teardown(t *testing.T) {
 	t.Helper()
 	close(f.Finished)
 	if shouldStopServers(t) {
@@ -116,7 +116,7 @@ func shouldCleanFiles(t *testing.T) bool {
 	return !t.Failed()
 }
 
-func (f *TestFixture) Clean(t *testing.T) {
+func (f *testFixture) Clean(t *testing.T) {
 	t.Helper()
 	contents, err := ioutil.ReadDir(f.BaseDir)
 	if err != nil {
@@ -143,7 +143,7 @@ func (f *TestFixture) Clean(t *testing.T) {
 // DeploymentID derived from the passed flags. If flags do not have both
 // repo and cluster set this task is impossible and thus fails the test
 // immediately.
-func (f *TestFixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
+func (f *testFixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
 	t.Helper()
 	if flags.repo == "" {
 		t.Fatalf("flags.repo empty")
@@ -165,14 +165,14 @@ func (f *TestFixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
 }
 
 // IsolatedClusterName returns a cluster name unique to this test fixture.
-func (f *TestFixture) IsolatedClusterName(baseName string) string {
+func (f *testFixture) IsolatedClusterName(baseName string) string {
 	return baseName + f.ClusterSuffix
 }
 
 // IsolatedVersionTag returns an all-lowercase unique version tag (unique per
 // test-run, subsequent runs will use the same tag). These version tags should
 // be compatible natively as both Sous and Docker tags.
-func (f *TestFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
+func (f *testFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
 	t.Helper()
 	v, err := semv.Parse(baseTag)
 	if err != nil {
@@ -188,12 +188,12 @@ func (f *TestFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
 	return strings.ToLower(baseTag + "-" + suffix)
 }
 
-func (f *TestFixture) ReportStatus(t *testing.T) {
+func (f *testFixture) ReportStatus(t *testing.T) {
 	t.Helper()
 	f.Parent.recordTestStatus(t)
 }
 
-func (f *TestFixture) KnownToFailHere(t *testing.T) {
+func (f *testFixture) KnownToFailHere(t *testing.T) {
 	t.Helper()
 	const skipKnownFailuresEnvVar = "EXCLUDE_KNOWN_FAILING_TESTS"
 	if os.Getenv(skipKnownFailuresEnvVar) == "YES" {

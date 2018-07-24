@@ -10,7 +10,7 @@ import (
 	"github.com/opentable/sous/util/filemap"
 )
 
-func dockerBuildAddArtifactInit(t *testing.T, f *TestFixture, client *TestClient, flags *sousFlags, transforms ...ManifestTransform) (dockerRef string) {
+func dockerBuildAddArtifactInit(t *testing.T, f *testFixture, client *sousClient, flags *sousFlags, transforms ...ManifestTransform) (dockerRef string) {
 	t.Helper()
 
 	dockerRef = dockerBuildAddArtifact(t, f, client, flags)
@@ -21,7 +21,7 @@ func dockerBuildAddArtifactInit(t *testing.T, f *TestFixture, client *TestClient
 	return dockerRef
 }
 
-func dockerBuildAddArtifact(t *testing.T, f *TestFixture, client *TestClient, flags *sousFlags) (dockerRef string) {
+func dockerBuildAddArtifact(t *testing.T, f *testFixture, client *sousClient, flags *sousFlags) (dockerRef string) {
 	t.Helper()
 	tag := flags.tag
 	if tag == "" {
@@ -49,7 +49,7 @@ func TestOTPL(t *testing.T) {
 
 	pf.RunMatrix(
 
-		PTest{Name: "artifact-add", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "artifact-add", Test: func(t *testing.T, f *testFixture) {
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{tag: "1.2.3", repo: "github.com/some-user/project1"}
@@ -68,7 +68,7 @@ func TestOTPL(t *testing.T) {
 			}
 		}},
 
-		PTest{Name: "build-init-deploy", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "build-init-deploy", Test: func(t *testing.T, f *testFixture) {
 
 			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 				"config/cluster1/singularity.json": `
@@ -108,7 +108,7 @@ func TestOTPL(t *testing.T) {
 			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
-		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *testFixture) {
 
 			t.Skipf("WIP")
 

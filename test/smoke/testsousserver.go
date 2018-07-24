@@ -17,7 +17,7 @@ import (
 	"github.com/opentable/sous/util/yaml"
 )
 
-type SousServer struct {
+type sousServer struct {
 	Bin
 	Addr                string
 	StateDir, ConfigDir string
@@ -27,7 +27,7 @@ type SousServer struct {
 	Num int
 }
 
-func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, addr string, finished <-chan struct{}) (*SousServer, error) {
+func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, addr string, finished <-chan struct{}) (*sousServer, error) {
 	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i+1))
 	stateDir := path.Join(baseDir, "state")
 
@@ -36,7 +36,7 @@ func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, add
 	bin := NewBin(binPath, name, baseDir, finished)
 	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
 
-	return &SousServer{
+	return &sousServer{
 		Bin:         bin,
 		Addr:        addr,
 		ClusterName: clusterName,
@@ -55,7 +55,7 @@ func seedDB(config *config.Config, state *sous.State) error {
 	return mgr.WriteState(state, sous.User{})
 }
 
-func (i *SousServer) Configure(config *config.Config, remoteGDMDir string, fcfg fixtureConfig) error {
+func (i *sousServer) Configure(config *config.Config, remoteGDMDir string, fcfg fixtureConfig) error {
 	if err := seedDB(config, fcfg.startState); err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (i *SousServer) Configure(config *config.Config, remoteGDMDir string, fcfg 
 	return nil
 }
 
-func (i *SousServer) Start(t *testing.T) {
+func (i *sousServer) Start(t *testing.T) {
 	t.Helper()
 
 	if !quiet() {
@@ -152,7 +152,7 @@ func (i *SousServer) Start(t *testing.T) {
 	writePID(t, i.Proc.Pid)
 }
 
-func (i *SousServer) DumpTail(t *testing.T, n int) {
+func (i *sousServer) DumpTail(t *testing.T, n int) {
 	path := filepath.Join(i.LogDir, "combined")
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -168,7 +168,7 @@ func (i *SousServer) DumpTail(t *testing.T, n int) {
 	fmt.Fprint(outPipe, out)
 }
 
-func (i *SousServer) Stop() error {
+func (i *sousServer) Stop() error {
 	if i.Proc == nil {
 		return fmt.Errorf("cannot stop instance %q (not started)", i.Num)
 	}

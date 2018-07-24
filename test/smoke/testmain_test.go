@@ -4,26 +4,12 @@ import (
 	"flag"
 	"os"
 	"testing"
-
-	sous "github.com/opentable/sous/lib"
 )
 
 var pfs *ParallelTestFixtureSet
 
-var flags = struct {
-	printMatrix     bool
-	printDimensions bool
-}{}
-
-type fixtureConfig struct {
-	dbPrimary  bool
-	startState *sous.State
-	projects   ProjectList
-	Desc       string
-}
-
-func Matrix() MatrixDef {
-	m := NewMatrix()
+func Matrix() matrixDef {
+	m := newMatrix()
 	m.AddDimension("store", "GDM storage to use", map[string]interface{}{
 		"db":  true,
 		"git": false,
@@ -59,6 +45,6 @@ func TestMain(m *testing.M) {
 
 func resetSingularity() {
 	envDesc := getEnvDesc()
-	singularity := NewSingularity(envDesc.SingularityURL())
+	singularity := newSingularity(envDesc.SingularityURL())
 	singularity.Reset()
 }

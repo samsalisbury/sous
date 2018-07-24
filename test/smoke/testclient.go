@@ -16,18 +16,18 @@ import (
 	"github.com/opentable/sous/util/yaml"
 )
 
-type TestClient struct {
+type sousClient struct {
 	Bin
 	// Config is set after calling Configure()
 	Config config.Config
 	// Fixture is the test fixture this client belongs to.
-	Fixture *TestFixture
+	Fixture *testFixture
 }
 
-func makeClient(fixture *TestFixture, baseDir, sousBin string) *TestClient {
+func makeClient(fixture *testFixture, baseDir, sousBin string) *sousClient {
 	clientName := "client1"
 	baseDir = path.Join(baseDir, clientName)
-	c := &TestClient{
+	c := &sousClient{
 		Bin:     NewBin(sousBin, clientName, baseDir, fixture.Finished),
 		Fixture: fixture,
 	}
@@ -35,7 +35,7 @@ func makeClient(fixture *TestFixture, baseDir, sousBin string) *TestClient {
 	return c
 }
 
-func (c *TestClient) Configure(server, dockerReg, userEmail string) error {
+func (c *sousClient) Configure(server, dockerReg, userEmail string) error {
 	user := strings.Split(userEmail, "@")
 	conf := config.Config{
 		Server: server,
@@ -70,7 +70,7 @@ func (c *TestClient) Configure(server, dockerReg, userEmail string) error {
 	})
 }
 
-func (c *TestClient) insertClusterSuffix(t *testing.T, args []string) []string {
+func (c *sousClient) insertClusterSuffix(t *testing.T, args []string) []string {
 	t.Helper()
 	for i, s := range args {
 		if s == "-cluster" && len(args) > i+1 {
@@ -85,7 +85,7 @@ func (c *TestClient) insertClusterSuffix(t *testing.T, args []string) []string {
 
 // TransformManifest applies each of transforms in order to the retrieved
 // manifest, then calls 'sous manifest set' to apply them. Any failure is fatal.
-func (c *TestClient) TransformManifest(t *testing.T, flags *sousFlags, transforms ...ManifestTransform) {
+func (c *sousClient) TransformManifest(t *testing.T, flags *sousFlags, transforms ...ManifestTransform) {
 	t.Helper()
 	flags = flags.ManifestIDFlags()
 	manifest := c.MustRun(t, "manifest get", flags.ManifestIDFlags())
@@ -110,7 +110,7 @@ func (c *TestClient) TransformManifest(t *testing.T, flags *sousFlags, transform
 	}
 }
 
-func (c *TestClient) setSingularityRequestID(t *testing.T, clusterName, singReqID string) ManifestTransform {
+func (c *sousClient) setSingularityRequestID(t *testing.T, clusterName, singReqID string) ManifestTransform {
 	return func(m sous.Manifest) sous.Manifest {
 		clusterName := c.Fixture.IsolatedClusterName(clusterName)
 		d, ok := m.Deployments[clusterName]

@@ -16,15 +16,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type TestBunchOfSousServers struct {
+type bunchOfSousServers struct {
 	BaseDir      string
 	RemoteGDMDir string
 	Count        int
-	Instances    []*SousServer
+	Instances    []*sousServer
 	Stop         func() error
 }
 
-func newBunchOfSousServers(t *testing.T, baseDir string, getAddrs func(int) []string, fcfg fixtureConfig, finished <-chan struct{}) (*TestBunchOfSousServers, error) {
+func newBunchOfSousServers(t *testing.T, baseDir string, getAddrs func(int) []string, fcfg fixtureConfig, finished <-chan struct{}) (*bunchOfSousServers, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
@@ -39,7 +39,7 @@ func newBunchOfSousServers(t *testing.T, baseDir string, getAddrs func(int) []st
 	binPath := sousBin
 
 	count := len(state.Defs.Clusters)
-	instances := make([]*SousServer, count)
+	instances := make([]*sousServer, count)
 	addrs := getAddrs(count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
@@ -49,7 +49,7 @@ func newBunchOfSousServers(t *testing.T, baseDir string, getAddrs func(int) []st
 		}
 		instances[i] = inst
 	}
-	return &TestBunchOfSousServers{
+	return &bunchOfSousServers{
 		BaseDir:      baseDir,
 		RemoteGDMDir: gdmDir,
 		Count:        count,
@@ -96,7 +96,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 	return nil
 }
 
-func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
+func (c *bunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr
@@ -142,8 +142,8 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, f
 	return nil
 }
 
-func (c *TestBunchOfSousServers) Start(t *testing.T, sousBin string) error {
-	var started []*SousServer
+func (c *bunchOfSousServers) Start(t *testing.T, sousBin string) error {
+	var started []*sousServer
 	// Set the stop func first in case starting returns early.
 	c.Stop = func() error {
 		var errs []string

@@ -16,7 +16,7 @@ type (
 
 	ParallelTestFixture struct {
 		T                  *testing.T
-		Matrix             MatrixDef
+		Matrix             matrixDef
 		GetAddrs           func(int) []string
 		testNames          map[string]struct{}
 		testNamesMu        sync.RWMutex
@@ -48,7 +48,7 @@ func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
 	}
 }
 
-func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m MatrixDef) *ParallelTestFixture {
+func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrixDef) *ParallelTestFixture {
 	if flags.printMatrix {
 		matrix := m.FixtureConfigs()
 		for _, m := range matrix {
@@ -89,7 +89,7 @@ func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
 // PTest is a test to run in parallel.
 type PTest struct {
 	Name string
-	Test func(*testing.T, *TestFixture)
+	Test func(*testing.T, *testFixture)
 }
 
 func (pf *ParallelTestFixture) RunMatrix(tests ...PTest) {
@@ -194,7 +194,7 @@ func (pf *ParallelTestFixture) PrintSummary() (total, passed, skipped, failed, m
 	return total, passed, skipped, failed, missing
 }
 
-func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) *TestFixture {
+func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
 	envDesc := getEnvDesc()

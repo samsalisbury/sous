@@ -9,24 +9,24 @@ import (
 	"github.com/opentable/sous/util/filemap"
 )
 
-type ProjectMaker func() filemap.FileMap
+type projectMaker func() filemap.FileMap
 
-type ProjectList struct {
+type projectList struct {
 	GroupName                   string
-	HTTPServer, Sleeper, Failer ProjectMaker
+	HTTPServer, Sleeper, Failer projectMaker
 }
 
 var projects = struct {
-	SingleDockerfile ProjectList
-	SplitBuild       ProjectList
+	SingleDockerfile projectList
+	SplitBuild       projectList
 }{
-	SingleDockerfile: ProjectList{
+	SingleDockerfile: projectList{
 		GroupName:  "dockerbuild",
 		HTTPServer: func() filemap.FileMap { return singleDockerfile(httpServer) },
 		Sleeper:    func() filemap.FileMap { return singleDockerfile(sleepT) },
 		Failer:     func() filemap.FileMap { return singleDockerfile(failImmediately) },
 	},
-	SplitBuild: ProjectList{
+	SplitBuild: projectList{
 		GroupName:  "splitbuild",
 		HTTPServer: func() filemap.FileMap { return splitBuild(httpServer) },
 		Sleeper:    func() filemap.FileMap { return splitBuild(sleepT) },
@@ -34,29 +34,29 @@ var projects = struct {
 	},
 }
 
-// Program is a POSIX shell script program.
-type Program string
+// program is a POSIX shell script program.
+type program string
 
 // All these shell scripts require explicit command termination with ; since
 // they may be inlined later.
 const (
-	sleepT = Program(`
+	sleepT = program(`
 		if [ -z "$T" ]; then T=2; fi;
 		echo -n "Sleeping ${T}s...";
 		sleep $T;
 		echo "Awake";
 		`)
-	httpServer = Program(`
+	httpServer = program(`
 		echo Listening on :$PORT0;
 		while true; do
 		  echo -e "HTTP/1.1 200 OK\n\n$(date)" | nc -l -p $PORT0;
 		done;
 		`)
-	failImmediately = Program(`
+	failImmediately = program(`
 		echo Failing now;
 		exit 1
 		`)
-	exitImmediately = Program(`
+	exitImmediately = program(`
 		echo Done;
 		`)
 )
@@ -74,19 +74,19 @@ func failer() filemap.FileMap {
 }
 
 // String returns p as a string with spaces trimmed.
-func (p Program) String() string {
+func (p program) String() string {
 	return strings.TrimSpace(string(p))
 }
 
-func (p Program) FormatForDockerfile() string {
+func (p program) FormatForDockerfile() string {
 	return strings.Replace(p.String(), "\n", " \\\n", -1)
 }
 
-func (p Program) FormatAsShellFile() string {
+func (p program) FormatAsShellFile() string {
 	return fmt.Sprintf("#!/usr/bin/env sh\n\n%s", p)
 }
 
-func singleDockerfile(p Program) filemap.FileMap {
+func singleDockerfile(p program) filemap.FileMap {
 	return filemap.FileMap{
 		"Dockerfile": fmt.Sprintf(
 			"FROM alpine:3.7\nCMD %s", p.FormatForDockerfile()),
@@ -126,7 +126,7 @@ func simpleServerSplitContainer() filemap.FileMap {
 	}
 }
 
-func splitBuild(p Program) filemap.FileMap {
+func splitBuild(p program) filemap.FileMap {
 	return filemap.FileMap{
 		"Dockerfile": `
 			FROM alpine:3.7
@@ -155,7 +155,7 @@ func splitBuild(p Program) filemap.FileMap {
 	}
 }
 
-func (f *TestFixture) setupProject(t *testing.T, fm filemap.FileMap) *TestClient {
+func (f *testFixture) setupProject(t *testing.T, fm filemap.FileMap) *sousClient {
 	t.Helper()
 	// Setup project git repo.
 	projectDir := makeGitRepo(t, f.Client.BaseDir, "projects/project1", GitRepoSpec{

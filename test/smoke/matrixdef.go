@@ -4,26 +4,35 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	sous "github.com/opentable/sous/lib"
 )
 
-type MatrixDef struct {
+type fixtureConfig struct {
+	dbPrimary  bool
+	startState *sous.State
+	projects   projectList
+	Desc       string
+}
+
+type matrixDef struct {
 	OrderedDimensionNames []string
 	OrderedDimensionDescs []string
 	Dimensions            map[string]map[string]interface{}
 }
 
-type Combination []Particle
+type combination []particle
 
-type Particle struct {
+type particle struct {
 	Dimension, Name string
 	Value           interface{}
 }
 
-func NewMatrix() MatrixDef {
-	return MatrixDef{Dimensions: map[string]map[string]interface{}{}}
+func newMatrix() matrixDef {
+	return matrixDef{Dimensions: map[string]map[string]interface{}{}}
 }
 
-func (m MatrixDef) PrintDimensions() {
+func (m matrixDef) PrintDimensions() {
 	var out []string
 	for _, name := range m.OrderedDimensionNames {
 		out = append(out, "<"+name+">")
@@ -40,19 +49,19 @@ func (m MatrixDef) PrintDimensions() {
 	}
 }
 
-func (m *MatrixDef) AddDimension(name, desc string, values map[string]interface{}) {
+func (m *matrixDef) AddDimension(name, desc string, values map[string]interface{}) {
 	m.OrderedDimensionNames = append(m.OrderedDimensionNames, name)
 	m.OrderedDimensionDescs = append(m.OrderedDimensionDescs, desc)
 	m.Dimensions[name] = values
 }
 
-func (m MatrixDef) FixedDimension(dimensionName, valueName string) MatrixDef {
+func (m matrixDef) FixedDimension(dimensionName, valueName string) matrixDef {
 	return m.Clone(func(dimension, value string) bool {
 		return dimension != dimensionName || value == valueName
 	})
 }
 
-func (m MatrixDef) Clone(include func(dimension, value string) bool) MatrixDef {
+func (m matrixDef) Clone(include func(dimension, value string) bool) matrixDef {
 	n := m
 	n.Dimensions = map[string]map[string]interface{}{}
 	for name, values := range m.Dimensions {
@@ -68,7 +77,7 @@ func (m MatrixDef) Clone(include func(dimension, value string) bool) MatrixDef {
 }
 
 // TODO SS: Remove this from MatrixDef and write a helper func to do the same.
-func (m *MatrixDef) FixtureConfigs() []fixtureConfig {
+func (m *matrixDef) FixtureConfigs() []fixtureConfig {
 	cs := m.Combinations()
 	fcfgs := make([]fixtureConfig, len(cs))
 	for i, c := range m.Combinations() {
@@ -76,16 +85,16 @@ func (m *MatrixDef) FixtureConfigs() []fixtureConfig {
 		fcfgs[i] = fixtureConfig{
 			Desc:      c.String(),
 			dbPrimary: m["store"].(bool),
-			projects:  m["project"].(ProjectList),
+			projects:  m["project"].(projectList),
 		}
 	}
 	return fcfgs
 }
 
-func (m *MatrixDef) Combinations() []Combination {
-	combos := [][]Combination{}
+func (m *matrixDef) Combinations() []combination {
+	combos := [][]combination{}
 	for _, d := range m.OrderedDimensionNames {
-		c := []Combination{}
+		c := []combination{}
 		dim := m.Dimensions[d]
 		valNames := []string{}
 		for name := range dim {
@@ -93,8 +102,8 @@ func (m *MatrixDef) Combinations() []Combination {
 		}
 		sort.Strings(valNames)
 		for _, name := range valNames {
-			c = append(c, Combination{
-				Particle{
+			c = append(c, combination{
+				particle{
 					Dimension: d,
 					Name:      name,
 					Value:     dim[name],
@@ -106,7 +115,7 @@ func (m *MatrixDef) Combinations() []Combination {
 	return product(combos...)
 }
 
-func product(slices ...[]Combination) []Combination {
+func product(slices ...[]combination) []combination {
 	res := slices[0]
 	for _, s := range slices[1:] {
 		res = mult(res, s)
@@ -114,23 +123,23 @@ func product(slices ...[]Combination) []Combination {
 	return res
 }
 
-func mult(a, b []Combination) []Combination {
-	res := make([][]Combination, len(a)*len(b))
+func mult(a, b []combination) []combination {
+	res := make([][]combination, len(a)*len(b))
 	n := 0
 	for _, aa := range a {
 		for _, bb := range b {
-			res[n] = []Combination{aa, bb}
+			res[n] = []combination{aa, bb}
 			n++
 		}
 	}
-	slice := make([]Combination, len(res))
+	slice := make([]combination, len(res))
 	for i, r := range res {
 		slice[i] = concat(r)
 	}
 	return slice
 }
 
-func concat(combos []Combination) Combination {
+func concat(combos []combination) combination {
 	res := combos[0]
 	for _, c := range combos[1:] {
 		res = append(res, c...)
@@ -138,7 +147,7 @@ func concat(combos []Combination) Combination {
 	return res
 }
 
-func (c Combination) String() string {
+func (c combination) String() string {
 	var names []string
 	for _, p := range c {
 		names = append(names, p.Name)
@@ -146,7 +155,7 @@ func (c Combination) String() string {
 	return strings.Join(names, "/")
 }
 
-func (c Combination) Map() map[string]interface{} {
+func (c combination) Map() map[string]interface{} {
 	res := make(map[string]interface{}, len(c))
 	for _, p := range c {
 		res[p.Dimension] = p.Value

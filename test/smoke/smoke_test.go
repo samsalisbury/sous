@@ -10,7 +10,7 @@ import (
 
 // initBuild is a macro to fast-forward to tests to a point where we have
 // initialised the project, transformed the manifest, and performed a build.
-func initBuild(t *testing.T, client *TestClient, flags *sousFlags, transforms ...ManifestTransform) {
+func initBuild(t *testing.T, client *sousClient, flags *sousFlags, transforms ...ManifestTransform) {
 	client.MustRun(t, "init", flags.SousInitFlags())
 	client.TransformManifest(t, flags.ManifestIDFlags(), transforms...)
 	client.MustRun(t, "build", flags.SourceIDFlags())
@@ -19,17 +19,17 @@ func initBuild(t *testing.T, client *TestClient, flags *sousFlags, transforms ..
 // initBuildDeploy is a macro for fast-forwarding tests to a point where we have
 // initialised the project as a kind project, built it with -tag tag and
 // deployed that tag successfully to cluster.
-func initBuildDeploy(t *testing.T, client *TestClient, flags *sousFlags, transforms ...ManifestTransform) {
+func initBuildDeploy(t *testing.T, client *sousClient, flags *sousFlags, transforms ...ManifestTransform) {
 	initBuild(t, client, flags, transforms...)
 	client.MustRun(t, "deploy", flags.SousDeployFlags())
 }
 
-func TestInitToDeploy(t *testing.T) {
+func TestSmoke(t *testing.T) {
 	pf := pfs.newParallelTestFixture(t, Matrix())
 
 	pf.RunMatrix(
 
-		PTest{Name: "simple", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "simple", Test: func(t *testing.T, f *testFixture) {
 
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
@@ -43,7 +43,7 @@ func TestInitToDeploy(t *testing.T) {
 			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
-		PTest{Name: "fail-zero-instances", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "fail-zero-instances", Test: func(t *testing.T, f *testFixture) {
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", repo: "github.com/user1/repo1"}
@@ -53,7 +53,7 @@ func TestInitToDeploy(t *testing.T) {
 			client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
 		}},
 
-		PTest{Name: "fail-container-crash", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "fail-container-crash", Test: func(t *testing.T, f *testFixture) {
 
 			// TODO SS: Remove this once fail-container-crash-rafactor works.
 
@@ -80,7 +80,7 @@ func TestInitToDeploy(t *testing.T) {
 			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
-		PTest{Name: "fail-container-crash-rafactor", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "fail-container-crash-rafactor", Test: func(t *testing.T, f *testFixture) {
 
 			// TODO SS: Fix this test.
 			t.Skipf("This test fails, figure out why it's not equivalent to test above.")
@@ -99,7 +99,7 @@ func TestInitToDeploy(t *testing.T) {
 			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
-		PTest{Name: "flavors", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "flavors", Test: func(t *testing.T, f *testFixture) {
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{
@@ -115,7 +115,7 @@ func TestInitToDeploy(t *testing.T) {
 			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
-		PTest{Name: "pause-unpause", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "pause-unpause", Test: func(t *testing.T, f *testFixture) {
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1", cluster: "cluster1", repo: "github.com/user1/repo1"}
@@ -139,7 +139,7 @@ func TestInitToDeploy(t *testing.T) {
 			assertActiveStatus(t, f, reqID)
 		}},
 
-		PTest{Name: "scheduled", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "scheduled", Test: func(t *testing.T, f *testFixture) {
 			client := f.setupProject(t, f.Projects.Sleeper())
 
 			flags := &sousFlags{kind: "scheduled", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
@@ -162,7 +162,7 @@ func TestInitToDeploy(t *testing.T) {
 			assertNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
-		PTest{Name: "custom-reqid-first-deploy", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "custom-reqid-first-deploy", Test: func(t *testing.T, f *testFixture) {
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
@@ -179,7 +179,7 @@ func TestInitToDeploy(t *testing.T) {
 			assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
 		}},
 
-		PTest{Name: "custom-reqid-second-deploy", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "custom-reqid-second-deploy", Test: func(t *testing.T, f *testFixture) {
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
@@ -208,7 +208,7 @@ func TestInitToDeploy(t *testing.T) {
 			assertActiveStatus(t, f, originalReqID)
 		}},
 
-		PTest{Name: "change-reqid", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "change-reqid", Test: func(t *testing.T, f *testFixture) {
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
 			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
