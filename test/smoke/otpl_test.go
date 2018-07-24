@@ -41,7 +41,7 @@ func dockerBuildAddArtifact(t *testing.T, f *TestFixture, client *TestClient, fl
 	return dockerRef
 }
 
-func TestOTPLInitToDeploy(t *testing.T) {
+func TestOTPL(t *testing.T) {
 
 	// FixedDimension is because otpl deploy can only work with simple dockerfile
 	// projects, not split build projects. This "project", "simple".
