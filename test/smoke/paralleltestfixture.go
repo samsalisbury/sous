@@ -150,33 +150,53 @@ func (pf *parallelTestFixture) recordTestStatus(t *testing.T) {
 // failed to report back any status, which should not happen under normal
 // circumstances.
 func (pfs *parallelTestFixtureSet) PrintSummary() {
-	var total, passed, skipped, failed, missing int
+	var total, passed, skipped, failed, missing []string
 	for _, pf := range pfs.fixtures {
 		t, p, s, f, m := pf.printSummary()
-		total += t
-		passed += p
-		skipped += s
-		failed += f
-		missing += m
+		total = append(total, t...)
+		passed = append(passed, p...)
+		skipped = append(skipped, s...)
+		failed = append(failed, f...)
+		missing = append(missing, m...)
 	}
-	summary := fmt.Sprintf("Summary: %d failed; %d skipped; %d passed; %d missing (total %d)", failed, skipped, passed, missing, total)
+
+	if len(failed) != 0 {
+		fmt.Printf("These tests failed:\n")
+		for _, n := range failed {
+			fmt.Printf("> %s\n", n)
+		}
+	}
+
+	summary := fmt.Sprintf("Summary: %d failed; %d skipped; %d passed; %d missing (total %d)",
+		len(failed), len(skipped), len(passed), len(missing), len(total))
 	fmt.Fprintln(os.Stdout, summary)
 }
 
-func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, missing int) {
+func testNamesSlice(m map[string]struct{}) []string {
+	var s, i = make([]string, len(m)), 0
+	for n := range m {
+		s[i] = n
+		i++
+	}
+	return s
+}
+
+func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, missing []string) {
 	t := pf.T
 	t.Helper()
-	total = len(pf.testNames)
-	passed = len(pf.testNamesPassed)
-	skipped = len(pf.testNamesSkipped)
-	failed = len(pf.testNamesFailed)
+	total = testNamesSlice(pf.testNames)
+	passed = testNamesSlice(pf.testNamesPassed)
+	skipped = testNamesSlice(pf.testNamesSkipped)
+	failed = testNamesSlice(pf.testNamesFailed)
 
-	summary := fmt.Sprintf("%s summary: %d failed; %d skipped; %d passed (total %d)", t.Name(), failed, skipped, passed, total)
+	summary := fmt.Sprintf("%s summary: %d failed; %d skipped; %d passed (total %d)",
+		t.Name(), len(failed), len(skipped), len(passed), len(total))
 	t.Log(summary)
 	fmt.Fprintln(os.Stdout, summary)
 
-	missing = total - (passed + failed + skipped)
-	if missing != 0 {
+	var missingTests []string
+	missingCount := len(total) - (len(passed) + len(failed) + len(skipped))
+	if missingCount != 0 {
 		for t := range pf.testNamesPassed {
 			delete(pf.testNames, t)
 		}
@@ -186,13 +206,12 @@ func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, m
 		for t := range pf.testNamesFailed {
 			delete(pf.testNames, t)
 		}
-		var missingTests []string
 		for t := range pf.testNames {
 			missingTests = append(missingTests, t)
 		}
 		rtLog("Warning! Some tests did not report status: %s", strings.Join(missingTests, ", "))
 	}
-	return total, passed, skipped, failed, missing
+	return total, passed, skipped, failed, missingTests
 }
 
 func (pf *parallelTestFixture) newIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {
