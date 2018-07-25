@@ -49,7 +49,6 @@ func NewBin(path, name, baseDir string, finished <-chan struct{}) Bin {
 		Env:          map[string]string{},
 		ConfigDir:    filepath.Join(baseDir, "config"),
 		LogDir:       filepath.Join(baseDir, "logs"),
-		//Dir:       filepath.Join(baseDir, "work"),
 		TestFinished: finished,
 	}
 }
@@ -178,6 +177,8 @@ type invocation struct {
 	args         []string
 }
 
+// String() returns this invocation roughly as a copy-pastable shell command.
+// Note: if args contain quotes some manual editing may be required.
 func (i invocation) String() string {
 	return fmt.Sprintf("%s %s", i.name, strings.Join(i.allArgs(), " "))
 }

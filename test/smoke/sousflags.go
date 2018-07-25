@@ -33,6 +33,8 @@ func (f *sousFlags) DeploymentIDFlags() *sousFlags {
 	return didFlags
 }
 
+// SousDeployFlags returns a derived set of flags only keeping those that are
+// valid for the 'sous deploy' command.
 func (f *sousFlags) SousDeployFlags() *sousFlags {
 	if f == nil {
 		return nil
@@ -53,6 +55,9 @@ func (f *sousFlags) SousInitFlags() *sousFlags {
 	return initFlags
 }
 
+// SourceIDFlags returns a derived set of flags only keeping those that play a
+// part in identifying a SourceID (that is a particular version of a particular
+// code repo).
 func (f *sousFlags) SourceIDFlags() *sousFlags {
 	if f == nil {
 		return nil
@@ -62,7 +67,7 @@ func (f *sousFlags) SourceIDFlags() *sousFlags {
 	return sidFlags
 }
 
-// Map returns a map of flag names to values.
+// FlagMap returns a map of flag names to values.
 // Any flags which have an empty string value are omitted from the map entirely.
 func (f *sousFlags) FlagMap() map[string]string {
 	m := map[string]string{}
@@ -90,6 +95,7 @@ func (f *sousFlags) FlagMap() map[string]string {
 	return m
 }
 
+// FlagPrefix returns '-' which is the standard flag prefix for Sous.
 func (f *sousFlags) FlagPrefix() string {
 	return "-"
 }

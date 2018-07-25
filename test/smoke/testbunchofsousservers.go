@@ -96,7 +96,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 	return nil
 }
 
-func (c *bunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
+func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr
@@ -135,7 +135,7 @@ func (c *bunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, fcfg 
 			},
 		}
 		config.Logging.Basic.Level = "debug"
-		if err := i.Configure(config, c.RemoteGDMDir, fcfg); err != nil {
+		if err := i.configure(config, c.RemoteGDMDir, fcfg); err != nil {
 			return errors.Wrapf(err, "configuring instance %d", i)
 		}
 	}

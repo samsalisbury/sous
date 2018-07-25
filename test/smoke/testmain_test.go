@@ -10,6 +10,7 @@ import (
 
 var pfs *parallelTestFixtureSet
 
+// Matrix returns the defined sous smoke test matrix.
 func Matrix() matrixDef {
 	m := newMatrix()
 	m.AddDimension("store", "GDM storage to use", map[string]interface{}{

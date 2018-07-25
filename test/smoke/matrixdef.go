@@ -49,19 +49,27 @@ func (m matrixDef) PrintDimensions() {
 	}
 }
 
+// AddDimension adds a new dimension to this matrix with the provided name
+// and desc which is used in help text when using -matrix flag on 'go test'.
+// The values are a map of short value names to concrete representations, which
+// are passed to tests. The names of values map to parts of the sub-test path
+// for 'go test -run' flag.
 func (m *matrixDef) AddDimension(name, desc string, values map[string]interface{}) {
 	m.OrderedDimensionNames = append(m.OrderedDimensionNames, name)
 	m.OrderedDimensionDescs = append(m.OrderedDimensionDescs, desc)
 	m.Dimensions[name] = values
 }
 
+// FixedDimension returns a matrixDef based on m with one of its dimensions
+// fixed to a particular value. This can be used when writing tests where
+// only a single value for one particular dimension is appropriate.
 func (m matrixDef) FixedDimension(dimensionName, valueName string) matrixDef {
-	return m.Clone(func(dimension, value string) bool {
+	return m.clone(func(dimension, value string) bool {
 		return dimension != dimensionName || value == valueName
 	})
 }
 
-func (m matrixDef) Clone(include func(dimension, value string) bool) matrixDef {
+func (m matrixDef) clone(include func(dimension, value string) bool) matrixDef {
 	n := m
 	n.Dimensions = map[string]map[string]interface{}{}
 	for name, values := range m.Dimensions {
@@ -78,9 +86,9 @@ func (m matrixDef) Clone(include func(dimension, value string) bool) matrixDef {
 
 // TODO SS: Remove this from MatrixDef and write a helper func to do the same.
 func (m *matrixDef) FixtureConfigs() []fixtureConfig {
-	cs := m.Combinations()
+	cs := m.combinations()
 	fcfgs := make([]fixtureConfig, len(cs))
-	for i, c := range m.Combinations() {
+	for i, c := range m.combinations() {
 		m := c.Map()
 		fcfgs[i] = fixtureConfig{
 			Desc:      c.String(),
@@ -91,7 +99,7 @@ func (m *matrixDef) FixtureConfigs() []fixtureConfig {
 	return fcfgs
 }
 
-func (m *matrixDef) Combinations() []combination {
+func (m *matrixDef) combinations() []combination {
 	combos := [][]combination{}
 	for _, d := range m.OrderedDimensionNames {
 		c := []combination{}
@@ -147,6 +155,8 @@ func concat(combos []combination) combination {
 	return res
 }
 
+// String returns the sub-test path of this combination. E.g.
+// dim1ValueName/dim2ValueName[/...].
 func (c combination) String() string {
 	var names []string
 	for _, p := range c {
@@ -155,6 +165,8 @@ func (c combination) String() string {
 	return strings.Join(names, "/")
 }
 
+// Map returns a map of dimension name to specific value for this combination.
+// This is useful where we want to look up a value by dimension name.
 func (c combination) Map() map[string]interface{} {
 	res := make(map[string]interface{}, len(c))
 	for _, p := range c {

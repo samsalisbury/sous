@@ -44,7 +44,7 @@ func dockerBuildAddArtifact(t *testing.T, f *testFixture, client *sousClient, fl
 func TestOTPL(t *testing.T) {
 
 	// FixedDimension is because otpl deploy can only work with simple dockerfile
-	// projects, not split build projects. This "project", "simple".
+	// projects, not split build projects.
 	pf := pfs.newParallelTestFixture(t, Matrix().FixedDimension("project", "simple"))
 
 	pf.RunMatrix(

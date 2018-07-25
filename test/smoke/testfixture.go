@@ -63,7 +63,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixt
 		t.Fatalf("setting up test cluster: %s", err)
 	}
 
-	if err := c.Configure(t, envDesc, fcfg); err != nil {
+	if err := c.configure(t, envDesc, fcfg); err != nil {
 		t.Fatalf("configuring test cluster: %s", err)
 	}
 
@@ -93,6 +93,9 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixt
 	return tf
 }
 
+// Teardown performs conditional cleanup of resources used in the test.
+// This includes stopping servers and deleting intermediate test data (config
+// files, git repos, logs etc.) in the case that the test passed.
 func (f *testFixture) Teardown(t *testing.T) {
 	t.Helper()
 	close(f.Finished)
@@ -139,7 +142,7 @@ func (f *testFixture) Clean(t *testing.T) {
 	}
 }
 
-// DefaultSingReqID returns the default singularity request ID for the\
+// DefaultSingReqID returns the default singularity request ID for the
 // DeploymentID derived from the passed flags. If flags do not have both
 // repo and cluster set this task is impossible and thus fails the test
 // immediately.
@@ -170,8 +173,8 @@ func (f *testFixture) IsolatedClusterName(baseName string) string {
 }
 
 // IsolatedVersionTag returns an all-lowercase unique version tag (unique per
-// test-run, subsequent runs will use the same tag). These version tags should
-// be compatible natively as both Sous and Docker tags.
+// test-run, subsequent runs will use the same tag). These version tags are
+// compatible natively as both Sous and Docker tags for convenience.
 func (f *testFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
 	t.Helper()
 	v, err := semv.Parse(baseTag)
@@ -188,11 +191,13 @@ func (f *testFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
 	return strings.ToLower(baseTag + "-" + suffix)
 }
 
-func (f *testFixture) ReportStatus(t *testing.T) {
+func (f *testFixture) reportStatus(t *testing.T) {
 	t.Helper()
 	f.Parent.recordTestStatus(t)
 }
 
+// KnownToFailHere cauuses the test to be skipped from this point on if
+// the environment variable EXCLUDE_KNOWN_FAILING_TESTS=YES.
 func (f *testFixture) KnownToFailHere(t *testing.T) {
 	t.Helper()
 	const skipKnownFailuresEnvVar = "EXCLUDE_KNOWN_FAILING_TESTS"

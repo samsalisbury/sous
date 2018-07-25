@@ -87,6 +87,8 @@ type PTest struct {
 	Test func(*testing.T, *testFixture)
 }
 
+// RunMatrix runs the provided PTests in parallel, once for each combination of
+// the matrix passed to newParallelTestFixture.
 func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
 	for _, c := range pf.Matrix.FixtureConfigs() {
 		pf.T.Run(c.Desc, func(t *testing.T) {
@@ -95,9 +97,9 @@ func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
 			for _, pt := range tests {
 				pt := pt
 				t.Run(pt.Name, func(t *testing.T) {
-					f := pf.NewIsolatedFixture(t, c)
+					f := pf.newIsolatedFixture(t, c)
 					defer f.Teardown(t)
-					defer f.ReportStatus(t)
+					defer f.reportStatus(t)
 					pt.Test(t, f)
 				})
 			}
@@ -143,10 +145,14 @@ func (pf *parallelTestFixture) recordTestStatus(t *testing.T) {
 	}
 }
 
+// PrintSummary prints a summary of tests run by top-level test and as a sum
+// total. It reports tests failed, skipped, passed, and missing (when a test has
+// failed to report back any status, which should not happen under normal
+// circumstances.
 func (pfs *parallelTestFixtureSet) PrintSummary() {
 	var total, passed, skipped, failed, missing int
 	for _, pf := range pfs.fixtures {
-		t, p, s, f, m := pf.PrintSummary()
+		t, p, s, f, m := pf.printSummary()
 		total += t
 		passed += p
 		skipped += s
@@ -157,7 +163,7 @@ func (pfs *parallelTestFixtureSet) PrintSummary() {
 	fmt.Fprintln(os.Stdout, summary)
 }
 
-func (pf *parallelTestFixture) PrintSummary() (total, passed, skipped, failed, missing int) {
+func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, missing int) {
 	t := pf.T
 	t.Helper()
 	total = len(pf.testNames)
@@ -189,7 +195,7 @@ func (pf *parallelTestFixture) PrintSummary() (total, passed, skipped, failed, m
 	return total, passed, skipped, failed, missing
 }
 
-func (pf *parallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {
+func (pf *parallelTestFixture) newIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
 	envDesc := getEnvDesc()

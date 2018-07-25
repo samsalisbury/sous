@@ -55,7 +55,7 @@ func seedDB(config *config.Config, state *sous.State) error {
 	return mgr.WriteState(state, sous.User{})
 }
 
-func (i *sousServer) Configure(config *config.Config, remoteGDMDir string, fcfg fixtureConfig) error {
+func (i *sousServer) configure(config *config.Config, remoteGDMDir string, fcfg fixtureConfig) error {
 	if err := seedDB(config, fcfg.startState); err != nil {
 		return err
 	}
