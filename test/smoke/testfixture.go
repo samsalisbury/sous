@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
@@ -99,6 +100,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixt
 func (f *testFixture) Teardown(t *testing.T) {
 	t.Helper()
 	close(f.Finished)
+	time.Sleep(5 * time.Second)
 	if shouldStopServers(t) {
 		if err := f.Cluster.Stop(); err != nil {
 			t.Errorf("failed to stop cluster: %s", err)
