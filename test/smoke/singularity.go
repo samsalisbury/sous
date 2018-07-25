@@ -1,5 +1,3 @@
-//+build smoke
-
 package smoke
 
 import (
@@ -16,17 +14,17 @@ import (
 	sous "github.com/opentable/sous/lib"
 )
 
-type Singularity struct {
+type testSingularity struct {
 	URL           string
 	client        *sing.Client
 	ClusterSuffix string
 }
 
-func NewSingularity(baseURL string) *Singularity {
-	return &Singularity{URL: baseURL, client: sing.NewClient(baseURL)}
+func newSingularity(baseURL string) *testSingularity {
+	return &testSingularity{URL: baseURL, client: sing.NewClient(baseURL)}
 }
 
-func (s *Singularity) PauseRequestForDeployment(t *testing.T, reqID string) {
+func (s *testSingularity) PauseRequestForDeployment(t *testing.T, reqID string) {
 	t.Helper()
 	if _, err := s.client.Pause(reqID, nil); err != nil {
 		t.Fatal(err)
@@ -59,7 +57,7 @@ func (s *Singularity) PauseRequestForDeployment(t *testing.T, reqID string) {
 	})
 }
 
-func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, reqID string) {
+func (s *testSingularity) UnpauseRequestForDeployment(t *testing.T, reqID string) {
 	t.Helper()
 	if _, err := s.client.Unpause(reqID, nil); err != nil {
 		t.Fatal(err)
@@ -77,7 +75,7 @@ func (s *Singularity) UnpauseRequestForDeployment(t *testing.T, reqID string) {
 	})
 }
 
-func (s *Singularity) MustGetRequestForDeployment(t *testing.T, reqID string) *dtos.SingularityRequestParent {
+func (s *testSingularity) MustGetRequestForDeployment(t *testing.T, reqID string) *dtos.SingularityRequestParent {
 	t.Helper()
 	req, err := s.GetRequestForDeployment(t, reqID)
 	if err != nil {
@@ -86,12 +84,12 @@ func (s *Singularity) MustGetRequestForDeployment(t *testing.T, reqID string) *d
 	return req
 }
 
-func (s *Singularity) GetRequestForDeployment(t *testing.T, reqID string) (*dtos.SingularityRequestParent, error) {
+func (s *testSingularity) GetRequestForDeployment(t *testing.T, reqID string) (*dtos.SingularityRequestParent, error) {
 	t.Helper()
 	return s.client.GetRequest(reqID, false)
 }
 
-func (s *Singularity) MustGetLatestDeployForDeployment(t *testing.T, reqID string) *dtos.SingularityDeployHistory {
+func (s *testSingularity) MustGetLatestDeployForDeployment(t *testing.T, reqID string) *dtos.SingularityDeployHistory {
 	t.Helper()
 	deps, err := s.client.GetDeploys(reqID, 100, 1)
 	if err != nil {
@@ -116,7 +114,7 @@ func (s *Singularity) MustGetLatestDeployForDeployment(t *testing.T, reqID strin
 	return dep
 }
 
-func (s *Singularity) DefaultReqID(t *testing.T, did sous.DeploymentID) string {
+func (s *testSingularity) DefaultReqID(t *testing.T, did sous.DeploymentID) string {
 	t.Helper()
 	did.Cluster = did.Cluster + s.ClusterSuffix
 	reqID, err := singularity.MakeRequestID(did)
@@ -167,7 +165,7 @@ func waitFor(t *testing.T, what string, timeout, interval time.Duration, f func(
 	}
 }
 
-func (s *Singularity) Reset() error {
+func (s *testSingularity) Reset() error {
 	const pollLimit = 30
 	const retryLimit = 3
 	log.Printf("Resetting Singularity...")

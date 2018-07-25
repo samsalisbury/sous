@@ -1,5 +1,3 @@
-//+build smoke
-
 package smoke
 
 import (
@@ -15,6 +13,7 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -25,6 +24,14 @@ import (
 // timeGoTestInvoked is used to group test data for tests run
 // via the same go test invocation.
 var timeGoTestInvoked = time.Now().Format(time.RFC3339)
+
+func quiet() bool {
+	return os.Getenv("SMOKE_TEST_QUIET") == "YES"
+}
+
+func rtLog(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", a...)
+}
 
 func getEnvDesc() desc.EnvDesc {
 	descPath := os.Getenv("SOUS_QA_DESC")
@@ -267,32 +274,31 @@ func closeFiles(t *testing.T, fs ...*os.File) {
 	}
 }
 
+var lastPort int
+var freePortsMu sync.Mutex
+var usedPorts = map[int]struct{}{}
+
 // freePortAddrs returns n listenable addresses on the ip provided in the
 // range min-max. Note that it does not guarantee they are still free by the
 // time you come to bind to them, but makes that more likely by binding and then
 // unbinding from them.
 func freePortAddrs(ip string, n, min, max int) []string {
+	freePortsMu.Lock()
+	defer freePortsMu.Unlock()
 	ports := make(map[int]net.Listener, n)
 	addrs := make([]string, n)
-	// First bind to all the ports...
-	port := min
-NEXT_PORT:
+	if lastPort < min || lastPort > max {
+		lastPort = min
+	}
 	for i := 0; i < n; i++ {
-		if port > max {
-			port = min
+		p, addr, listener, err := oneFreePort(ip, lastPort, min, max)
+		if err != nil {
+			log.Panic(err)
 		}
-		for ; port <= max; port++ {
-			addr := fmt.Sprintf("%s:%d", ip, port)
-			listener, err := net.Listen("tcp", addr)
-			if err != nil {
-				port = port + 1
-				continue
-			}
-			addrs[i] = addr
-			ports[port] = listener
-			continue NEXT_PORT
-		}
-		log.Panicf("Unable to find a free port.")
+		lastPort = p
+		addrs[i] = addr
+		ports[p] = listener
+		usedPorts[p] = struct{}{}
 	}
 	// Now release them all. It's now a race to get our desired things
 	// listening on these addresses.
@@ -304,49 +310,69 @@ NEXT_PORT:
 	return addrs
 }
 
+func oneFreePort(ip string, start, min, max int) (int, string, net.Listener, error) {
+	port := start
+	maxAttempts := max - min
+	for a := 0; a < maxAttempts; a, port = a+1, port+1 {
+		if port > max {
+			port = min
+		}
+		if _, ok := usedPorts[port]; ok {
+			continue
+		}
+		addr := fmt.Sprintf("%s:%d", ip, port)
+		listener, err := net.Listen("tcp", addr)
+		if err != nil {
+			if listener != nil {
+				if err := listener.Close(); err != nil {
+					return 0, "", nil, fmt.Errorf("failed to close listener: %s", err)
+				}
+			}
+			continue
+		}
+		return port, addr, listener, nil
+	}
+	return 0, "", nil, fmt.Errorf("unable to find a free port in range %d-%d", min, max)
+}
+
+func prefixedPipe(prefix string) (io.Writer, error) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		return nil, err
+	}
+	go func() {
+		defer func() {
+			if err := r.Close(); err != nil {
+				rtLog("Failed to close reader: %s", err)
+			}
+			if err := w.Close(); err != nil {
+				rtLog("Failed to close writer: %s", err)
+			}
+		}()
+		scanner := bufio.NewScanner(r)
+		for scanner.Scan() {
+			if err := scanner.Err(); err != nil {
+				rtLog("Error prefixing: %s", err)
+			}
+			fmt.Fprintf(os.Stdout, "%s%s\n", prefix, scanner.Text())
+		}
+	}()
+	return w, nil
+}
+
 func prefixWithTestName(t *testing.T, label string) (prefixedOut, prefixedErr io.Writer) {
 	t.Helper()
-	outReader, outWriter, err := os.Pipe()
+
+	outPrefix := fmt.Sprintf("%s:%s:stdout> ", t.Name(), label)
+	errPrefix := fmt.Sprintf("%s:%s:stderr> ", t.Name(), label)
+
+	stdout, err := prefixedPipe(outPrefix)
 	if err != nil {
 		t.Fatalf("Setting up output prefix: %s", err)
 	}
-	errReader, errWriter, err := os.Pipe()
+	stderr, err := prefixedPipe(errPrefix)
 	if err != nil {
 		t.Fatalf("Setting up output prefix: %s", err)
 	}
-	go func() {
-		defer func() {
-			if err := outReader.Close(); err != nil {
-				t.Fatalf("Failed to close outReader: %s", err)
-			}
-			if err := outWriter.Close(); err != nil {
-				t.Fatalf("Failed to close outWriter: %s", err)
-			}
-		}()
-		scanner := bufio.NewScanner(outReader)
-		for scanner.Scan() {
-			if err := scanner.Err(); err != nil {
-				t.Fatalf("Error prefixing stdout: %s", err)
-			}
-			fmt.Fprintf(os.Stdout, "%s:%s:stdout > %s\n", t.Name(), label, scanner.Text())
-		}
-	}()
-	go func() {
-		defer func() {
-			if err := errReader.Close(); err != nil {
-				t.Fatalf("Failed to close errReader: %s", err)
-			}
-			if err := errWriter.Close(); err != nil {
-				t.Fatalf("Failed to close errWriter: %s", err)
-			}
-		}()
-		scanner := bufio.NewScanner(errReader)
-		for scanner.Scan() {
-			if err := scanner.Err(); err != nil {
-				t.Fatalf("Error prefixing stderr: %s", err)
-			}
-			fmt.Fprintf(os.Stderr, "%s:%s:stderr > %s\n", t.Name(), label, scanner.Text())
-		}
-	}()
-	return outWriter, errWriter
+	return stdout, stderr
 }

@@ -59,6 +59,9 @@ const (
 	// DeveloperBuild means image was built with the dev flag true, only enables
 	// local image detection at the moment.
 	DeveloperBuild = AdvisoryName(`developer build`)
+	// AddedArtifact means artifact was added to Sous manually and may not have
+	// been built by sous.
+	AddedArtifact = AdvisoryName(`added artifact`)
 )
 
 // AllAdvisories returns all advisories.
@@ -77,6 +80,7 @@ func AllAdvisories() Advisories {
 		BogusRev,
 		DirtyWS,
 		DeveloperBuild,
+		AddedArtifact,
 	}
 }
 

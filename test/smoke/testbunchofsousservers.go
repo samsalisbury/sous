@@ -1,10 +1,10 @@
-//+build smoke
-
 package smoke
 
 import (
+	"fmt"
 	"os"
 	"path"
+	"strings"
 	"testing"
 
 	"github.com/opentable/sous/config"
@@ -16,14 +16,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-type TestBunchOfSousServers struct {
+type bunchOfSousServers struct {
 	BaseDir      string
 	RemoteGDMDir string
 	Count        int
-	Instances    []*Instance
+	Instances    []*sousServer
+	Stop         func() error
 }
 
-func newBunchOfSousServers(t *testing.T, baseDir string, nextFreeAddr func() string, fcfg fixtureConfig) (*TestBunchOfSousServers, error) {
+func newBunchOfSousServers(t *testing.T, baseDir string, getAddrs func(int) []string, fcfg fixtureConfig, finished <-chan struct{}) (*bunchOfSousServers, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
@@ -35,21 +36,27 @@ func newBunchOfSousServers(t *testing.T, baseDir string, nextFreeAddr func() str
 		return nil, err
 	}
 
+	binPath := sousBin
+
 	count := len(state.Defs.Clusters)
-	instances := make([]*Instance, count)
+	instances := make([]*sousServer, count)
+	addrs := getAddrs(count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
-		inst, err := makeInstance(t, i, clusterName, baseDir, nextFreeAddr())
+		inst, err := makeInstance(t, binPath, i, clusterName, baseDir, addrs[i], finished)
 		if err != nil {
 			return nil, errors.Wrapf(err, "making test instance %d", i)
 		}
 		instances[i] = inst
 	}
-	return &TestBunchOfSousServers{
+	return &bunchOfSousServers{
 		BaseDir:      baseDir,
 		RemoteGDMDir: gdmDir,
 		Count:        count,
 		Instances:    instances,
+		Stop: func() error {
+			return fmt.Errorf("cannot stop bunch of sous servers (not started)")
+		},
 	}, nil
 }
 
@@ -89,7 +96,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 	return nil
 }
 
-func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
+func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr
@@ -128,18 +135,31 @@ func (c *TestBunchOfSousServers) Configure(t *testing.T, envDesc desc.EnvDesc, f
 			},
 		}
 		config.Logging.Basic.Level = "debug"
-		if err := i.Configure(config, c.RemoteGDMDir, fcfg); err != nil {
+		if err := i.configure(config, c.RemoteGDMDir, fcfg); err != nil {
 			return errors.Wrapf(err, "configuring instance %d", i)
 		}
 	}
 	return nil
 }
 
-func (c *TestBunchOfSousServers) Start(t *testing.T, sousBin string) error {
-	for j, i := range c.Instances {
-		if err := i.Start(t, sousBin); err != nil {
-			return errors.Wrapf(err, "instance%d", j)
+func (c *bunchOfSousServers) Start(t *testing.T, sousBin string) error {
+	var started []*sousServer
+	// Set the stop func first in case starting returns early.
+	c.Stop = func() error {
+		var errs []string
+		for j, i := range started {
+			if err := i.Stop(); err != nil {
+				errs = append(errs, fmt.Sprintf(`"could not stop instance%d: %s"`, j, err))
+			}
 		}
+		if len(errs) == 0 {
+			return nil
+		}
+		return fmt.Errorf("could not stop all instances: %s", strings.Join(errs, ", "))
+	}
+	for _, i := range c.Instances {
+		i.Start(t)
+		started = append(started, i)
 	}
 	return nil
 }

@@ -50,7 +50,7 @@ func (a *AddArtifact) UploadArtifact(versionName, digestName string) error {
 		VersionName:     versionName,
 		DigestReference: digestName,
 		Qualities: []sous.Quality{{
-			Name: "added artifact",
+			Name: string(sous.AddedArtifact),
 			Kind: "advisory",
 		}},
 	}

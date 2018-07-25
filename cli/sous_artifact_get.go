@@ -13,7 +13,7 @@ type SousArtifactGet struct {
 	opts      graph.ArtifactOpts
 }
 
-func init() { AddSubcommands["get"] = &SousArtifactGet{} }
+func init() { ArtifactSubcommands["get"] = &SousArtifactGet{} }
 
 // Help prints the help.
 func (*SousArtifactGet) Help() string {
@@ -26,7 +26,12 @@ Tell sous that this docker image represents a particular SourceID.
 // AddFlags adds the flags.
 func (sa *SousArtifactGet) AddFlags(fs *flag.FlagSet) {
 	MustAddFlags(fs, &sa.opts.SourceID, AddArtifactFlagsHelp)
+}
 
+// RegisterOn adds flag-derived values to the graph.
+func (sa *SousArtifactGet) RegisterOn(psy Addable) {
+	dff := sa.opts.SourceID.DeployFilterFlags()
+	psy.Add(&dff)
 }
 
 // Execute defines the behavior of 'sous add artifact'.

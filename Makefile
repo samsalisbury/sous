@@ -73,8 +73,12 @@ SMOKE_TEST_TIMEOUT ?= 30m
 
 # install-dev uses DEV_DESC and DATE to make a git described, timestamped dev build.
 DEV_DESC ?= $(shell git describe)
+ifeq ($(DEV_DESC),)
+DEV_DESC := 0.0.0-no-git-tags-found
+else
 ifneq ($(shell echo $(DEV_DESC) | grep -E '^\d+\.\d+\.\d+'),$(DEV_DESC))
 DEV_DESC := 0.0.0-$(DEV_DESC)
+endif
 endif
 
 DATE := $(shell date +%Y-%m-%dT%H-%M-%S)
@@ -393,15 +397,20 @@ test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TE
 	SOUS_QA_DESC=$(QA_DESC) \
 	DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES=$(DESTROY_SINGULARITY_BETWEEN_SMOKE_TEST_CASES) \
 	SOUS_TERSE_LOGGING=$(SOUS_TERSE_LOGGING) \
+	SMOKE_TEST_QUIET=$(SMOKE_TEST_QUIET) \
 	go test $(EXTRA_GO_TEST_FLAGS) -timeout $(SMOKE_TEST_TIMEOUT) -tags 'smoke netcgo' -v -count 1 ./test/smoke $(TEST_TEAMCITY)
 
-.PHONY: test-smoke
-test-smoke:
-	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
-
 .PHONY: test-smoke-ls
-test-smoke-ls:
+test-smoke-ls: ## List top-level smoke tests and matrix dimensions.
 	@go test -v -tags smoke ./test/smoke -ls -dimensions | grep -E '(^Dimension |^Matrix dimensions|^Test[A-Za-z0-9_]+/)'
+
+.PHONY: test-smoke
+test-smoke: ## Run smoke tests (showing client commands run only).
+	SMOKE_TEST_QUIET=YES EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
+
+.PHONY: test-smoke-v
+test-smoke-v: ## Verbose smoke tests (print results of client commands).
+	EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
 
 .PHONY: docker-is-working
 docker-is-working:

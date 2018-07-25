@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.115...master)
+### Changed
+* Client: 'sous artifact get' no longer requires -cluster flag.
+* Client: 'sous artifact get' now prints artifact information (digest, type).
 
 ## [0.5.115](//github.com/opentable/sous/compare/0.5.114...0.5.115)
 ### Changed

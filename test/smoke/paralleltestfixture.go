@@ -1,5 +1,3 @@
-//+build smoke
-
 package smoke
 
 import (
@@ -7,22 +5,14 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"testing"
 )
 
 type (
-	// PTFOpts are options for a ParallelTestFixture.
-	PTFOpts struct {
-		// NumFreeAddrs determines how many free addresses are guaranteed by this
-		// test fixture.
-		NumFreeAddrs int
-	}
-
-	ParallelTestFixture struct {
+	parallelTestFixture struct {
 		T                  *testing.T
-		Matrix             MatrixDef
-		NextAddr           func() string
+		Matrix             matrixDef
+		GetAddrs           func(int) []string
 		testNames          map[string]struct{}
 		testNamesMu        sync.RWMutex
 		testNamesPassed    map[string]struct{}
@@ -33,38 +23,27 @@ type (
 		testNamesFailedMu  sync.Mutex
 	}
 
-	ParallelTestFixtureSet struct {
-		NextAddr func() string
+	parallelTestFixtureSet struct {
+		GetAddrs func(int) []string
 		mu       sync.Mutex
-		fixtures map[string]*ParallelTestFixture
+		fixtures map[string]*parallelTestFixture
 	}
 )
 
-func rtLog(format string, a ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", a...)
-}
-
-func newParallelTestFixtureSet(opts PTFOpts) *ParallelTestFixtureSet {
+func newParallelTestFixtureSet() *parallelTestFixtureSet {
 	if err := stopPIDs(); err != nil {
 		panic(err)
 	}
-	numFreeAddrs := opts.NumFreeAddrs
-	freeAddrs := freePortAddrs("127.0.0.1", numFreeAddrs, 6601, 9000)
-	var nextAddrIndex int64
-	nextAddr := func() string {
-		i := atomic.AddInt64(&nextAddrIndex, 1)
-		if i == int64(numFreeAddrs) {
-			panic("ran out of free ports; increase numFreeAddrs")
-		}
-		return freeAddrs[i]
+	getAddrs := func(n int) []string {
+		return freePortAddrs("127.0.0.1", n, 49152, 65535)
 	}
-	return &ParallelTestFixtureSet{
-		NextAddr: nextAddr,
-		fixtures: map[string]*ParallelTestFixture{},
+	return &parallelTestFixtureSet{
+		GetAddrs: getAddrs,
+		fixtures: map[string]*parallelTestFixture{},
 	}
 }
 
-func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m MatrixDef) *ParallelTestFixture {
+func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrixDef) *parallelTestFixture {
 	if flags.printMatrix {
 		matrix := m.FixtureConfigs()
 		for _, m := range matrix {
@@ -76,10 +55,10 @@ func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m Matrix
 	t.Helper()
 	t.Parallel()
 	rtLog("Running     %s", t.Name())
-	pf := &ParallelTestFixture{
+	pf := &parallelTestFixture{
 		T:                t,
 		Matrix:           m,
-		NextAddr:         pfs.NextAddr,
+		GetAddrs:         pfs.GetAddrs,
 		testNames:        map[string]struct{}{},
 		testNamesPassed:  map[string]struct{}{},
 		testNamesSkipped: map[string]struct{}{},
@@ -91,7 +70,7 @@ func (pfs *ParallelTestFixtureSet) newParallelTestFixture(t *testing.T, m Matrix
 	return pf
 }
 
-func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
+func (pf *parallelTestFixture) recordTestStarted(t *testing.T) {
 	t.Helper()
 	name := t.Name()
 	pf.testNamesMu.Lock()
@@ -105,10 +84,12 @@ func (pf *ParallelTestFixture) recordTestStarted(t *testing.T) {
 // PTest is a test to run in parallel.
 type PTest struct {
 	Name string
-	Test func(*testing.T, *TestFixture)
+	Test func(*testing.T, *testFixture)
 }
 
-func (pf *ParallelTestFixture) RunMatrix(tests ...PTest) {
+// RunMatrix runs the provided PTests in parallel, once for each combination of
+// the matrix passed to newParallelTestFixture.
+func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
 	for _, c := range pf.Matrix.FixtureConfigs() {
 		pf.T.Run(c.Desc, func(t *testing.T) {
 			c := c
@@ -116,8 +97,9 @@ func (pf *ParallelTestFixture) RunMatrix(tests ...PTest) {
 			for _, pt := range tests {
 				pt := pt
 				t.Run(pt.Name, func(t *testing.T) {
-					f := pf.NewIsolatedFixture(t, c)
-					defer f.ReportStatus(t)
+					f := pf.newIsolatedFixture(t, c)
+					defer f.Teardown(t)
+					defer f.reportStatus(t)
 					pt.Test(t, f)
 				})
 			}
@@ -125,7 +107,7 @@ func (pf *ParallelTestFixture) RunMatrix(tests ...PTest) {
 	}
 }
 
-func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
+func (pf *parallelTestFixture) recordTestStatus(t *testing.T) {
 	t.Helper()
 	name := t.Name()
 	pf.testNamesMu.RLock()
@@ -163,34 +145,58 @@ func (pf *ParallelTestFixture) recordTestStatus(t *testing.T) {
 	}
 }
 
-func (pfs *ParallelTestFixtureSet) PrintSummary() {
-	var total, passed, skipped, failed, missing int
+// PrintSummary prints a summary of tests run by top-level test and as a sum
+// total. It reports tests failed, skipped, passed, and missing (when a test has
+// failed to report back any status, which should not happen under normal
+// circumstances.
+func (pfs *parallelTestFixtureSet) PrintSummary() {
+	var total, passed, skipped, failed, missing []string
 	for _, pf := range pfs.fixtures {
-		t, p, s, f, m := pf.PrintSummary()
-		total += t
-		passed += p
-		skipped += s
-		failed += f
-		missing += m
+		t, p, s, f, m := pf.printSummary()
+		total = append(total, t...)
+		passed = append(passed, p...)
+		skipped = append(skipped, s...)
+		failed = append(failed, f...)
+		missing = append(missing, m...)
 	}
-	summary := fmt.Sprintf("Summary: %d failed; %d skipped; %d passed; %d missing (total %d)", failed, skipped, passed, missing, total)
+
+	if len(failed) != 0 {
+		fmt.Printf("These tests failed:\n")
+		for _, n := range failed {
+			fmt.Printf("> %s\n", n)
+		}
+	}
+
+	summary := fmt.Sprintf("Summary: %d failed; %d skipped; %d passed; %d missing (total %d)",
+		len(failed), len(skipped), len(passed), len(missing), len(total))
 	fmt.Fprintln(os.Stdout, summary)
 }
 
-func (pf *ParallelTestFixture) PrintSummary() (total, passed, skipped, failed, missing int) {
+func testNamesSlice(m map[string]struct{}) []string {
+	var s, i = make([]string, len(m)), 0
+	for n := range m {
+		s[i] = n
+		i++
+	}
+	return s
+}
+
+func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, missing []string) {
 	t := pf.T
 	t.Helper()
-	total = len(pf.testNames)
-	passed = len(pf.testNamesPassed)
-	skipped = len(pf.testNamesSkipped)
-	failed = len(pf.testNamesFailed)
+	total = testNamesSlice(pf.testNames)
+	passed = testNamesSlice(pf.testNamesPassed)
+	skipped = testNamesSlice(pf.testNamesSkipped)
+	failed = testNamesSlice(pf.testNamesFailed)
 
-	summary := fmt.Sprintf("%s summary: %d failed; %d skipped; %d passed (total %d)", t.Name(), failed, skipped, passed, total)
+	summary := fmt.Sprintf("%s summary: %d failed; %d skipped; %d passed (total %d)",
+		t.Name(), len(failed), len(skipped), len(passed), len(total))
 	t.Log(summary)
 	fmt.Fprintln(os.Stdout, summary)
 
-	missing = total - (passed + failed + skipped)
-	if missing != 0 {
+	var missingTests []string
+	missingCount := len(total) - (len(passed) + len(failed) + len(skipped))
+	if missingCount != 0 {
 		for t := range pf.testNamesPassed {
 			delete(pf.testNames, t)
 		}
@@ -200,18 +206,17 @@ func (pf *ParallelTestFixture) PrintSummary() (total, passed, skipped, failed, m
 		for t := range pf.testNamesFailed {
 			delete(pf.testNames, t)
 		}
-		var missingTests []string
 		for t := range pf.testNames {
 			missingTests = append(missingTests, t)
 		}
-		t.Errorf("Some tests did not report status: %s", strings.Join(missingTests, ", "))
+		rtLog("Warning! Some tests did not report status: %s", strings.Join(missingTests, ", "))
 	}
-	return total, passed, skipped, failed, missing
+	return total, passed, skipped, failed, missingTests
 }
 
-func (pf *ParallelTestFixture) NewIsolatedFixture(t *testing.T, fcfg fixtureConfig) *TestFixture {
+func (pf *parallelTestFixture) newIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
 	envDesc := getEnvDesc()
-	return newTestFixture(t, envDesc, pf, pf.NextAddr, fcfg)
+	return newTestFixture(t, envDesc, pf, pf.GetAddrs, fcfg)
 }

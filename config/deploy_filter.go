@@ -39,6 +39,15 @@ type SourceIDFlags struct {
 	SourceVersionFlags
 }
 
+// DeployFilterFlags returns an equivalent DeployFilterFlags.
+func (f SourceIDFlags) DeployFilterFlags() DeployFilterFlags {
+	dff := DeployFilterFlags{}
+	dff.Tag = f.Tag
+	dff.Repo = f.Repo
+	dff.Offset = f.Offset
+	return dff
+}
+
 // SourceID returns the sous.SourceID represented by these flags.
 func (f SourceIDFlags) SourceID() (sous.SourceID, error) {
 	version, err := semv.Parse(f.Tag)

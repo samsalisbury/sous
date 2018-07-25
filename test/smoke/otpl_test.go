@@ -4,47 +4,72 @@ package smoke
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/opentable/sous/util/filemap"
 )
 
-func dockerBuildAddArtifact(t *testing.T, f *TestFixture, client *TestClient, flags *sousFlags) {
+func dockerBuildAddArtifactInit(t *testing.T, f *testFixture, client *sousClient, flags *sousFlags, transforms ...ManifestTransform) (dockerRef string) {
+	t.Helper()
+
+	dockerRef = dockerBuildAddArtifact(t, f, client, flags)
+
+	client.MustRun(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
+	client.TransformManifest(t, flags, transforms...)
+
+	return dockerRef
+}
+
+func dockerBuildAddArtifact(t *testing.T, f *testFixture, client *sousClient, flags *sousFlags) (dockerRef string) {
 	t.Helper()
 	tag := flags.tag
 	if tag == "" {
 		t.Fatalf("you must add a non-empty tag flag")
 	}
 	reg := client.Config.Docker.RegistryHost
-	repo := "github.com/user1/project1"
+	repo := flags.repo
 	dockerTag := f.IsolatedVersionTag(t, tag)
 	dockerRepo := fmt.Sprintf("%s/%s", reg, repo)
-	dockerRef := fmt.Sprintf("%s:%s", dockerRepo, dockerTag)
+	dockerRef = fmt.Sprintf("%s:%s", dockerRepo, dockerTag)
 
 	mustDoCMD(t, client.Dir, "docker", "build", "-t", dockerRef, ".")
 	mustDoCMD(t, client.Dir, "docker", "push", dockerRef)
 
 	client.MustRun(t, "artifact add", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
+
+	return dockerRef
 }
 
-func TestOTPLInitToDeploy(t *testing.T) {
+func TestOTPL(t *testing.T) {
 
-	t.Skipf("WIP Test")
-
-	pf := pfs.newParallelTestFixture(t, Matrix())
+	// FixedDimension is because otpl deploy can only work with simple dockerfile
+	// projects, not split build projects.
+	pf := pfs.newParallelTestFixture(t, Matrix().FixedDimension("project", "simple"))
 
 	pf.RunMatrix(
 
-		PTest{Name: "artifact-add", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "artifact-add", Test: func(t *testing.T, f *testFixture) {
 			client := f.setupProject(t, f.Projects.HTTPServer())
 
-			flags := &sousFlags{tag: "1.2.3"}
+			flags := &sousFlags{tag: "1.2.3", repo: "github.com/some-user/project1"}
 
-			dockerBuildAddArtifact(t, f, client, flags)
-			// TODO: Assertion that artifact was registered.
+			dockerRef := dockerBuildAddArtifact(t, f, client, flags)
+
+			output := client.MustRun(t, "artifact get", flags)
+
+			if !strings.Contains(output, dockerRef) {
+				// TODO SS: Figure out how to do this assertion given that we do
+				// not store the Docker tag sent, only the  digest.
+				//t.Errorf("output did not contain %q; was:\n%s", dockerRef, output)
+			} else {
+				// TODO SS: Remove next line once we have the assertion above.
+				t.Logf(output)
+			}
 		}},
 
-		PTest{Name: "build-init-deploy", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "build-init-deploy", Test: func(t *testing.T, f *testFixture) {
+
 			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 				"config/cluster1/singularity.json": `
 				{
@@ -73,14 +98,20 @@ func TestOTPLInitToDeploy(t *testing.T) {
 				cluster: "cluster1",
 			}
 
-			dockerBuildAddArtifact(t, f, client, flags)
-
-			client.MustRun(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
+			dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
 
 			client.MustRun(t, "deploy", flags.SousDeployFlags())
+
+			reqID := f.DefaultSingReqID(t, flags)
+			assertActiveStatus(t, f, reqID)
+			assertSingularityRequestTypeService(t, f, reqID)
+			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 		}},
 
-		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *TestFixture) {
+		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *testFixture) {
+
+			t.Skipf("WIP")
+
 			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 				"config/cluster1/singularity.json": `
 				{
