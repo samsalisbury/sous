@@ -93,10 +93,10 @@ cp coverage.html ./coverage
             '''
           }
         }
-        stage('Smoke') {
+        stage('Smoke_Simple_Git') {
    				agent { label 'mesos-qa-uswest2' }
 					steps {
-            echo "smoke test step"
+            echo "smoke test TestSomke/git/simple step"
             sh '''#!/usr/bin/env bash
 set -x
 echo $PATH
@@ -121,7 +121,73 @@ git config --global user.email "sous-internal@opentable.onmicrosoft.com"
 git config --global user.name "Jenkins Run"
 
 
-make test-smoke
+GO_TEST_RUN=TestSmoke/git/simple make test-smoke
+
+            '''
+          }
+        }
+        stage('Smoke_Split_Git') {
+   				agent { label 'mesos-qa-uswest2' }
+					steps {
+            echo "smoke test TestSomke/git/split step"
+            sh '''#!/usr/bin/env bash
+set -x
+echo $PATH
+PATH=$PATH:/usr/local/go/bin export PATH
+echo $PATH
+
+echo "Setting up GOPATH"
+
+mkdir -p godir/src/github.com/opentable
+ln -sfn $PWD $PWD/godir/src/github.com/opentable/sous
+export GOPATH=$PWD/godir
+cd $PWD/godir/src/github.com/opentable/sous
+
+echo $GOPATH
+echo $PWD
+
+
+echo "Running Tests"
+
+echo "Setting up git identity for test"
+git config --global user.email "sous-internal@opentable.onmicrosoft.com"
+git config --global user.name "Jenkins Run"
+
+
+GO_TEST_RUN=TestSmoke/git/split make test-smoke
+
+            '''
+          }
+        }
+        stage('Smoke_TestOTPL_Simple_Git') {
+   				agent { label 'mesos-qa-uswest2' }
+					steps {
+            echo "smoke test TestOTPL/git/simple step"
+            sh '''#!/usr/bin/env bash
+set -x
+echo $PATH
+PATH=$PATH:/usr/local/go/bin export PATH
+echo $PATH
+
+echo "Setting up GOPATH"
+
+mkdir -p godir/src/github.com/opentable
+ln -sfn $PWD $PWD/godir/src/github.com/opentable/sous
+export GOPATH=$PWD/godir
+cd $PWD/godir/src/github.com/opentable/sous
+
+echo $GOPATH
+echo $PWD
+
+
+echo "Running Tests"
+
+echo "Setting up git identity for test"
+git config --global user.email "sous-internal@opentable.onmicrosoft.com"
+git config --global user.name "Jenkins Run"
+
+
+GO_TEST_RUN=TestOTPL/git/simple make test-smoke
 
             '''
           }
