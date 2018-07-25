@@ -307,6 +307,10 @@ func freePortAddrs(ip string, n, min, max int) []string {
 			log.Panic(err)
 		}
 	}
+	// TODO SS: Remove below sleep; this is a test to see if it helps these
+	// tests in Jenkins. If so we need a way to signal to do this only in
+	// certain circumstances.
+	time.Sleep(2 * time.Second)
 	return addrs
 }
 
