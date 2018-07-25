@@ -1,12 +1,15 @@
 package graph
 
 import (
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
 	"github.com/samsalisbury/semv"
 )
@@ -193,15 +196,27 @@ func (di *SousGraph) GetDeploy(opts DeployActionOpts) (actions.Action, error) {
 		LogSink          LogSink
 		User             sous.User
 		Config           LocalSousConfig
+		TraceID          sous.TraceID
 	}{}
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
 	rf := (*sous.ResolveFilter)(scoop.ResolveFilter)
+
+	client := scoop.HTTP.HTTPClient
+	if _, exists := os.LookupEnv("SOUS_USE_SOUS_SERVER"); exists == true {
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("TraceID: %s", scoop.TraceID), logging.DebugLevel, scoop.LogSink.LogSink, scoop.TraceID)
+		c, err := restful.NewClient(scoop.Config.Config.Server, scoop.LogSink.LogSink.Child(opts.DFF.Cluster+".http-client"), map[string]string{"OT-RequestId": string(scoop.TraceID)})
+		if err != nil {
+			return nil, err
+		}
+		client = c
+	}
+
 	did := sous.DeploymentID(scoop.DeploymentID)
 	return &actions.Deploy{
 		ResolveFilter:      rf,
-		HTTPClient:         scoop.HTTP.HTTPClient,
+		HTTPClient:         client,
 		TargetDeploymentID: did,
 		StateReader:        scoop.HTTPStateManager,
 		LogSink:            scoop.LogSink.LogSink.Child("deploy", rf, did),

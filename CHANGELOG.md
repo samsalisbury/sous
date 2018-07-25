@@ -6,19 +6,25 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.114...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.115...master)
 ### Changed
 * Client: 'sous artifact get' no longer requires -cluster flag.
 * Client: 'sous artifact get' now prints artifact information (digest, type).
 
+## [0.5.115](//github.com/opentable/sous/compare/0.5.114...0.5.115)
+### Changed
+* Client: Create a way for deploy to bypass cluster configuration for how http client
+  obtains it's url for sous server.
+* Server: On sous build, don't treat failure to update name cache as an error, just log.
+
 ## [0.5.114](//github.com/opentable/sous/compare/0.5.113...0.5.114)
 ### Changed
-* Server: Default endpoint / implemented
+* Server: Default endpoint / implemented.
 
 ## [0.5.113](//github.com/opentable/sous/compare/0.5.112...0.5.113)
 ### Changed
 * Both: Send the request URL back to the client and print to
-	console on deploy
+  console on deploy.
 
 ## [0.5.112](//github.com/opentable/sous/compare/0.5.111...0.5.112)
 ### Changed
