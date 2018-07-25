@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 )
 
@@ -52,21 +53,27 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 			return c
 		}():
 			if err != nil {
-				rtLog("SERVER CRASHED: %s: %s; process state: %s", id, err, ps)
+				exitCode := tryGetExitCode("Wait error", err)
+				rtLog("SERVER CRASHED: %s: %s (exit code %d); process state: %s", id, err, exitCode, ps)
 				return
 			}
+
+			exitCode := tryGetExitCode("ps.Sys()", ps.Sys())
+
 			if !ps.Exited() {
 				// NOTE SS: This condition should not be possible, since after
 				// calling Wait, the process should have exited. But it hasn't.
-				rtLog("SERVER DID NOT EXIT: %s", id)
+				// Even though 'should be impossible', this does happen in
+				// practice.
+				rtLog("OK: SERVER DID NOT EXIT: %s", id)
 				return
 			}
 			if ps.Success() {
 				rtLog("SERVER STOPPED: %s (exit code 0)", id)
 			}
 			// TODO SS: Dump log tail here as well for analysis.
-			rtLog("SERVER CRASHED: %s; logs follow:", id)
-			s.DumpTail(t, 50)
+			rtLog("SERVER CRASHED: exit code %d: %s; logs follow:", exitCode, id)
+			s.DumpTail(t, 25)
 		// In this case the process is still running.
 		case <-s.TestFinished:
 			rtLog("OK: SERVER STILL RUNNING AFTER TEST %s", id)
@@ -76,6 +83,15 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 
 	s.Proc = cmd.Process
 	writePID(t, s.Proc.Pid)
+}
+
+func tryGetExitCode(fromDesc string, from interface{}) int {
+	if ws, ok := from.(syscall.WaitStatus); ok {
+		rtLog("GOT EXIT CODE: %s is a syscall.WaitStatus: %d", fromDesc, ws.ExitStatus())
+		return ws.ExitStatus()
+	}
+	rtLog("UNABLE TO GET EXIT CODE: %s was a %T", fromDesc, from)
+	return -1
 }
 
 // Stop stops this service.
