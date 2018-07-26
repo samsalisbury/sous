@@ -11,8 +11,7 @@ install:
 - "./bin/vendor-check"
 script:
 - bundle exec danger
-- make test-smoke
-- make -j3 test
+- $TEST_COMMAND
 - make reject-wip
 after_script:
 - docker ps || true
@@ -22,6 +21,14 @@ after_success:
 - make coverage
 - bin/codecov -f /tmp/sous-cover/count_merged.txt
 env:
+  - TEST_COMMAND=make test-integration
+  - TEST_COMMAND=make test-unit
+  - TEST_COMMAND=GO_TEST_RUN=TestOTPL/db/simple make test-smoke
+  - TEST_COMMAND=GO_TEST_RUN=TestOTPL/git/simple make test-smoke 
+  - TEST_COMMAND=GO_TEST_RUN=TestSmoke/db/simple make test-smoke
+  - TEST_COMMAND=GO_TEST_RUN=TestSmoke/db/split make test-smoke
+  - TEST_COMMAND=GO_TEST_RUN=TestSmoke/git/simple make test-smoke
+  - TEST_COMMAND=GO_TEST_RUN=TestSmoke/git/split make test-smoke
   global:
   - SOUS_TERSE_LOGGING=MSGONLY
   - PGPORT=6543
