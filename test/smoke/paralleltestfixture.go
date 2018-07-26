@@ -171,7 +171,7 @@ func (pfs *parallelTestFixtureSet) PrintSummary() {
 
 	if len(missing) != 0 {
 		fmt.Printf("These tests did not report status:\n")
-		for _, n := range failed {
+		for _, n := range missing {
 			fmt.Printf("> %s\n", n)
 		}
 	}
