@@ -9,7 +9,7 @@ pipeline {
   stages {
     //Immediately send github PR all checks that this pipeline will be checking
     stage('Git statuses') {
-      agent { label 'master' }
+      agent { label 'mesos-qa-uswest2' }
       steps {
         githubNotify context: 'Jenkins/Test/Static-Check', description: 'Static Check Tests', status: 'PENDING'
       }
