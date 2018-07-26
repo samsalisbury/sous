@@ -191,11 +191,6 @@ func (f *testFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
 	return strings.ToLower(baseTag + "-" + suffix)
 }
 
-func (f *testFixture) reportStatus(t *testing.T) {
-	t.Helper()
-	f.Parent.recordTestStatus(t)
-}
-
 // KnownToFailHere cauuses the test to be skipped from this point on if
 // the environment variable EXCLUDE_KNOWN_FAILING_TESTS=YES.
 func (f *testFixture) KnownToFailHere(t *testing.T) {

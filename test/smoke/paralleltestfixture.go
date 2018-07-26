@@ -98,8 +98,10 @@ func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
 				pt := pt
 				t.Run(pt.Name, func(t *testing.T) {
 					f := pf.newIsolatedFixture(t, c)
-					defer f.Teardown(t)
-					defer f.reportStatus(t)
+					defer func() {
+						pf.recordTestStatus(t)
+						f.Teardown(t)
+					}()
 					pt.Test(t, f)
 				})
 			}
@@ -162,6 +164,13 @@ func (pfs *parallelTestFixtureSet) PrintSummary() {
 
 	if len(failed) != 0 {
 		fmt.Printf("These tests failed:\n")
+		for _, n := range failed {
+			fmt.Printf("> %s\n", n)
+		}
+	}
+
+	if len(missing) != 0 {
+		fmt.Printf("These tests did not report status:\n")
 		for _, n := range failed {
 			fmt.Printf("> %s\n", n)
 		}
