@@ -3,7 +3,6 @@ package smoke
 import (
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 )
@@ -165,14 +164,14 @@ func (pfs *parallelTestFixtureSet) PrintSummary() {
 	if len(failed) != 0 {
 		fmt.Printf("These tests failed:\n")
 		for _, n := range failed {
-			fmt.Printf("> %s\n", n)
+			fmt.Printf("FAILED> %s\n", n)
 		}
 	}
 
 	if len(missing) != 0 {
 		fmt.Printf("These tests did not report status:\n")
 		for _, n := range missing {
-			fmt.Printf("> %s\n", n)
+			fmt.Printf("MISSING> %s\n", n)
 		}
 	}
 
@@ -198,12 +197,13 @@ func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, m
 	skipped = testNamesSlice(pf.testNamesSkipped)
 	failed = testNamesSlice(pf.testNamesFailed)
 
-	summary := fmt.Sprintf("%s summary: %d failed; %d skipped; %d passed (total %d)",
-		t.Name(), len(failed), len(skipped), len(passed), len(total))
-	t.Log(summary)
-	fmt.Fprintln(os.Stdout, summary)
+	if !quiet() {
+		summary := fmt.Sprintf("%s summary: %d failed; %d skipped; %d passed (total %d)",
+			t.Name(), len(failed), len(skipped), len(passed), len(total))
+		t.Log(summary)
+		fmt.Fprintln(os.Stdout, summary)
+	}
 
-	var missingTests []string
 	missingCount := len(total) - (len(passed) + len(failed) + len(skipped))
 	if missingCount != 0 {
 		for t := range pf.testNamesPassed {
@@ -216,11 +216,10 @@ func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, m
 			delete(pf.testNames, t)
 		}
 		for t := range pf.testNames {
-			missingTests = append(missingTests, t)
+			missing = append(missing, t)
 		}
-		rtLog("Warning! Some tests did not report status: %s", strings.Join(missingTests, ", "))
 	}
-	return total, passed, skipped, failed, missingTests
+	return total, passed, skipped, failed, missing
 }
 
 func (pf *parallelTestFixture) newIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {
