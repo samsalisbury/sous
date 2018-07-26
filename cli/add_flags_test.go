@@ -7,12 +7,7 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
-	"github.com/stretchr/testify/assert"
 )
-
-func TestAddFlags_GoingToFail(t *testing.T) {
-	assert.True(t, false, "fail on purpose")
-}
 
 func TestAddFlagsForRectify(t *testing.T) {
 	expectedHelpText := `
