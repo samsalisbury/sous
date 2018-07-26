@@ -20,12 +20,14 @@ type (
 		testNamesSkippedMu sync.Mutex
 		testNamesFailed    map[string]struct{}
 		testNamesFailedMu  sync.Mutex
+		parent             *parallelTestFixtureSet
 	}
 
 	parallelTestFixtureSet struct {
 		GetAddrs func(int) []string
 		mu       sync.Mutex
 		fixtures map[string]*parallelTestFixture
+		wg       sync.WaitGroup
 	}
 )
 
@@ -50,10 +52,8 @@ func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 		}
 		t.Skip("Just printing test matrix (-ls-matrix flag set)")
 	}
-	rtLog("Registering %s", t.Name())
 	t.Helper()
 	t.Parallel()
-	rtLog("Running     %s", t.Name())
 	pf := &parallelTestFixture{
 		T:                t,
 		Matrix:           m,
@@ -62,6 +62,7 @@ func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 		testNamesPassed:  map[string]struct{}{},
 		testNamesSkipped: map[string]struct{}{},
 		testNamesFailed:  map[string]struct{}{},
+		parent:           pfs,
 	}
 	pfs.mu.Lock()
 	defer pfs.mu.Unlock()
@@ -96,8 +97,10 @@ func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
 			for _, pt := range tests {
 				pt := pt
 				t.Run(pt.Name, func(t *testing.T) {
+					pf.parent.wg.Add(1)
 					f := pf.newIsolatedFixture(t, c)
 					defer func() {
+						defer pf.parent.wg.Done()
 						pf.recordTestStatus(t)
 						f.Teardown(t)
 					}()
@@ -151,6 +154,9 @@ func (pf *parallelTestFixture) recordTestStatus(t *testing.T) {
 // failed to report back any status, which should not happen under normal
 // circumstances.
 func (pfs *parallelTestFixtureSet) PrintSummary() {
+	pfs.wg.Wait()
+	pfs.mu.Lock()
+	defer pfs.mu.Unlock()
 	var total, passed, skipped, failed, missing []string
 	for _, pf := range pfs.fixtures {
 		t, p, s, f, m := pf.printSummary()
