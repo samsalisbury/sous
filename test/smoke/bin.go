@@ -272,12 +272,6 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	}
 }
 
-func (c *PreparedCmd) start() error {
-	defer c.PostRun()
-	c.PreRun()
-	return c.Cmd.Start()
-}
-
 func (c *PreparedCmd) runWithTimeout(timeout time.Duration) error {
 	defer c.PostRun()
 	c.PreRun()

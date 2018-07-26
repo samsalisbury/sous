@@ -181,7 +181,6 @@ func (f *testFixture) setupProject(t *testing.T, fm filemap.FileMap) *sousClient
 	if !quiet() {
 		client.MustRun(t, "version", nil)
 	}
-	client.MustRun(t, "config", nil)
 
 	return client
 }

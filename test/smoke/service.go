@@ -33,6 +33,8 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 
 	prepared := s.Command(t, subcmd, flags, args...)
 
+	prepared.PreRun()
+
 	cmd := prepared.Cmd
 	if err := cmd.Start(); err != nil {
 		t.Fatalf("error starting server %q: %s", s.InstanceName, err)
