@@ -11,6 +11,7 @@ pipeline {
     stage('Git statuses') {
       agent { label 'mesos-qa-uswest2' }
       steps {
+        githubNotify context: 'Jenkins/Test/Unit', description: 'Unit Tests', status: 'PENDING'
         githubNotify context: 'Jenkins/Test/Static-Check', description: 'Static Check Tests', status: 'PENDING'
       }
     }
@@ -108,6 +109,14 @@ pipeline {
               cp coverage.html ./coverage
 
               '''
+          }
+          post {
+            success {
+              githubNotify context: 'Jenkins/Test/Unit', description: 'Unit Tests Passed', status: 'SUCCESS'
+            }
+            failure {
+              githubNotify context: 'Jenkins/Test/Unit', description: 'Unit Tests Failed', status: 'FAILURE'
+            }
           }
         }
         stage('Smoke_Simple_Git') {
