@@ -11,7 +11,7 @@ install:
 - "./bin/vendor-check"
 script:
 - bundle exec danger
-- $TEST_COMMAND
+- sh -c "$TEST_COMMAND"
 - make reject-wip
 after_script:
 - docker ps || true
