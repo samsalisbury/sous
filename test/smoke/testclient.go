@@ -24,11 +24,11 @@ type sousClient struct {
 	Fixture *testFixture
 }
 
-func makeClient(fixture *testFixture, baseDir, sousBin string) *sousClient {
+func makeClient(t *testing.T, fixture *testFixture, baseDir, sousBin string) *sousClient {
 	clientName := "client1"
 	baseDir = path.Join(baseDir, clientName)
 	c := &sousClient{
-		Bin:     NewBin(sousBin, clientName, baseDir, fixture.Finished),
+		Bin:     NewBin(t, sousBin, clientName, baseDir, fixture.Finished),
 		Fixture: fixture,
 	}
 	c.Bin.MassageArgs = c.insertClusterSuffix

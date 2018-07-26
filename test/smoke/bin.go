@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 
 // Bin represents a binary under test.
 type Bin struct {
+	TestName     string
 	InstanceName string
 	BinName      string
 	BaseDir      string
@@ -36,12 +38,14 @@ type Bin struct {
 
 // NewBin returns a new minimal Bin, all files will be created in subdirectories
 // of baseDir.
-func NewBin(path, name, baseDir string, finished <-chan struct{}) Bin {
-	binName := filepath.Base(path)
-	if name == "" {
-		name = binName
+func NewBin(t *testing.T, path, name, baseDir string, finished <-chan struct{}) Bin {
+	illegalChars := ":/>"
+	if strings.ContainsAny(name, illegalChars) {
+		log.Panicf("name %q contains at least one illegal character from %q", name, illegalChars)
 	}
+	binName := filepath.Base(path)
 	return Bin{
+		TestName:     t.Name(),
 		BinPath:      path,
 		InstanceName: name,
 		BinName:      binName,
@@ -51,6 +55,12 @@ func NewBin(path, name, baseDir string, finished <-chan struct{}) Bin {
 		LogDir:       filepath.Join(baseDir, "logs"),
 		TestFinished: finished,
 	}
+}
+
+// ID returns the unique ID of this instance, formatted as:
+// "test-name:instance-name".
+func (c *Bin) ID() string {
+	return fmt.Sprintf("%s:%s", c.TestName, c.InstanceName)
 }
 
 // Configure writes fm files relative to c.ConfigPath and ensures the log

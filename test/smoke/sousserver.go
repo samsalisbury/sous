@@ -31,7 +31,7 @@ func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, add
 
 	name := fmt.Sprintf("instance%d", num)
 
-	bin := NewBin(binPath, name, baseDir, finished)
+	bin := NewBin(t, binPath, name, baseDir, finished)
 	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
 
 	service := NewService(bin)

@@ -86,7 +86,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixt
 		Projects:      fcfg.projects,
 		Finished:      finished,
 	}
-	client := makeClient(tf, baseDir, sousBin)
+	client := makeClient(t, tf, baseDir, sousBin)
 	if err := client.Configure(primaryServer, envDesc.RegistryName(), userEmail); err != nil {
 		t.Fatal(err)
 	}
