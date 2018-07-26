@@ -31,7 +31,7 @@ pipeline {
             echo "static test step"
             sh '''#!/usr/bin/env bash
 set -x
-
+set -e
 
 echo "Setting up git identity for test"
 git config --global user.email "sous-internal@opentable.onmicrosoft.com"
@@ -68,6 +68,8 @@ VERBOSE=1 make test-staticcheck
             echo "unit test step"
             sh '''#!/usr/bin/env bash
 set -x
+set -e
+
 echo $PATH
 PATH=$PATH:/usr/local/go/bin export PATH
 echo $PATH
@@ -99,6 +101,8 @@ cp coverage.html ./coverage
             echo "smoke test TestSomke/git/simple step"
             sh '''#!/usr/bin/env bash
 set -x
+set -e
+
 echo $PATH
 PATH=$PATH:/usr/local/go/bin export PATH
 echo $PATH
@@ -132,6 +136,8 @@ GO_TEST_RUN=TestSmoke/git/simple make test-smoke
             echo "smoke test TestSomke/git/split step"
             sh '''#!/usr/bin/env bash
 set -x
+set -e
+
 echo $PATH
 PATH=$PATH:/usr/local/go/bin export PATH
 echo $PATH
@@ -165,6 +171,8 @@ GO_TEST_RUN=TestSmoke/git/split make test-smoke
             echo "smoke test TestOTPL/git/simple step"
             sh '''#!/usr/bin/env bash
 set -x
+set -e
+
 echo $PATH
 PATH=$PATH:/usr/local/go/bin export PATH
 echo $PATH
@@ -198,6 +206,8 @@ GO_TEST_RUN=TestOTPL/git/simple make test-smoke
             echo "integration test"
             sh '''#!/usr/bin/env bash
 set -x
+set -e
+
 echo $PATH
 PATH=$PATH:/usr/local/go/bin export PATH
 echo $PATH
