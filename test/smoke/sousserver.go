@@ -102,7 +102,7 @@ func (i *sousServer) Start(t *testing.T) {
 
 	serverDebug := os.Getenv("SOUS_SERVER_DEBUG") == "true"
 
-	i.Service.Start(t, "server", nil, "-listen", i.Addr, "-cluster", i.ClusterName, "autoresolver=false", fmt.Sprintf("-d=%t", serverDebug))
+	i.Service.Start(t, "server", nil, "-listen", i.Addr, "-cluster", i.ClusterName, "-autoresolver=false", fmt.Sprintf("-d=%t", serverDebug))
 
 }
 
