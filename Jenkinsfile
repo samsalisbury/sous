@@ -16,6 +16,7 @@ pipeline {
         githubNotify context: 'Jenkins/Test/TestSmoke/git/split', description: 'Smoke Git Split Tests', status: 'PENDING'
         githubNotify context: 'Jenkins/Test/TestSmoke/git/simple', description: 'Smoke Git Simple Tests', status: 'PENDING'
         githubNotify context: 'Jenkins/Test/TestOTPL/git/simple', description: 'OTPL Git Simple Tests', status: 'PENDING'
+        githubNotify context: 'Jenkins Overall Success', description: 'Pipeline Status', status: 'PENDING'
       }
     }
     stage('Inited Values') {
@@ -295,6 +296,7 @@ pipeline {
 
             notifier.notifyResult()
         }
+        githubNotify context: 'Jenkins Overall Success', description: 'PIPELINE all Passed!!!', status: 'SUCCESS'
     }
     failure {
       echo 'This will run only if failed'
@@ -307,6 +309,7 @@ pipeline {
 
             notifier.notifyResult()
         }
+        githubNotify context: 'Jenkins Overall Success', description: 'PIPELINE FAILED', status: 'FAILURE'
     }
     unstable {
       echo 'This will run only if the run was marked as unstable'
