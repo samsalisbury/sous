@@ -13,6 +13,7 @@ pipeline {
       steps {
         githubNotify context: 'Jenkins/Test/Unit', description: 'Unit Tests', status: 'PENDING'
         githubNotify context: 'Jenkins/Test/Static-Check', description: 'Static Check Tests', status: 'PENDING'
+        githubNotify context: 'Jenkins/Test/TestSmoke/git/split', description: 'Smoke Git Split Tests', status: 'PENDING'
       }
     }
     stage('Inited Values') {
@@ -187,6 +188,14 @@ pipeline {
               GO_TEST_RUN=TestSmoke/git/split make test-smoke
 
               '''
+          }
+          post {
+            success {
+              githubNotify context: 'Jenkins/Test/TestSmoke/git/split', description: 'Smoke Git Split Tests Passed', status: 'SUCCESS'
+            }
+            failure {
+              githubNotify context: 'Jenkins/Test/TestSmoke/git/split', description: 'Smoke Git Split Tests Failed', status: 'FAILURE'
+            }
           }
         }
         stage('Smoke_TestOTPL_Simple_Git') {
