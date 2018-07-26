@@ -65,12 +65,16 @@ func (c *Bin) ID() string {
 
 // Configure writes fm files relative to c.ConfigPath and ensures the log
 // directory exists.
-func (c *Bin) Configure(fm filemap.FileMap) error {
+func (c *Bin) Configure(fms ...filemap.FileMap) error {
 	if err := os.MkdirAll(c.ConfigDir, os.ModePerm); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(c.LogDir, os.ModePerm); err != nil {
 		return err
+	}
+	fm := filemap.FileMap{}
+	for _, f := range fms {
+		fm = fm.Merge(f)
 	}
 	if err := fm.Write(c.ConfigDir); err != nil {
 		return err

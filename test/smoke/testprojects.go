@@ -158,11 +158,14 @@ func splitBuild(p program) filemap.FileMap {
 func (f *testFixture) setupProject(t *testing.T, fm filemap.FileMap) *sousClient {
 	t.Helper()
 	// Setup project git repo.
-	projectDir := makeGitRepo(t, f.Client.BaseDir, "projects/project1", GitRepoSpec{
+	g := newGitClient(t, f, f.Client.BaseDir)
+
+	projectDir := g.configureRepo(t, "projects/project1", gitRepoSpec{
 		UserName:  "Sous User 1",
 		UserEmail: "sous-user1@example.com",
 		OriginURL: "git@github.com:user1/repo1.git",
 	})
+
 	if err := fm.Write(projectDir); err != nil {
 		t.Fatalf("filemap.Write: %s", err)
 	}
