@@ -64,6 +64,7 @@ func (c *sousClient) Configure(server, dockerReg, userEmail string) error {
 		return err
 	}
 	c.Env["SOUS_CONFIG_DIR"] = c.Bin.ConfigDir
+	c.Env["SOUS_BUILD_NOPULL"] = "YES"
 
 	return c.Bin.Configure(filemap.FileMap{
 		"config.yaml": string(configYAML),
