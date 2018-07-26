@@ -97,6 +97,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 }
 
 func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
+	t.Helper()
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr
@@ -113,8 +114,14 @@ func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg 
 	}
 
 	for n, i := range c.Instances {
-		sous.SetupDB(t, n)
 		dbname := sous.DBNameForTest(t, n)
+
+		if _, err := sous.SetupDBNamed(t, dbname); err != nil {
+			rtLog("%s:db:%s> create failed: %s", i.ID(), dbname, err)
+			t.Fatalf("create database failed: %s", err)
+		}
+		rtLog("%s:db:%s> created", i.ID(), dbname)
+
 		config := &config.Config{
 			StateLocation: i.StateDir,
 			SiblingURLs:   siblingURLs,
@@ -127,7 +134,6 @@ func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg 
 			DatabasePrimary: fcfg.dbPrimary,
 			Docker: docker.Config{
 				RegistryHost: envDesc.RegistryName(),
-				//DatabaseConnection: "file:dummy_" + i.ClusterName + ".db?mode=memory&cache=shared",
 			},
 			User: sous.User{
 				Name:  "Sous Server " + i.ClusterName,
