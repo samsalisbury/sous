@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.115...master)
+## [0.5.116](//github.com/opentable/sous/compare/0.5.115...0.5.116)
 ### Changed
 * Client: 'sous artifact get' no longer requires -cluster flag.
 * Client: 'sous artifact get' now prints artifact information (digest, type).
