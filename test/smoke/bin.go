@@ -107,18 +107,19 @@ func (i invocation) allArgs() []string {
 	return all
 }
 
-// Cmd generates an *exec.Cmd and cancellation func.
-func (c *Bin) Cmd(t *testing.T, i invocation) (*exec.Cmd, context.CancelFunc) {
-	t.Helper()
-	args := i.allArgs()
-	if c.MassageArgs != nil {
-		args = c.MassageArgs(t, args)
-	}
-	cmd, cancel := mkCMD(c.Dir, c.BinPath, args...)
+// Cmd generates an *exec.Cmd and cancellation func from final args.
+func (c *Bin) cmd(finalArgs []string) (*exec.Cmd, context.CancelFunc) {
+	cmd, cancel := mkCMD(c.Dir, c.BinPath, finalArgs...)
 	for name, value := range c.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", name, value))
 	}
 	return cmd, cancel
+}
+
+// Cmd generates an *exec.Cmd and cancellation func from an invocation.
+func (c *Bin) Cmd(t *testing.T, i invocation) (*exec.Cmd, context.CancelFunc) {
+	t.Helper()
+	return c.cmd(i.finalArgs)
 }
 
 // Add quotes to args with spaces for printing.
@@ -141,6 +142,7 @@ func quotedArgsString(args []string) string {
 // ExecutedCMD represents the reasult of a command having been run.
 type ExecutedCMD struct {
 	invocation
+	finalArgs                []string
 	Stdout, Stderr, Combined *bytes.Buffer
 }
 
@@ -175,7 +177,7 @@ func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*Execut
 
 // Command returns the prepared command.
 func (c *Bin) Command(t *testing.T, subcmd string, f Flags, args ...string) *PreparedCmd {
-	i := invocation{name: c.BinName, subcmd: subcmd, flags: f, args: args}
+	i := c.newInvocation(t, subcmd, f, args...)
 	return c.configureCommand(t, i)
 }
 
@@ -185,17 +187,31 @@ type invocation struct {
 	name, subcmd string
 	flags        Flags
 	args         []string
+	finalArgs    []string
 }
 
-// String() returns this invocation roughly as a copy-pastable shell command.
+func (c *Bin) newInvocation(t *testing.T, subcmd string, f Flags, args ...string) invocation {
+	t.Helper()
+	i := invocation{name: c.BinName, subcmd: subcmd, flags: f, args: args}
+	i.finalArgs = i.allArgs()
+	if c.MassageArgs != nil {
+		i.finalArgs = c.MassageArgs(t, i.finalArgs)
+	}
+	return i
+}
+
+// String returns this invocation roughly as a copy-pastable shell command.
 // Note: if args contain quotes some manual editing may be required.
 func (i invocation) String() string {
-	return fmt.Sprintf("%s %s", i.name, strings.Join(i.allArgs(), " "))
+	return fmt.Sprintf("%s %s", i.name, strings.Join(i.finalArgs, " "))
 }
 
 func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	t.Helper()
-	cmd, cancel := c.Cmd(t, i)
+
+	executed := newExecutedCMD(i)
+
+	cmd, cancel := c.cmd(i.finalArgs)
 
 	outFile, errFile, combinedFile :=
 		openFileAppendOnly(t, c.LogDir, "stdout"),
@@ -203,8 +219,6 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 		openFileAppendOnly(t, c.LogDir, "combined")
 
 	allFiles := io.MultiWriter(outFile, errFile, combinedFile)
-
-	executed := newExecutedCMD(i)
 
 	stdoutWriters := []io.Writer{outFile, combinedFile, executed.Stdout, executed.Combined}
 	stderrWriters := []io.Writer{errFile, combinedFile, executed.Stderr, executed.Combined}
@@ -227,10 +241,11 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 		fmt.Fprintf(allFiles, "%s> %s", relPath, i)
 	}
 	postRun := func() {
-		err := cmd.Wait()
-		if err != nil {
-			exitCode := tryGetExitCode("cmd.Wait", err)
-			rtLog("%s:error> exit code %d; combined logs follow:", c.ID(), exitCode)
+		if !cmd.ProcessState.Success() {
+			exitCode := tryGetExitCode("cmd.ProcessState.Sys()", cmd.ProcessState.Sys())
+			if exitCode != -1 {
+				rtLog("%s:error> exit code %d; combined logs follow:", c.ID(), exitCode)
+			}
 			prefixedOut, err := prefixedPipe("%s:combined> ", c.ID())
 			if err != nil {
 				t.Fatal(err)

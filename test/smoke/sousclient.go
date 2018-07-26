@@ -106,7 +106,7 @@ func (c *sousClient) TransformManifest(t *testing.T, flags *sousFlags, transform
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
 	// TODO SS: remove below invocation, make a top-level RunWithStdin or something.
-	i := invocation{name: "sous", subcmd: "manifest set", flags: flags}
+	i := c.newInvocation(t, "manifest set", flags)
 	manifestSetCmd := c.configureCommand(t, i)
 	defer manifestSetCmd.Cancel()
 	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
