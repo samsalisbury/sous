@@ -207,7 +207,7 @@ func (c *Bin) newInvocation(t *testing.T, subcmd string, f Flags, args ...string
 // String returns this invocation roughly as a copy-pastable shell command.
 // Note: if args contain quotes some manual editing may be required.
 func (i invocation) String() string {
-	return fmt.Sprintf("%s %s", i.name, strings.Join(i.finalArgs, " "))
+	return fmt.Sprintf("%s %s", i.name, quotedArgsString(i.finalArgs))
 }
 
 func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
