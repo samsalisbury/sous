@@ -16,7 +16,6 @@ func newServerComponentLocator(
 	sm *ServerStateManager,
 	cm *ServerClusterManager,
 	rf *sous.ResolveFilter,
-	ar *sous.AutoResolver,
 	v semv.Version,
 	qs *sous.R11nQueueSet,
 ) server.ComponentLocator {
@@ -41,7 +40,6 @@ func newServerComponentLocator(
 		ClusterManager:    cm.ClusterManager,
 		DeploymentManager: dm,
 		ResolveFilter:     rf,
-		AutoResolver:      ar,
 		Version:           v,
 		QueueSet:          qs,
 	}
