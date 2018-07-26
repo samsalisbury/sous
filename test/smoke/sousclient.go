@@ -31,7 +31,13 @@ func makeClient(t *testing.T, fixture *testFixture, baseDir, sousBin string) *so
 		Bin:     NewBin(t, sousBin, clientName, baseDir, fixture.Finished),
 		Fixture: fixture,
 	}
+
+	c.Bin.Env["SOUS_CONFIG_DIR"] = c.Bin.ConfigDir
+	c.Bin.Env["SOUS_BUILD_NOPULL"] = "YES"
+	addGitEnvVars(c.Bin.Env)
+
 	c.Bin.MassageArgs = c.insertClusterSuffix
+
 	return c
 }
 
@@ -63,8 +69,6 @@ func (c *sousClient) Configure(server, dockerReg, userEmail string) error {
 	if err != nil {
 		return err
 	}
-	c.Env["SOUS_CONFIG_DIR"] = c.Bin.ConfigDir
-	c.Env["SOUS_BUILD_NOPULL"] = "YES"
 
 	return c.Bin.Configure(filemap.FileMap{
 		"config.yaml": string(configYAML),

@@ -32,7 +32,10 @@ func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, add
 	name := fmt.Sprintf("instance%d", num)
 
 	bin := NewBin(t, binPath, name, baseDir, finished)
+
 	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
+	bin.Env["SOUS_BUILD_NOPULL"] = "YES"
+	addGitEnvVars(bin.Env)
 
 	service := NewService(bin)
 

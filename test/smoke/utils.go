@@ -29,6 +29,16 @@ func quiet() bool {
 	return os.Getenv("SMOKE_TEST_QUIET") == "YES"
 }
 
+func addGitEnvVars(env map[string]string) {
+	env["GIT_CONFIG_NOSYSTEM"] = "yes"
+	env["HOME"] = "nowhere"
+	env["PREFIX"] = "nowhere"
+	env["GIT_COMMITTER_NAME"] = "Tester"
+	env["GIT_COMMITTER_EMAIL"] = "tester@example.com"
+	env["GIT_AUTHOR_NAME"] = "Tester"
+	env["GIT_AUTHOR_EMAIL"] = "tester@example.com"
+}
+
 func rtLog(format string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, format+"\n", a...)
 }
@@ -227,16 +237,6 @@ func mkCMD(dir, name string, args ...string) (*exec.Cmd, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(context.Background(), perCommandTimeout)
 	c := exec.CommandContext(ctx, name, args...)
 	c.Env = os.Environ()
-	// Isolate git...
-	c.Env = append(c.Env,
-		"GIT_CONFIG_NOSYSTEM=yes",
-		"HOME=/nowhere",
-		"PREFIX=/nowhere",
-		"GIT_COMMITTER_NAME=Tester",
-		"GIT_COMMITTER_EMAIL=tester@example.com",
-		"GIT_AUTHOR_NAME=Tester",
-		"GIT_AUTHOR_EMAIL=tester@example.com",
-	)
 	c.Dir = dir
 	return c, cancel
 }
