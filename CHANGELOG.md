@@ -10,6 +10,9 @@ with respect to its command line interface and HTTP interface
 ### Changed
 * Client: 'sous artifact get' no longer requires -cluster flag.
 * Client: 'sous artifact get' now prints artifact information (digest, type).
+* Client: If `SOUS_BUILD_NOPULL=YES` then sous omits the `--pull` flag from
+  Docker builds. This is mostly useful for tests. See also the `-dev` flag
+  which may be more useful.
 
 ## [0.5.115](//github.com/opentable/sous/compare/0.5.114...0.5.115)
 ### Changed
