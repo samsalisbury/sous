@@ -335,7 +335,8 @@ func oneFreePort(ip string, start, min, max int) (int, string, net.Listener, err
 	return 0, "", nil, fmt.Errorf("unable to find a free port in range %d-%d", min, max)
 }
 
-func prefixedPipe(prefix string) (io.Writer, error) {
+func prefixedPipe(prefixFormat string, a ...interface{}) (io.Writer, error) {
+	prefix := fmt.Sprintf(prefixFormat, a...)
 	r, w, err := os.Pipe()
 	if err != nil {
 		return nil, err

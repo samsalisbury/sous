@@ -219,7 +219,7 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	cmd.Stderr = io.MultiWriter(stderrWriters...)
 
 	preRun := func() {
-		fmt.Fprintf(os.Stderr, "%s:%s:command> %s\n", t.Name(), c.InstanceName, i)
+		rtLog("%s:$> %s", c.ID(), i)
 		var relPath string
 		if cmd.Dir != "" {
 			relPath = " " + mustGetRelPath(t, c.BaseDir, cmd.Dir)
@@ -227,6 +227,16 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 		fmt.Fprintf(allFiles, "%s> %s", relPath, i)
 	}
 	postRun := func() {
+		err := cmd.Wait()
+		if err != nil {
+			exitCode := tryGetExitCode("cmd.Wait", err)
+			rtLog("%s:error> exit code %d; combined logs follow:", c.ID(), exitCode)
+			prefixedOut, err := prefixedPipe("%s:combined> ", c.ID())
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Fprintf(prefixedOut, executed.Combined.String())
+		}
 		cancel()
 		closeFiles(t, outFile, errFile, combinedFile)
 	}
