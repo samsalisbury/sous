@@ -237,13 +237,15 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	cmd.Stderr = io.MultiWriter(stderrWriters...)
 
 	preRun := func() {
-		rtLog("%s:$> %s", c.ID(), i)
-		var relPath string
+		relPath := "/"
 		if cmd.Dir != "" {
-			relPath = " " + mustGetRelPath(t, c.BaseDir, cmd.Dir)
+			relPath += mustGetRelPath(t, c.BaseDir, cmd.Dir)
 		}
-		fmt.Fprintf(allFiles, "%s> %s", relPath, i)
+		cmdStr := fmt.Sprintf("%s$> %s", relPath, i)
+		rtLog("%s:%s", c.ID(), cmdStr)
+		fmt.Fprintf(allFiles, cmdStr)
 	}
+
 	postRun := func() {
 		if !cmd.ProcessState.Success() {
 			exitCode := tryGetExitCode("cmd.ProcessState.Sys()", cmd.ProcessState.Sys())

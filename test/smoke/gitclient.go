@@ -25,5 +25,5 @@ func (g *gitClient) configureRepo(t *testing.T, dir string, spec gitRepoSpec) st
 	g.MustRun(t, "remote", nil, "add", "origin", spec.OriginURL)
 	g.MustRun(t, "config", nil, "user.name", spec.UserName)
 	g.MustRun(t, "config", nil, "user.email", spec.UserEmail)
-	return g.Bin.BaseDir
+	return g.Bin.Dir
 }

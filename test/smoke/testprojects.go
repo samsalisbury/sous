@@ -2,7 +2,6 @@ package smoke
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"testing"
 
@@ -170,20 +169,19 @@ func (f *testFixture) setupProject(t *testing.T, fm filemap.FileMap) *sousClient
 		t.Fatalf("filemap.Write: %s", err)
 	}
 	for filePath := range fm {
-		mustDoCMD(t, projectDir, "git", "add", filePath)
+		g.MustRun(t, "add", nil, filePath)
 	}
-	mustDoCMD(t, projectDir, "git", "commit", "-m", "Initial Commit")
+
+	g.MustRun(t, "commit", nil, "-m", "initial commit")
 
 	client := f.Client
-
-	// cd into project dir
 	client.Dir = projectDir
 
 	// Dump sous version & config.
 	if !quiet() {
-		log.Printf("Sous version: %s", client.MustRun(t, "version", nil))
-		client.MustRun(t, "config", nil)
+		client.MustRun(t, "version", nil)
 	}
+	client.MustRun(t, "config", nil)
 
 	return client
 }
