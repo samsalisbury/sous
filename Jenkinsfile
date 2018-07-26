@@ -7,6 +7,13 @@ pipeline {
     timeout(time: 1, unit: 'DAYS')
   }
   stages {
+    //Immediately send github PR all checks that this pipeline will be checking
+    stage('Git statuses') {
+      agent { label 'master' }
+      steps {
+        githubNotify context: 'Jenkins/Test/Static-Check', description: 'Static Check Tests', status: 'PENDING'
+      }
+    }
     stage('Inited Values') {
       steps {
         echo "BUILD_NUMBER=$BUILD_NUMBER"
