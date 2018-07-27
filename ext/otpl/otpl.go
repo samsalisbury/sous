@@ -266,6 +266,6 @@ func parseSingularityJSON(rawJSON string) (SingularityJSON, error) {
 
 func parseSingularityRequestJSON(rawJSON string) (SingularityRequestJSON, error) {
 	v := SingularityRequestJSON{}
-	err := json.Unmarshal([]byte(rawJSON), &v)
+	err := strictParseJSON(rawJSON, &v)
 	return v, err
 }

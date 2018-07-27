@@ -53,7 +53,8 @@ func TestParseSingularityJSON_err_fields(t *testing.T) {
 	cases := []string{
 		`{"invalid": {}}`,
 		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`,
-		`{
+		`
+		{
 			"resources": {
 				"numPorts": 1,
 				"memoryMb": 1,
@@ -103,6 +104,35 @@ func TestParseSingularityRequestJSON_ok(t *testing.T) {
 
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("got -->\n% #v\nwant -->\n% #v", got, want)
+	}
+}
+
+func TestParseSingularityRequestJSON_err_fields(t *testing.T) {
+
+	cases := []string{
+		`{"invalid": {}}`,
+		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`,
+		`
+		{
+			"instances": 1,
+			"owners": ["owner1@example.com"],
+			"blahBlahInvalid": "hello"
+		}`,
+	}
+
+	const wantPrefix = `unrecognised fields:`
+
+	for i, in := range cases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			_, gotErr := parseSingularityRequestJSON(in)
+			if gotErr == nil {
+				t.Fatalf("got nil error; want error beginning %q", wantPrefix)
+			}
+			got := gotErr.Error()
+			if !strings.HasPrefix(got, wantPrefix) {
+				t.Errorf("got %q; want string with prefix %q", got, wantPrefix)
+			}
+		})
 	}
 }
 
