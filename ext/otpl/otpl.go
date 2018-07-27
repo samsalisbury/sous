@@ -40,9 +40,9 @@ type (
 	// singularity-request.json file.
 	SingularityRequestJSON struct {
 		// Instances is the number of instances in this deployment.
-		Instances int
+		Instances int `json:"instances,omitempty"`
 		// Owners is a comma-separated list of email addresses.
-		Owners []string
+		Owners []string `json:"owners,omitempty"`
 		// NOTE: We do not currently support Daemon, RackSensitive or LoadBalanced
 		//Daemon, RackSensitive, LoadBalanced bool
 	}
@@ -52,8 +52,11 @@ type (
 func (sr SingularityResources) SousResources() sous.Resources {
 	r := make(sous.Resources, len(sr))
 	for k, v := range sr {
-		k := resourceNameSingToSous[k]
-		r[k] = strconv.FormatFloat(v, 'g', -1, 64)
+		sousName, ok := resourceNameSingToSous[k]
+		if !ok {
+			sousName = k
+		}
+		r[sousName] = strconv.FormatFloat(v, 'g', -1, 64)
 	}
 	return r
 }

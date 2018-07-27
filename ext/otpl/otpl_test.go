@@ -231,8 +231,7 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	files := filemap.FileMap{
 		"config/cluster1/singularity-request.json": `{
 	        "owners": ["owner1@example.com"],
-	        "instances": 2,
-	        "other fields": "are ignored"
+	        "instances": 2
 	    }`,
 		"config/cluster1/singularity.json": `{
 	      "resources": {
@@ -242,13 +241,11 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	      },
 	      "env": {
 	          "SOME_VAR": "22"
-	      },
-	      "other fields": "are ignored"
+	      }
 	    }`,
 		"config/cluster1.flavor1/singularity-request.json": `{
 	        "owners": ["owner1@example.com"],
-	        "instances": 2,
-	        "other fields": "are ignored"
+	        "instances": 2
 	    }`,
 		"config/cluster1.flavor1/singularity.json": `{
 	      "resources": {
@@ -259,8 +256,7 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	      "env": {
 	          "SOME_VAR": "22",
 	          "OT_ENV_FLAVOR": "flavor1"
-	      },
-	      "other fields": "are ignored"
+	      }
 	    }`,
 	}
 
@@ -275,7 +271,6 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 		}
 
 		ls, _ := logging.NewLogSinkSpy()
-		// Shebang...
 		actual = NewManifestParser(ls).ParseManifests(wd)
 	}); fileMapErr != nil {
 		t.Fatal(fileMapErr)
@@ -283,7 +278,6 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 
 	expected := sous.NewManifests(
 		&sous.Manifest{
-			//Source: sous.MustParseSourceLocation("github.com/test/project"),
 			Flavor: "",
 			Owners: []string{"owner1@example.com"},
 			Kind:   "",
@@ -307,7 +301,6 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 			},
 		},
 		&sous.Manifest{
-			//Source: sous.MustParseSourceLocation("github.com/test/project"),
 			Flavor: "flavor1",
 			Owners: []string{"owner1@example.com"},
 			Kind:   "",
