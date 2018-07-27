@@ -136,6 +136,52 @@ func TestParseSingularityRequestJSON_err_fields(t *testing.T) {
 	}
 }
 
+func TestParseSingularityJSON_invalidResources(t *testing.T) {
+
+	cases := []struct {
+		in, err string
+	}{
+		{
+			in:  `{"resources": {"numPorts": 1,"memoryMb": 1,"cpus": 1,"blah": 1}}`,
+			err: `invalid resource name "blah"`,
+		},
+		{
+			in:  `{"resources": {"numPorts": 1,"memoryMb": 1}}`,
+			err: `missing resource(s): cpus`,
+		},
+		{
+			in:  `{"resources": {"numPorts": 1,"cpus": 1}}`,
+			err: `missing resource(s): memoryMb`,
+		},
+		{
+			in:  `{"resources": {"memoryMb": 1,"cpus": 1}}`,
+			err: `missing resource(s): numPorts`,
+		},
+		{
+			in:  `{"resources": {"memoryMb": 1}}`,
+			err: `missing resource(s): cpus, numPorts`,
+		},
+		{
+			in:  `{}`,
+			err: `missing resource(s): cpus, memoryMb, numPorts`,
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.err, func(t *testing.T) {
+			in, want := c.in, c.err
+			_, gotErr := parseSingularityJSON(in)
+			if gotErr == nil {
+				t.Fatalf("got nil error; want %q", want)
+			}
+			got := gotErr.Error()
+			if got != want {
+				t.Errorf("got %q; want %q", got, want)
+			}
+		})
+	}
+}
+
 func TestSingularityResources_SousResources(t *testing.T) {
 	tests := []struct {
 		Singularity SingularityResources

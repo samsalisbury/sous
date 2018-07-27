@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"path"
 	"reflect"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -51,15 +52,16 @@ type (
 func (sr SingularityResources) SousResources() sous.Resources {
 	r := make(sous.Resources, len(sr))
 	for k, v := range sr {
-		if k == "numPorts" {
-			k = "ports"
-		}
-		if k == "memoryMb" {
-			k = "memory"
-		}
+		k := resourceNameSingToSous[k]
 		r[k] = strconv.FormatFloat(v, 'g', -1, 64)
 	}
 	return r
+}
+
+var resourceNameSingToSous = map[string]string{
+	"cpus":     "cpus",
+	"numPorts": "ports",
+	"memoryMb": "memory",
 }
 
 // NewManifestParser generates a new ManifestParser with default logging.
@@ -258,10 +260,36 @@ func equalJSON(a, b string) (bool, error) {
 	return reflect.DeepEqual(aVal, bVal), nil
 }
 
+func validateResources(v SingularityJSON) error {
+	seen := map[string]struct{}{}
+	for k := range v.Resources {
+		if _, ok := resourceNameSingToSous[k]; !ok {
+			return fmt.Errorf("invalid resource name %q", k)
+		}
+		seen[k] = struct{}{}
+	}
+	var missing []string
+	for k := range resourceNameSingToSous {
+		if _, ok := seen[k]; !ok {
+			missing = append(missing, k)
+		}
+	}
+	if len(missing) != 0 {
+		sort.Strings(missing)
+		return fmt.Errorf("missing resource(s): %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
 func parseSingularityJSON(rawJSON string) (SingularityJSON, error) {
 	v := SingularityJSON{}
-	err := strictParseJSON(rawJSON, &v)
-	return v, err
+	if err := strictParseJSON(rawJSON, &v); err != nil {
+		return v, err
+	}
+	if err := validateResources(v); err != nil {
+		return v, err
+	}
+	return v, nil
 }
 
 func parseSingularityRequestJSON(rawJSON string) (SingularityRequestJSON, error) {
