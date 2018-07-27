@@ -19,8 +19,7 @@ func build(ctx sous.BuildContext) (string, error) {
 	fmt.Println("starting runmount build")
 
 	cmd := []interface{}{"build"}
-	if !ctx.Source.DevBuild {
-		//pull the image if you aren't doing a dev build.
+	if ctx.ShouldPullDuringBuild() {
 		cmd = append(cmd, "--pull")
 	}
 

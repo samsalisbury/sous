@@ -16,9 +16,9 @@ func newServerComponentLocator(
 	sm *ServerStateManager,
 	cm *ServerClusterManager,
 	rf *sous.ResolveFilter,
-	ar *sous.AutoResolver,
 	v semv.Version,
 	qs *sous.R11nQueueSet,
+	ar *sous.AutoResolver,
 ) server.ComponentLocator {
 
 	logging.Deliver(ls, logging.SousGenericV1, logging.DebugLevel, logging.GetCallerInfo(),
@@ -41,9 +41,9 @@ func newServerComponentLocator(
 		ClusterManager:    cm.ClusterManager,
 		DeploymentManager: dm,
 		ResolveFilter:     rf,
-		AutoResolver:      ar,
 		Version:           v,
 		QueueSet:          qs,
+		AutoResolver:      ar,
 	}
 
 }

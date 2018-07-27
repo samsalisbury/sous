@@ -57,8 +57,7 @@ func (sb *splitBuilder) buildBuild() error {
 	}
 
 	cmd := []interface{}{"build"}
-	if !sb.context.Source.DevBuild {
-		//pull the image if you aren't doing a dev build.
+	if sb.context.ShouldPullDuringBuild() {
 		cmd = append(cmd, "--pull")
 	}
 

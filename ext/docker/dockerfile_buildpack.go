@@ -86,7 +86,10 @@ func (d *DockerfileBuildpack) Build(c *sous.BuildContext) (*sous.BuildResult, er
 		offset = "."
 	}
 
-	cmd := []interface{}{"build", "--pull"}
+	cmd := []interface{}{"build"}
+	if c.ShouldPullDuringBuild() {
+		cmd = append(cmd, "--pull")
+	}
 
 	r := dr.Data.(detectData)
 	if r.HasAppVersionArg {

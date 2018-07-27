@@ -24,14 +24,20 @@ type sousClient struct {
 	Fixture *testFixture
 }
 
-func makeClient(fixture *testFixture, baseDir, sousBin string) *sousClient {
+func makeClient(t *testing.T, fixture *testFixture, baseDir, sousBin string) *sousClient {
 	clientName := "client1"
 	baseDir = path.Join(baseDir, clientName)
 	c := &sousClient{
-		Bin:     NewBin(sousBin, clientName, baseDir, fixture.Finished),
+		Bin:     NewBin(t, sousBin, clientName, baseDir, fixture.Finished),
 		Fixture: fixture,
 	}
+
+	c.Bin.Env["SOUS_CONFIG_DIR"] = c.Bin.ConfigDir
+	c.Bin.Env["SOUS_BUILD_NOPULL"] = "YES"
+	addGitEnvVars(c.Bin.Env)
+
 	c.Bin.MassageArgs = c.insertClusterSuffix
+
 	return c
 }
 
@@ -63,7 +69,6 @@ func (c *sousClient) Configure(server, dockerReg, userEmail string) error {
 	if err != nil {
 		return err
 	}
-	c.Env["SOUS_CONFIG_DIR"] = c.Bin.ConfigDir
 
 	return c.Bin.Configure(filemap.FileMap{
 		"config.yaml": string(configYAML),
@@ -101,7 +106,7 @@ func (c *sousClient) TransformManifest(t *testing.T, flags *sousFlags, transform
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
 	// TODO SS: remove below invocation, make a top-level RunWithStdin or something.
-	i := invocation{name: "sous", subcmd: "manifest set", flags: flags}
+	i := c.newInvocation(t, "manifest set", flags)
 	manifestSetCmd := c.configureCommand(t, i)
 	defer manifestSetCmd.Cancel()
 	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))

@@ -2,7 +2,6 @@ package smoke
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"testing"
 
@@ -158,28 +157,29 @@ func splitBuild(p program) filemap.FileMap {
 func (f *testFixture) setupProject(t *testing.T, fm filemap.FileMap) *sousClient {
 	t.Helper()
 	// Setup project git repo.
-	projectDir := makeGitRepo(t, f.Client.BaseDir, "projects/project1", GitRepoSpec{
+	g := newGitClient(t, f, f.Client.BaseDir)
+
+	projectDir := g.configureRepo(t, "projects/project1", gitRepoSpec{
 		UserName:  "Sous User 1",
 		UserEmail: "sous-user1@example.com",
 		OriginURL: "git@github.com:user1/repo1.git",
 	})
+
 	if err := fm.Write(projectDir); err != nil {
 		t.Fatalf("filemap.Write: %s", err)
 	}
 	for filePath := range fm {
-		mustDoCMD(t, projectDir, "git", "add", filePath)
+		g.MustRun(t, "add", nil, filePath)
 	}
-	mustDoCMD(t, projectDir, "git", "commit", "-m", "Initial Commit")
+
+	g.MustRun(t, "commit", nil, "-m", "initial commit")
 
 	client := f.Client
-
-	// cd into project dir
 	client.Dir = projectDir
 
 	// Dump sous version & config.
 	if !quiet() {
-		log.Printf("Sous version: %s", client.MustRun(t, "version", nil))
-		client.MustRun(t, "config", nil)
+		client.MustRun(t, "version", nil)
 	}
 
 	return client
