@@ -217,35 +217,34 @@ func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfi
 	return deploySpec
 }
 
-func parseSingularityJSON(rawJSON string) (SingularityJSON, error) {
-	v := SingularityJSON{}
+func strictParseJSON(rawJSON string, v interface{}) error {
 	comp := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(rawJSON), &v); err != nil {
-		return v, err
+	if err := json.Unmarshal([]byte(rawJSON), v); err != nil {
+		return err
 	}
 	if err := json.Unmarshal([]byte(rawJSON), &comp); err != nil {
-		return v, err
+		return err
 	}
 	compJSONb, err := json.Marshal(comp)
 	if err != nil {
-		return v, err
+		return err
 	}
 	understoodJSONb, err := json.Marshal(v)
 	if err != nil {
-		return v, err
+		return err
 	}
 	understoodJSON := string(understoodJSONb)
 	compJSON := string(compJSONb)
 
 	equal, err := equalJSON(compJSON, understoodJSON)
 	if err != nil {
-		return v, err
+		return err
 	}
 	if !equal {
-		return v, fmt.Errorf("unrecognised fields:\n%sunderstood:\n%s",
+		return fmt.Errorf("unrecognised fields:\n%sunderstood:\n%s",
 			compJSON, understoodJSON)
 	}
-	return v, err
+	return nil
 }
 
 func equalJSON(a, b string) (bool, error) {
@@ -257,6 +256,12 @@ func equalJSON(a, b string) (bool, error) {
 		return false, err
 	}
 	return reflect.DeepEqual(aVal, bVal), nil
+}
+
+func parseSingularityJSON(rawJSON string) (SingularityJSON, error) {
+	v := SingularityJSON{}
+	err := strictParseJSON(rawJSON, &v)
+	return v, err
 }
 
 func parseSingularityRequestJSON(rawJSON string) (SingularityRequestJSON, error) {
