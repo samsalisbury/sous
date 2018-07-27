@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com.opentable/sous/compare/0.5.117...master)
+## Changed
+* Client: sous init with -use-otpl-deploy flag now fails unless it recognises
+  all fields in the singularity.json and singularity-request.json files.
 
 ## [0.5.117](//github.com.opentable/sous/compare/0.5.116...0.5.117)
 ### Changed
