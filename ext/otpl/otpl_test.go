@@ -38,7 +38,7 @@ func TestParseSingularityJSON_ok(t *testing.T) {
 
 	got, err := parseSingularityJSON(in)
 	if err != nil {
-		t.Fatalf("got error %q; want nil", err)
+		t.Fatal(err)
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -48,6 +48,26 @@ func TestParseSingularityJSON_ok(t *testing.T) {
 
 func TestParseSingularityRequestJSON_ok(t *testing.T) {
 
+	in := `
+	{
+		"instances": 1,
+		"owners": ["owner1@example.com"]
+	}`
+
+	want := SingularityRequestJSON{
+		Instances: 1,
+		Owners:    []string{"owner1@example.com"},
+	}
+
+	got, err := parseSingularityRequestJSON(in)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got -->\n% #v\nwant -->\n% #v", got, want)
+	}
 }
 
 func TestSingularityResources_SousResources(t *testing.T) {
