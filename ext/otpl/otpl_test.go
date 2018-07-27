@@ -1,6 +1,7 @@
 package otpl
 
 import (
+	"reflect"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
@@ -9,6 +10,45 @@ import (
 	"github.com/opentable/sous/util/shell"
 	"github.com/samsalisbury/semv"
 )
+
+func TestParseSingularityJSON_ok(t *testing.T) {
+
+	in := `
+	{
+		"resources": {
+			"numPorts": 1,
+			"memoryMb": 1,
+			"cpus": 1
+		},
+		"env": {
+			"ENV_1": "val 1"
+		}
+	}`
+
+	want := SingularityJSON{
+		Resources: SingularityResources{
+			"numPorts": 1,
+			"memoryMb": 1,
+			"cpus":     1,
+		},
+		Env: sous.Env{
+			"ENV_1": "val 1",
+		},
+	}
+
+	got, err := parseSingularityJSON(in)
+	if err != nil {
+		t.Fatalf("got error %q; want nil", err)
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("got -->\n% #v\nwant -->\n% #v", got, want)
+	}
+}
+
+func TestParseSingularityRequestJSON_ok(t *testing.T) {
+
+}
 
 func TestSingularityResources_SousResources(t *testing.T) {
 	tests := []struct {
