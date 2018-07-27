@@ -2,6 +2,7 @@ package otpl
 
 import (
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -47,22 +48,37 @@ func TestParseSingularityJSON_ok(t *testing.T) {
 	}
 }
 
-func TestParseSingularityJSON_err(t *testing.T) {
+func TestParseSingularityJSON_err_fields(t *testing.T) {
 
-	in := `
-	{
-		"invalid": {}
-	}`
-
-	wantPrefix := `unrecognised fields:`
-	_, gotErr := parseSingularityJSON(in)
-
-	if gotErr == nil {
-		t.Fatalf("got nil error; want error beginning %q", wantPrefix)
+	cases := []string{
+		`{"invalid": {}}`,
+		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`,
+		`{
+			"resources": {
+				"numPorts": 1,
+				"memoryMb": 1,
+				"cpus": 1
+			},
+			"env": {
+				"ENV_1": "val 1"
+			},
+			"blahBlahInvalid": "hello"
+		}`,
 	}
-	got := gotErr.Error()
-	if !strings.HasPrefix(got, wantPrefix) {
-		t.Errorf("got %q; want string with prefix %q", got, wantPrefix)
+
+	const wantPrefix = `unrecognised fields:`
+
+	for i, in := range cases {
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			_, gotErr := parseSingularityJSON(in)
+			if gotErr == nil {
+				t.Fatalf("got nil error; want error beginning %q", wantPrefix)
+			}
+			got := gotErr.Error()
+			if !strings.HasPrefix(got, wantPrefix) {
+				t.Errorf("got %q; want string with prefix %q", got, wantPrefix)
+			}
+		})
 	}
 }
 
