@@ -6,10 +6,19 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
+## [Unreleased](//github.com.opentable/sous/compare/0.5.117...master)
+
+## [0.5.117](//github.com.opentable/sous/compare/0.5.116...0.5.117)
+### Changed
+* Tests: Travis build times reduced by running sets of tests in parallel.
+  This allows us to produce relese binaries, see note below in 0.5.116.
+
 ## [0.5.116](//github.com/opentable/sous/compare/0.5.115...0.5.116)
 ### Changed
 * Client: 'sous artifact get' no longer requires -cluster flag.
 * Client: 'sous artifact get' now prints artifact information (digest, type).
+
+NOTE: No binaries were produced for 0.5.116 due to build timeout in Travis.
 
 ## [0.5.115](//github.com/opentable/sous/compare/0.5.114...0.5.115)
 ### Changed
