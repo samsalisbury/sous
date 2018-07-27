@@ -46,6 +46,25 @@ func TestParseSingularityJSON_ok(t *testing.T) {
 	}
 }
 
+func TestParseSingularityJSON_err(t *testing.T) {
+
+	in := `
+	{
+		"invalid": {}
+	}`
+
+	want := `unrecognised key "invalid"`
+	_, gotErr := parseSingularityJSON(in)
+
+	if gotErr == nil {
+		t.Fatalf("got nil error; want %q", want)
+	}
+	got := gotErr.Error()
+	if want != got {
+		t.Errorf("got %q; want %q", got, want)
+	}
+}
+
 func TestParseSingularityRequestJSON_ok(t *testing.T) {
 
 	in := `
