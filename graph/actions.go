@@ -294,16 +294,20 @@ func (di *SousGraph) GetServer(
 		LogSink       LogSink
 		Config        *config.Config
 		ServerHandler ServerHandler
-		AutoResolver  *sous.AutoResolver
 	}{}
 
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
 
-	ar := scoop.AutoResolver
-	if !enableAutoResolver {
-		ar = nil
+	arScoop := struct {
+		AutoResolver *sous.AutoResolver
+	}{}
+
+	if enableAutoResolver {
+		if err := di.Inject(&arScoop); err != nil {
+			return nil, err
+		}
 	}
 
 	return &actions.Server{
@@ -314,6 +318,6 @@ func (di *SousGraph) GetServer(
 		Log:               scoop.LogSink.LogSink,
 		Config:            scoop.Config,
 		ServerHandler:     scoop.ServerHandler.Handler,
-		AutoResolver:      ar,
+		AutoResolver:      arScoop.AutoResolver,
 	}, nil
 }

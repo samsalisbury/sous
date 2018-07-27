@@ -17,19 +17,26 @@ import (
 // should provide a unique name for its DB instance so that they'll be
 // independent.
 func SetupDB(t *testing.T, optidx ...int) *sql.DB {
-	//t.Helper()
 	name := dbNameRoot(t, optidx...)
-
 	log.Printf("Creating DB for %s called %s", t.Name(), name)
+	db, err := SetupDBNamed(t, name)
+	if err != nil {
+		t.Fatalf("Error creating test DB %q: %v (Set SOUS_TEST_NODB=yes) to skip tests that rely on the DB", name, err)
+	}
+	return db
+}
+
+// SetupDBNamed is like SetupDB except it takes an explicit name.
+func SetupDBNamed(t *testing.T, name string) (*sql.DB, error) {
+	t.Helper()
 	db, err := setupDBErr(name)
 	if err != nil {
 		if os.Getenv("SOUS_TEST_NODB") != "" {
 			t.Skipf("setupDB failed for %q: %s", name, err)
-			return nil
 		}
-		t.Fatalf("Error creating test DB %q: %v (Set SOUS_TEST_NODB=yes) to skip tests that rely on the DB", name, err)
+		return nil, err
 	}
-	return db
+	return db, nil
 }
 
 // DBNameForTest returns a database name based on the test name.

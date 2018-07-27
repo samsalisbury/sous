@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"os"
 	"os/user"
 
 	"github.com/opentable/sous/util/shell"
@@ -36,6 +37,12 @@ type (
 		SousUpdated, NewCommit, NewTag, NewFiles, ChangedFiles []string
 	}
 )
+
+// ShouldPullDuringBuild determines if Sous should pull updates to base images
+// during a build.
+func (bc *BuildContext) ShouldPullDuringBuild() bool {
+	return !bc.Source.DevBuild && os.Getenv("SOUS_BUILD_NOPULL") != "YES"
+}
 
 // Version returns the SourceID for this build.
 func (bc *BuildContext) Version() SourceID {

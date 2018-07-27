@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,6 +19,7 @@ import (
 
 // Bin represents a binary under test.
 type Bin struct {
+	TestName     string
 	InstanceName string
 	BinName      string
 	BaseDir      string
@@ -36,12 +38,14 @@ type Bin struct {
 
 // NewBin returns a new minimal Bin, all files will be created in subdirectories
 // of baseDir.
-func NewBin(path, name, baseDir string, finished <-chan struct{}) Bin {
-	binName := filepath.Base(path)
-	if name == "" {
-		name = binName
+func NewBin(t *testing.T, path, name, baseDir string, finished <-chan struct{}) Bin {
+	illegalChars := ":/>"
+	if strings.ContainsAny(name, illegalChars) {
+		log.Panicf("name %q contains at least one illegal character from %q", name, illegalChars)
 	}
+	binName := filepath.Base(path)
 	return Bin{
+		TestName:     t.Name(),
 		BinPath:      path,
 		InstanceName: name,
 		BinName:      binName,
@@ -53,14 +57,24 @@ func NewBin(path, name, baseDir string, finished <-chan struct{}) Bin {
 	}
 }
 
+// ID returns the unique ID of this instance, formatted as:
+// "test-name:instance-name".
+func (c *Bin) ID() string {
+	return fmt.Sprintf("%s:%s", c.TestName, c.InstanceName)
+}
+
 // Configure writes fm files relative to c.ConfigPath and ensures the log
 // directory exists.
-func (c *Bin) Configure(fm filemap.FileMap) error {
+func (c *Bin) Configure(fms ...filemap.FileMap) error {
 	if err := os.MkdirAll(c.ConfigDir, os.ModePerm); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(c.LogDir, os.ModePerm); err != nil {
 		return err
+	}
+	fm := filemap.FileMap{}
+	for _, f := range fms {
+		fm = fm.Merge(f)
 	}
 	if err := fm.Write(c.ConfigDir); err != nil {
 		return err
@@ -97,18 +111,19 @@ func (i invocation) allArgs() []string {
 	return all
 }
 
-// Cmd generates an *exec.Cmd and cancellation func.
-func (c *Bin) Cmd(t *testing.T, i invocation) (*exec.Cmd, context.CancelFunc) {
-	t.Helper()
-	args := i.allArgs()
-	if c.MassageArgs != nil {
-		args = c.MassageArgs(t, args)
-	}
-	cmd, cancel := mkCMD(c.Dir, c.BinPath, args...)
+// Cmd generates an *exec.Cmd and cancellation func from final args.
+func (c *Bin) cmd(finalArgs []string) (*exec.Cmd, context.CancelFunc) {
+	cmd, cancel := mkCMD(c.Dir, c.BinPath, finalArgs...)
 	for name, value := range c.Env {
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", name, value))
 	}
 	return cmd, cancel
+}
+
+// Cmd generates an *exec.Cmd and cancellation func from an invocation.
+func (c *Bin) Cmd(t *testing.T, i invocation) (*exec.Cmd, context.CancelFunc) {
+	t.Helper()
+	return c.cmd(i.finalArgs)
 }
 
 // Add quotes to args with spaces for printing.
@@ -131,6 +146,7 @@ func quotedArgsString(args []string) string {
 // ExecutedCMD represents the reasult of a command having been run.
 type ExecutedCMD struct {
 	invocation
+	finalArgs                []string
 	Stdout, Stderr, Combined *bytes.Buffer
 }
 
@@ -165,7 +181,7 @@ func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*Execut
 
 // Command returns the prepared command.
 func (c *Bin) Command(t *testing.T, subcmd string, f Flags, args ...string) *PreparedCmd {
-	i := invocation{name: c.BinName, subcmd: subcmd, flags: f, args: args}
+	i := c.newInvocation(t, subcmd, f, args...)
 	return c.configureCommand(t, i)
 }
 
@@ -175,17 +191,31 @@ type invocation struct {
 	name, subcmd string
 	flags        Flags
 	args         []string
+	finalArgs    []string
 }
 
-// String() returns this invocation roughly as a copy-pastable shell command.
+func (c *Bin) newInvocation(t *testing.T, subcmd string, f Flags, args ...string) invocation {
+	t.Helper()
+	i := invocation{name: c.BinName, subcmd: subcmd, flags: f, args: args}
+	i.finalArgs = i.allArgs()
+	if c.MassageArgs != nil {
+		i.finalArgs = c.MassageArgs(t, i.finalArgs)
+	}
+	return i
+}
+
+// String returns this invocation roughly as a copy-pastable shell command.
 // Note: if args contain quotes some manual editing may be required.
 func (i invocation) String() string {
-	return fmt.Sprintf("%s %s", i.name, strings.Join(i.allArgs(), " "))
+	return fmt.Sprintf("%s %s", i.name, quotedArgsString(i.finalArgs))
 }
 
 func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	t.Helper()
-	cmd, cancel := c.Cmd(t, i)
+
+	executed := newExecutedCMD(i)
+
+	cmd, cancel := c.cmd(i.finalArgs)
 
 	outFile, errFile, combinedFile :=
 		openFileAppendOnly(t, c.LogDir, "stdout"),
@@ -193,8 +223,6 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 		openFileAppendOnly(t, c.LogDir, "combined")
 
 	allFiles := io.MultiWriter(outFile, errFile, combinedFile)
-
-	executed := newExecutedCMD(i)
 
 	stdoutWriters := []io.Writer{outFile, combinedFile, executed.Stdout, executed.Combined}
 	stderrWriters := []io.Writer{errFile, combinedFile, executed.Stderr, executed.Combined}
@@ -209,14 +237,27 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	cmd.Stderr = io.MultiWriter(stderrWriters...)
 
 	preRun := func() {
-		fmt.Fprintf(os.Stderr, "%s:%s:command> %s\n", t.Name(), c.InstanceName, i)
-		var relPath string
+		relPath := "/"
 		if cmd.Dir != "" {
-			relPath = " " + mustGetRelPath(t, c.BaseDir, cmd.Dir)
+			relPath += mustGetRelPath(t, c.BaseDir, cmd.Dir)
 		}
-		fmt.Fprintf(allFiles, "%s> %s", relPath, i)
+		cmdStr := fmt.Sprintf("%s$> %s", relPath, i)
+		rtLog("%s:%s", c.ID(), cmdStr)
+		fmt.Fprintf(allFiles, cmdStr)
 	}
+
 	postRun := func() {
+		if !cmd.ProcessState.Success() {
+			exitCode := tryGetExitCode("cmd.ProcessState.Sys()", cmd.ProcessState.Sys())
+			if exitCode != -1 {
+				rtLog("%s:error> exit code %d; combined logs follow:", c.ID(), exitCode)
+			}
+			prefixedOut, err := prefixedPipe("%s:combined> ", c.ID())
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Fprintf(prefixedOut, executed.Combined.String())
+		}
 		cancel()
 		closeFiles(t, outFile, errFile, combinedFile)
 	}

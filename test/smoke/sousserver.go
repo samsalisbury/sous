@@ -31,8 +31,11 @@ func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, add
 
 	name := fmt.Sprintf("instance%d", num)
 
-	bin := NewBin(binPath, name, baseDir, finished)
+	bin := NewBin(t, binPath, name, baseDir, finished)
+
 	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
+	bin.Env["SOUS_BUILD_NOPULL"] = "YES"
+	addGitEnvVars(bin.Env)
 
 	service := NewService(bin)
 
@@ -73,6 +76,7 @@ func (i *sousServer) configure(config *config.Config, remoteGDMDir string, fcfg 
 		"config.yaml": string(configYAML),
 	})
 
+	// TODO SS: use gitclient to do the below setup.
 	gdmDir := i.StateDir
 	if err := doCMD(gdmDir+"/..", "git", "clone", remoteGDMDir, gdmDir); err != nil {
 		return err
@@ -95,12 +99,10 @@ func (i *sousServer) Start(t *testing.T) {
 	if !quiet() {
 		fmt.Fprintf(os.Stderr, "==> Instance %q config:\n", i.ClusterName)
 	}
-	// Run 'sous config' to validate it.
-	i.MustRun(t, "config", nil)
 
 	serverDebug := os.Getenv("SOUS_SERVER_DEBUG") == "true"
 
-	i.Service.Start(t, "server", nil, "-listen", i.Addr, "-cluster", i.ClusterName, "autoresolver=false", fmt.Sprintf("-d=%t", serverDebug))
+	i.Service.Start(t, "server", nil, "-listen", i.Addr, "-cluster", i.ClusterName, "-autoresolver=false", fmt.Sprintf("-d=%t", serverDebug))
 
 }
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -14,12 +15,16 @@ import (
 // process. It includes things like crash detection.
 type Service struct {
 	Bin
-	Proc *os.Process
+	Proc            *os.Process
+	ReadyForCleanup chan struct{}
 }
 
 // NewService returns a new service bound to the provided binary.
 func NewService(bin Bin) *Service {
-	return &Service{Bin: bin}
+	return &Service{
+		Bin:             bin,
+		ReadyForCleanup: make(chan struct{}),
+	}
 }
 
 // Start starts this service.
@@ -27,6 +32,8 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 	t.Helper()
 
 	prepared := s.Command(t, subcmd, flags, args...)
+
+	prepared.PreRun()
 
 	cmd := prepared.Cmd
 	if err := cmd.Start(); err != nil {
@@ -36,53 +43,61 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 	if cmd.Process == nil {
 		panic("cmd.Process nil after cmd.Start")
 	}
-
-	go func() {
-		id := fmt.Sprintf("%s:%s", t.Name(), s.InstanceName)
-
-		var ps *os.ProcessState
-		select {
-		// In this case the process ended before the test finished.
-		case err := <-func() <-chan error {
-			var err error
-			c := make(chan error, 1)
-			go func() {
-				ps, err = cmd.Process.Wait()
-				c <- err
-			}()
-			return c
-		}():
-			if err != nil {
-				exitCode := tryGetExitCode("Wait error", err)
-				rtLog("SERVER CRASHED: %s: %s (exit code %d); process state: %s", id, err, exitCode, ps)
-				return
-			}
-
-			exitCode := tryGetExitCode("ps.Sys()", ps.Sys())
-
-			if !ps.Exited() {
-				// NOTE SS: This condition should not be possible, since after
-				// calling Wait, the process should have exited. But it hasn't.
-				// Even though 'should be impossible', this does happen in
-				// practice.
-				rtLog("OK: SERVER DID NOT EXIT: %s", id)
-				return
-			}
-			if ps.Success() {
-				rtLog("SERVER STOPPED: %s (exit code 0)", id)
-			}
-			// TODO SS: Dump log tail here as well for analysis.
-			rtLog("SERVER CRASHED: exit code %d: %s; logs follow:", exitCode, id)
-			s.DumpTail(t, 25)
-		// In this case the process is still running.
-		case <-s.TestFinished:
-			rtLog("OK: SERVER STILL RUNNING AFTER TEST %s", id)
-			// Do nothing.
-		}
-	}()
-
 	s.Proc = cmd.Process
 	writePID(t, s.Proc.Pid)
+
+	go func() {
+		s.detectPrematureExit(t, cmd)
+		close(s.ReadyForCleanup)
+	}()
+}
+
+func (s *Service) detectPrematureExit(t *testing.T, cmd *exec.Cmd) {
+	id := s.ID()
+	select {
+	// In this case the process ended before the test finished.
+	case wr := <-s.waitChan(cmd):
+		rtLog("SERVER CRASHED: exit code %d: %s; logs follow:", wr.exitCode(), id)
+		s.DumpTail(t, 25)
+	// In this case the process is still running.
+	case <-s.TestFinished:
+		// OK, test finished before this process exited.
+	}
+}
+
+type waitResult struct {
+	err error
+	ps  *os.ProcessState
+}
+
+func (wr *waitResult) exitCode() int {
+	err, ps := wr.err, wr.ps
+	if err != nil {
+		if exitCode := tryGetExitCode("Wait error", err); exitCode != -1 {
+			return exitCode
+		}
+	}
+	return tryGetExitCode("ps.Sys()", ps.Sys())
+}
+
+func (wr *waitResult) isCrash() bool {
+	err, ps := wr.err, wr.ps
+	if err != nil {
+		return true
+	}
+	return err != nil || (ps.Exited() && !ps.Success())
+}
+
+// WaitChan returns a channel that sends the error from os.Process.Waiting on
+// this command.
+func (s *Service) waitChan(cmd *exec.Cmd) <-chan waitResult {
+	var wr waitResult
+	c := make(chan waitResult, 1)
+	go func() {
+		wr.ps, wr.err = cmd.Process.Wait()
+		c <- wr
+	}()
+	return c
 }
 
 func tryGetExitCode(fromDesc string, from interface{}) int {
@@ -96,6 +111,7 @@ func tryGetExitCode(fromDesc string, from interface{}) int {
 
 // Stop stops this service.
 func (s *Service) Stop() error {
+	<-s.ReadyForCleanup
 	if s.Proc == nil {
 		return fmt.Errorf("cannot stop %s (not started)", s.InstanceName)
 	}

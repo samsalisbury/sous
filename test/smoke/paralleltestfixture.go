@@ -3,7 +3,6 @@ package smoke
 import (
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 	"testing"
 )
@@ -21,12 +20,14 @@ type (
 		testNamesSkippedMu sync.Mutex
 		testNamesFailed    map[string]struct{}
 		testNamesFailedMu  sync.Mutex
+		parent             *parallelTestFixtureSet
 	}
 
 	parallelTestFixtureSet struct {
 		GetAddrs func(int) []string
 		mu       sync.Mutex
 		fixtures map[string]*parallelTestFixture
+		wg       sync.WaitGroup
 	}
 )
 
@@ -51,10 +52,8 @@ func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 		}
 		t.Skip("Just printing test matrix (-ls-matrix flag set)")
 	}
-	rtLog("Registering %s", t.Name())
 	t.Helper()
 	t.Parallel()
-	rtLog("Running     %s", t.Name())
 	pf := &parallelTestFixture{
 		T:                t,
 		Matrix:           m,
@@ -63,6 +62,7 @@ func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 		testNamesPassed:  map[string]struct{}{},
 		testNamesSkipped: map[string]struct{}{},
 		testNamesFailed:  map[string]struct{}{},
+		parent:           pfs,
 	}
 	pfs.mu.Lock()
 	defer pfs.mu.Unlock()
@@ -97,9 +97,13 @@ func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
 			for _, pt := range tests {
 				pt := pt
 				t.Run(pt.Name, func(t *testing.T) {
+					pf.parent.wg.Add(1)
 					f := pf.newIsolatedFixture(t, c)
-					defer f.Teardown(t)
-					defer f.reportStatus(t)
+					defer func() {
+						defer pf.parent.wg.Done()
+						pf.recordTestStatus(t)
+						f.Teardown(t)
+					}()
 					pt.Test(t, f)
 				})
 			}
@@ -150,6 +154,9 @@ func (pf *parallelTestFixture) recordTestStatus(t *testing.T) {
 // failed to report back any status, which should not happen under normal
 // circumstances.
 func (pfs *parallelTestFixtureSet) PrintSummary() {
+	pfs.wg.Wait()
+	pfs.mu.Lock()
+	defer pfs.mu.Unlock()
 	var total, passed, skipped, failed, missing []string
 	for _, pf := range pfs.fixtures {
 		t, p, s, f, m := pf.printSummary()
@@ -163,7 +170,14 @@ func (pfs *parallelTestFixtureSet) PrintSummary() {
 	if len(failed) != 0 {
 		fmt.Printf("These tests failed:\n")
 		for _, n := range failed {
-			fmt.Printf("> %s\n", n)
+			fmt.Printf("FAILED> %s\n", n)
+		}
+	}
+
+	if len(missing) != 0 {
+		fmt.Printf("These tests did not report status:\n")
+		for _, n := range missing {
+			fmt.Printf("MISSING> %s\n", n)
 		}
 	}
 
@@ -189,12 +203,13 @@ func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, m
 	skipped = testNamesSlice(pf.testNamesSkipped)
 	failed = testNamesSlice(pf.testNamesFailed)
 
-	summary := fmt.Sprintf("%s summary: %d failed; %d skipped; %d passed (total %d)",
-		t.Name(), len(failed), len(skipped), len(passed), len(total))
-	t.Log(summary)
-	fmt.Fprintln(os.Stdout, summary)
+	if !quiet() {
+		summary := fmt.Sprintf("%s summary: %d failed; %d skipped; %d passed (total %d)",
+			t.Name(), len(failed), len(skipped), len(passed), len(total))
+		t.Log(summary)
+		fmt.Fprintln(os.Stdout, summary)
+	}
 
-	var missingTests []string
 	missingCount := len(total) - (len(passed) + len(failed) + len(skipped))
 	if missingCount != 0 {
 		for t := range pf.testNamesPassed {
@@ -207,11 +222,10 @@ func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, m
 			delete(pf.testNames, t)
 		}
 		for t := range pf.testNames {
-			missingTests = append(missingTests, t)
+			missing = append(missing, t)
 		}
-		rtLog("Warning! Some tests did not report status: %s", strings.Join(missingTests, ", "))
 	}
-	return total, passed, skipped, failed, missingTests
+	return total, passed, skipped, failed, missing
 }
 
 func (pf *parallelTestFixture) newIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {

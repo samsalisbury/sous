@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
@@ -86,7 +85,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixt
 		Projects:      fcfg.projects,
 		Finished:      finished,
 	}
-	client := makeClient(tf, baseDir, sousBin)
+	client := makeClient(t, tf, baseDir, sousBin)
 	if err := client.Configure(primaryServer, envDesc.RegistryName(), userEmail); err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +99,6 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixt
 func (f *testFixture) Teardown(t *testing.T) {
 	t.Helper()
 	close(f.Finished)
-	time.Sleep(5 * time.Second)
 	if shouldStopServers(t) {
 		if err := f.Cluster.Stop(); err != nil {
 			t.Errorf("failed to stop cluster: %s", err)
@@ -191,11 +189,6 @@ func (f *testFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
 		return strings.ToLower(baseTag + suffix)
 	}
 	return strings.ToLower(baseTag + "-" + suffix)
-}
-
-func (f *testFixture) reportStatus(t *testing.T) {
-	t.Helper()
-	f.Parent.recordTestStatus(t)
 }
 
 // KnownToFailHere cauuses the test to be skipped from this point on if
