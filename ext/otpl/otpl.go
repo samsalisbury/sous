@@ -4,7 +4,9 @@ package otpl
 
 import (
 	"encoding/json"
+	"fmt"
 	"path"
+	"reflect"
 	"strconv"
 	"sync"
 
@@ -25,10 +27,11 @@ type (
 		WD  shell.Shell
 	}
 	// SingularityJSON represents the JSON in an otpl-deploy singularity.json
-	// file.
+	// file. Note that the json tags are essential to validating parsed JSON
+	// contains only recognised fields.
 	SingularityJSON struct {
-		Resources SingularityResources
-		Env       sous.Env
+		Resources SingularityResources `json:"resources,omitempty"`
+		Env       sous.Env             `json:"env,omitempty"`
 	}
 	// SingularityResources represents the resources section in SingularityJSON.
 	SingularityResources map[string]float64
@@ -216,8 +219,44 @@ func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfi
 
 func parseSingularityJSON(rawJSON string) (SingularityJSON, error) {
 	v := SingularityJSON{}
-	err := json.Unmarshal([]byte(rawJSON), &v)
+	comp := map[string]interface{}{}
+	if err := json.Unmarshal([]byte(rawJSON), &v); err != nil {
+		return v, err
+	}
+	if err := json.Unmarshal([]byte(rawJSON), &comp); err != nil {
+		return v, err
+	}
+	compJSONb, err := json.Marshal(comp)
+	if err != nil {
+		return v, err
+	}
+	understoodJSONb, err := json.Marshal(v)
+	if err != nil {
+		return v, err
+	}
+	understoodJSON := string(understoodJSONb)
+	compJSON := string(compJSONb)
+
+	equal, err := equalJSON(compJSON, understoodJSON)
+	if err != nil {
+		return v, err
+	}
+	if !equal {
+		return v, fmt.Errorf("unrecognised fields:\n%sunderstood:\n%s",
+			compJSON, understoodJSON)
+	}
 	return v, err
+}
+
+func equalJSON(a, b string) (bool, error) {
+	var aVal, bVal interface{}
+	if err := json.Unmarshal([]byte(a), &aVal); err != nil {
+		return false, err
+	}
+	if err := json.Unmarshal([]byte(b), &bVal); err != nil {
+		return false, err
+	}
+	return reflect.DeepEqual(aVal, bVal), nil
 }
 
 func parseSingularityRequestJSON(rawJSON string) (SingularityRequestJSON, error) {

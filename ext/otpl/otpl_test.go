@@ -2,6 +2,7 @@ package otpl
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
@@ -53,15 +54,15 @@ func TestParseSingularityJSON_err(t *testing.T) {
 		"invalid": {}
 	}`
 
-	want := `unrecognised key "invalid"`
+	wantPrefix := `unrecognised fields:`
 	_, gotErr := parseSingularityJSON(in)
 
 	if gotErr == nil {
-		t.Fatalf("got nil error; want %q", want)
+		t.Fatalf("got nil error; want error beginning %q", wantPrefix)
 	}
 	got := gotErr.Error()
-	if want != got {
-		t.Errorf("got %q; want %q", got, want)
+	if !strings.HasPrefix(got, wantPrefix) {
+		t.Errorf("got %q; want string with prefix %q", got, wantPrefix)
 	}
 }
 
