@@ -27,217 +27,214 @@ func initBuildDeploy(t *testing.T, client *sousClient, flags *sousFlags, transfo
 func TestSmoke(t *testing.T) {
 	pf := pfs.newParallelTestFixture(t, matrix())
 
-	pf.RunMatrix(
+	pf.Run("simple", func(t *testing.T, f *testFixture) {
 
-		PTest{Name: "simple", Test: func(t *testing.T, f *testFixture) {
+		client := f.setupProject(t, f.Projects.HTTPServer())
 
-			client := f.setupProject(t, f.Projects.HTTPServer())
+		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
+		reqID := f.DefaultSingReqID(t, flags)
 
-			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
-			reqID := f.DefaultSingReqID(t, flags)
+		initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
+		assertActiveStatus(t, f, reqID)
+		assertSingularityRequestTypeService(t, f, reqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+	})
 
-			assertActiveStatus(t, f, reqID)
-			assertSingularityRequestTypeService(t, f, reqID)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
-		}},
+	pf.Run("fail-zero-instances", func(t *testing.T, f *testFixture) {
+		client := f.setupProject(t, f.Projects.HTTPServer())
 
-		PTest{Name: "fail-zero-instances", Test: func(t *testing.T, f *testFixture) {
-			client := f.setupProject(t, f.Projects.HTTPServer())
+		flags := &sousFlags{kind: "http-service", tag: "1.2.3", repo: "github.com/user1/repo1"}
 
-			flags := &sousFlags{kind: "http-service", tag: "1.2.3", repo: "github.com/user1/repo1"}
+		initBuild(t, client, flags, setMinimalMemAndCPUNumInst0)
 
-			initBuild(t, client, flags, setMinimalMemAndCPUNumInst0)
+		client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
+	})
 
-			client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
-		}},
+	pf.Run("fail-container-crash", func(t *testing.T, f *testFixture) {
 
-		PTest{Name: "fail-container-crash", Test: func(t *testing.T, f *testFixture) {
+		// TODO SS: Remove this once fail-container-crash-rafactor works.
 
-			// TODO SS: Remove this once fail-container-crash-rafactor works.
+		client := f.setupProject(t, f.Projects.Failer())
 
-			client := f.setupProject(t, f.Projects.Failer())
+		flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
 
-			flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
+		initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-			initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
+		client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
 
-			client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
-
-			did := sous.DeploymentID{
-				ManifestID: sous.ManifestID{
-					Source: sous.SourceLocation{
-						Repo: "github.com/user1/repo1",
-					},
+		did := sous.DeploymentID{
+			ManifestID: sous.ManifestID{
+				Source: sous.SourceLocation{
+					Repo: "github.com/user1/repo1",
 				},
-				Cluster: "cluster1",
-			}
+			},
+			Cluster: "cluster1",
+		}
 
-			reqID := f.Singularity.DefaultReqID(t, did)
-			assertActiveStatus(t, f, reqID)
-			assertSingularityRequestTypeService(t, f, reqID)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
-		}},
+		reqID := f.Singularity.DefaultReqID(t, did)
+		assertActiveStatus(t, f, reqID)
+		assertSingularityRequestTypeService(t, f, reqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+	})
 
-		PTest{Name: "fail-container-crash-rafactor", Test: func(t *testing.T, f *testFixture) {
+	pf.Run("fail-container-crash-rafactor", func(t *testing.T, f *testFixture) {
 
-			// TODO SS: Fix this test.
-			t.Skipf("This test fails, figure out why it's not equivalent to test above.")
+		// TODO SS: Fix this test.
+		t.Skipf("This test fails, figure out why it's not equivalent to test above.")
 
-			client := f.setupProject(t, f.Projects.Failer())
+		client := f.setupProject(t, f.Projects.Failer())
 
-			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
+		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
-			initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
+		initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-			client.MustFail(t, "deploy", flags)
+		client.MustFail(t, "deploy", flags)
 
-			reqID := f.DefaultSingReqID(t, flags)
-			assertActiveStatus(t, f, reqID)
-			assertSingularityRequestTypeService(t, f, reqID)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
-		}},
+		reqID := f.DefaultSingReqID(t, flags)
+		assertActiveStatus(t, f, reqID)
+		assertSingularityRequestTypeService(t, f, reqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+	})
 
-		PTest{Name: "flavors", Test: func(t *testing.T, f *testFixture) {
-			client := f.setupProject(t, f.Projects.HTTPServer())
+	pf.Run("flavors", func(t *testing.T, f *testFixture) {
+		client := f.setupProject(t, f.Projects.HTTPServer())
 
-			flags := &sousFlags{
-				kind: "http-service", tag: "1.2.3", cluster: "cluster1",
-				flavor: "flavor1", repo: "github.com/user1/repo1",
-			}
+		flags := &sousFlags{
+			kind: "http-service", tag: "1.2.3", cluster: "cluster1",
+			flavor: "flavor1", repo: "github.com/user1/repo1",
+		}
 
-			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
+		initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-			reqID := f.DefaultSingReqID(t, flags)
-			assertActiveStatus(t, f, reqID)
-			assertSingularityRequestTypeService(t, f, reqID)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
-		}},
+		reqID := f.DefaultSingReqID(t, flags)
+		assertActiveStatus(t, f, reqID)
+		assertSingularityRequestTypeService(t, f, reqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+	})
 
-		PTest{Name: "pause-unpause", Test: func(t *testing.T, f *testFixture) {
-			client := f.setupProject(t, f.Projects.HTTPServer())
+	pf.Run("pause-unpause", func(t *testing.T, f *testFixture) {
+		client := f.setupProject(t, f.Projects.HTTPServer())
 
-			flags := &sousFlags{kind: "http-service", tag: "1", cluster: "cluster1", repo: "github.com/user1/repo1"}
+		flags := &sousFlags{kind: "http-service", tag: "1", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
-			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
+		initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-			// Prepare a couple more builds...
-			client.MustRun(t, "build", nil, "-tag", "2")
-			client.MustRun(t, "build", nil, "-tag", "3")
+		// Prepare a couple more builds...
+		client.MustRun(t, "build", nil, "-tag", "2")
+		client.MustRun(t, "build", nil, "-tag", "3")
 
-			reqID := f.DefaultSingReqID(t, flags)
-			assertActiveStatus(t, f, reqID)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
-			assertSingularityRequestTypeService(t, f, reqID)
+		reqID := f.DefaultSingReqID(t, flags)
+		assertActiveStatus(t, f, reqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+		assertSingularityRequestTypeService(t, f, reqID)
 
-			f.Singularity.PauseRequestForDeployment(t, reqID)
-			client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "2")
-			f.Singularity.UnpauseRequestForDeployment(t, reqID)
+		f.Singularity.PauseRequestForDeployment(t, reqID)
+		client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "2")
+		f.Singularity.UnpauseRequestForDeployment(t, reqID)
 
-			client.MustRun(t, "deploy", nil, "-cluster", "cluster1", "-tag", "3")
-			assertActiveStatus(t, f, reqID)
-		}},
+		client.MustRun(t, "deploy", nil, "-cluster", "cluster1", "-tag", "3")
+		assertActiveStatus(t, f, reqID)
+	})
 
-		PTest{Name: "scheduled", Test: func(t *testing.T, f *testFixture) {
-			client := f.setupProject(t, f.Projects.Sleeper())
+	pf.Run("scheduled", func(t *testing.T, f *testFixture) {
+		client := f.setupProject(t, f.Projects.Sleeper())
 
-			flags := &sousFlags{kind: "scheduled", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
+		flags := &sousFlags{kind: "scheduled", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
-			initBuildDeploy(t, client, flags, func(m sous.Manifest) sous.Manifest {
-				clusterName := "cluster1" + f.ClusterSuffix
-				d := m.Deployments[clusterName]
-				d.NumInstances = 1
-				d.Schedule = "*/5 * * * *"
-				m.Deployments[clusterName] = d
+		initBuildDeploy(t, client, flags, func(m sous.Manifest) sous.Manifest {
+			clusterName := "cluster1" + f.ClusterSuffix
+			d := m.Deployments[clusterName]
+			d.NumInstances = 1
+			d.Schedule = "*/5 * * * *"
+			m.Deployments[clusterName] = d
 
-				m.Deployments = setMemAndCPUForAll(m.Deployments)
+			m.Deployments = setMemAndCPUForAll(m.Deployments)
 
-				return m
-			})
+			return m
+		})
 
-			reqID := f.DefaultSingReqID(t, flags)
-			assertSingularityRequestTypeScheduled(t, f, reqID)
-			assertActiveStatus(t, f, reqID)
-			assertNilHealthCheckOnLatestDeploy(t, f, reqID)
-		}},
+		reqID := f.DefaultSingReqID(t, flags)
+		assertSingularityRequestTypeScheduled(t, f, reqID)
+		assertActiveStatus(t, f, reqID)
+		assertNilHealthCheckOnLatestDeploy(t, f, reqID)
+	})
 
-		PTest{Name: "custom-reqid-first-deploy", Test: func(t *testing.T, f *testFixture) {
-			client := f.setupProject(t, f.Projects.HTTPServer())
+	pf.Run("custom-reqid-first-deploy", func(t *testing.T, f *testFixture) {
+		client := f.setupProject(t, f.Projects.HTTPServer())
 
-			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
+		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
-			customID := "some-custom-req-id" + f.ClusterSuffix
+		customID := "some-custom-req-id" + f.ClusterSuffix
 
-			initBuildDeploy(t, client, flags,
-				setMinimalMemAndCPUNumInst1,
-				client.setSingularityRequestID(t, "cluster1", customID),
-			)
+		initBuildDeploy(t, client, flags,
+			setMinimalMemAndCPUNumInst1,
+			client.setSingularityRequestID(t, "cluster1", customID),
+		)
 
-			assertSingularityRequestTypeService(t, f, customID)
-			assertActiveStatus(t, f, customID)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
-		}},
+		assertSingularityRequestTypeService(t, f, customID)
+		assertActiveStatus(t, f, customID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
+	})
 
-		PTest{Name: "custom-reqid-second-deploy", Test: func(t *testing.T, f *testFixture) {
-			client := f.setupProject(t, f.Projects.HTTPServer())
+	pf.Run("custom-reqid-second-deploy", func(t *testing.T, f *testFixture) {
+		client := f.setupProject(t, f.Projects.HTTPServer())
 
-			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
+		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
-			initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
+		initBuildDeploy(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-			originalReqID := f.DefaultSingReqID(t, flags)
+		originalReqID := f.DefaultSingReqID(t, flags)
 
-			assertSingularityRequestTypeService(t, f, originalReqID)
-			assertActiveStatus(t, f, originalReqID)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, originalReqID)
+		assertSingularityRequestTypeService(t, f, originalReqID)
+		assertActiveStatus(t, f, originalReqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, originalReqID)
 
-			customID := "some-custom-req-id" + f.ClusterSuffix
-			client.TransformManifest(t, nil, client.setSingularityRequestID(t, "cluster1", customID))
+		customID := "some-custom-req-id" + f.ClusterSuffix
+		client.TransformManifest(t, nil, client.setSingularityRequestID(t, "cluster1", customID))
 
-			// Force to avoid having to make another build.
-			client.MustRun(t, "deploy", nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
+		// Force to avoid having to make another build.
+		client.MustRun(t, "deploy", nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
 
-			assertSingularityRequestTypeService(t, f, customID)
-			assertActiveStatus(t, f, customID)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
+		assertSingularityRequestTypeService(t, f, customID)
+		assertActiveStatus(t, f, customID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
 
-			// TODO: Implement cleanup of old request.
-			//assertRequestDoesNotExist(t, f, originalReqID)
+		// TODO: Implement cleanup of old request.
+		//assertRequestDoesNotExist(t, f, originalReqID)
 
-			assertActiveStatus(t, f, originalReqID)
-		}},
+		assertActiveStatus(t, f, originalReqID)
+	})
 
-		PTest{Name: "change-reqid", Test: func(t *testing.T, f *testFixture) {
-			client := f.setupProject(t, f.Projects.HTTPServer())
+	pf.Run("change-reqid", func(t *testing.T, f *testFixture) {
+		client := f.setupProject(t, f.Projects.HTTPServer())
 
-			flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
+		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
-			customID1 := "some-custom-req-id1" + f.ClusterSuffix
+		customID1 := "some-custom-req-id1" + f.ClusterSuffix
 
-			initBuildDeploy(t, client, flags,
-				setMinimalMemAndCPUNumInst1,
-				client.setSingularityRequestID(t, "cluster1", customID1),
-			)
+		initBuildDeploy(t, client, flags,
+			setMinimalMemAndCPUNumInst1,
+			client.setSingularityRequestID(t, "cluster1", customID1),
+		)
 
-			assertSingularityRequestTypeService(t, f, customID1)
-			assertActiveStatus(t, f, customID1)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, customID1)
+		assertSingularityRequestTypeService(t, f, customID1)
+		assertActiveStatus(t, f, customID1)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, customID1)
 
-			customID2 := "some-custom-req-id2" + f.ClusterSuffix
+		customID2 := "some-custom-req-id2" + f.ClusterSuffix
 
-			client.TransformManifest(t, nil, client.setSingularityRequestID(t, "cluster1", customID2))
+		client.TransformManifest(t, nil, client.setSingularityRequestID(t, "cluster1", customID2))
 
-			client.MustRun(t, "deploy", nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
+		client.MustRun(t, "deploy", nil, "-force", "-cluster", "cluster1", "-tag", "1.2.3")
 
-			assertSingularityRequestTypeService(t, f, customID2)
-			assertActiveStatus(t, f, customID2)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, customID2)
+		assertSingularityRequestTypeService(t, f, customID2)
+		assertActiveStatus(t, f, customID2)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, customID2)
 
-			// TODO: Implement cleanup of old request.
-			//assertRequestDoesNotExist(t, f, customID1)
+		// TODO: Implement cleanup of old request.
+		//assertRequestDoesNotExist(t, f, customID1)
 
-			assertActiveStatus(t, f, customID1) // This works because we do not yet do cleanup.
-		}},
-	)
+		assertActiveStatus(t, f, customID1) // This works because we do not yet do cleanup.
+	})
 }
