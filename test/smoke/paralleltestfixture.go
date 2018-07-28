@@ -81,30 +81,6 @@ type PTest struct {
 	Test func(*testing.T, *testFixture)
 }
 
-// RunMatrix runs the provided PTests in parallel, once for each combination of
-// the matrix passed to newParallelTestFixture.
-func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
-	for _, c := range pf.Matrix.combinations() {
-		pf.T.Run(c.String(), func(t *testing.T) {
-			c := c
-			t.Parallel()
-			for _, pt := range tests {
-				pt := pt
-				t.Run(pt.Name, func(t *testing.T) {
-					pf.parent.wg.Add(1)
-					f := pf.newIsolatedFixture(t, c)
-					defer func() {
-						defer pf.parent.wg.Done()
-						pf.recordTestStatus(t)
-						f.Teardown(t)
-					}()
-					pt.Test(t, f)
-				})
-			}
-		})
-	}
-}
-
 // Test is a test.
 type Test func(t *testing.T, f *testFixture)
 
