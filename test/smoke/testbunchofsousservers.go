@@ -131,7 +131,7 @@ func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg 
 				Host:   host,
 				Port:   dbport,
 			},
-			DatabasePrimary: fcfg.dbPrimary,
+			DatabasePrimary: fcfg.matrix.dbPrimary,
 			Docker: docker.Config{
 				RegistryHost: envDesc.RegistryName(),
 			},

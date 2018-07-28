@@ -84,7 +84,7 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixt
 		Parent:        parent,
 		TestName:      t.Name(),
 		UserEmail:     userEmail,
-		Projects:      fcfg.projects,
+		Projects:      fcfg.matrix.projects,
 		Finished:      finished,
 	}
 	client := makeClient(t, tf, baseDir, sousBin)

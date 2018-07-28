@@ -3,9 +3,13 @@ package smoke
 import sous "github.com/opentable/sous/lib"
 
 type fixtureConfig struct {
-	dbPrimary  bool
+	matrix     matrixCombo
 	startState *sous.State
-	projects   projectList
+}
+
+type matrixCombo struct {
+	dbPrimary bool
+	projects  projectList
 }
 
 // matrix returns the defined sous smoke test matrix.
@@ -23,8 +27,14 @@ func matrix() matrixDef {
 }
 
 func makeFixtureConfig(c combination) fixtureConfig {
-	m := c.Map()
 	return fixtureConfig{
+		matrix: makeMatrixCombo(c),
+	}
+}
+
+func makeMatrixCombo(c combination) matrixCombo {
+	m := c.Map()
+	return matrixCombo{
 		dbPrimary: m["store"].(bool),
 		projects:  m["project"].(projectList),
 	}
