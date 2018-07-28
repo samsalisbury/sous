@@ -90,8 +90,8 @@ type PTest struct {
 // RunMatrix runs the provided PTests in parallel, once for each combination of
 // the matrix passed to newParallelTestFixture.
 func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
-	for _, c := range pf.Matrix.FixtureConfigs() {
-		pf.T.Run(c.Desc, func(t *testing.T) {
+	for _, c := range pf.Matrix.combinations() {
+		pf.T.Run(c.String(), func(t *testing.T) {
 			c := c
 			t.Parallel()
 			for _, pt := range tests {
@@ -228,9 +228,9 @@ func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, m
 	return total, passed, skipped, failed, missing
 }
 
-func (pf *parallelTestFixture) newIsolatedFixture(t *testing.T, fcfg fixtureConfig) *testFixture {
+func (pf *parallelTestFixture) newIsolatedFixture(t *testing.T, c combination) *testFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
 	envDesc := getEnvDesc()
-	return newTestFixture(t, envDesc, pf, pf.GetAddrs, fcfg)
+	return newTestFixture(t, envDesc, pf, pf.GetAddrs, c)
 }

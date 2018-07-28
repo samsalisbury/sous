@@ -32,7 +32,7 @@ type testFixture struct {
 
 var sousBin = mustGetSousBin()
 
-func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixture, getAddrs func(int) []string, fcfg fixtureConfig) *testFixture {
+func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixture, getAddrs func(int) []string, combo combination) *testFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {
@@ -53,6 +53,8 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixt
 	})
 
 	addURLsToState(state, envDesc)
+
+	fcfg := makeFixtureConfig(combo)
 
 	fcfg.startState = state
 
