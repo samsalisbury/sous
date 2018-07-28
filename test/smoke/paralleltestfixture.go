@@ -11,7 +11,6 @@ type (
 	parallelTestFixture struct {
 		T                  *testing.T
 		Matrix             matrixDef
-		GetAddrs           func(int) []string
 		testNames          map[string]struct{}
 		testNamesMu        sync.RWMutex
 		testNamesPassed    map[string]struct{}
@@ -35,11 +34,7 @@ func newParallelTestFixtureSet() *parallelTestFixtureSet {
 	if err := stopPIDs(); err != nil {
 		panic(err)
 	}
-	getAddrs := func(n int) []string {
-		return freePortAddrs("127.0.0.1", n, 49152, 65535)
-	}
 	return &parallelTestFixtureSet{
-		GetAddrs: getAddrs,
 		fixtures: map[string]*parallelTestFixture{},
 	}
 }
@@ -57,7 +52,6 @@ func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 	pf := &parallelTestFixture{
 		T:                t,
 		Matrix:           m,
-		GetAddrs:         pfs.GetAddrs,
 		testNames:        map[string]struct{}{},
 		testNamesPassed:  map[string]struct{}{},
 		testNamesSkipped: map[string]struct{}{},
@@ -231,6 +225,5 @@ func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, m
 func (pf *parallelTestFixture) newIsolatedFixture(t *testing.T, c combination) *testFixture {
 	t.Helper()
 	pf.recordTestStarted(t)
-	envDesc := getEnvDesc()
-	return newTestFixture(t, envDesc, pf, pf.GetAddrs, c)
+	return newTestFixture(t, pf, c)
 }

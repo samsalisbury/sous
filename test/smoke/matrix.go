@@ -1,10 +1,23 @@
 package smoke
 
-import sous "github.com/opentable/sous/lib"
+import (
+	"fmt"
+	"os"
+	"strings"
+	"testing"
+
+	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
+	sous "github.com/opentable/sous/lib"
+)
 
 type fixtureConfig struct {
-	matrix     matrixCombo
-	startState *sous.State
+	matrix      matrixCombo
+	startState  *sous.State
+	envDesc     desc.EnvDesc
+	singularity *testSingularity
+	// TODO SS: Remove this in favour of funcs that isolate for particular
+	// pieces of data.
+	clusterSuffix string
 }
 
 type matrixCombo struct {
@@ -26,9 +39,24 @@ func matrix() matrixDef {
 	return m
 }
 
-func makeFixtureConfig(c combination) fixtureConfig {
+func makeFixtureConfig(t *testing.T, c combination) fixtureConfig {
+	envDesc := getEnvDesc()
+	clusterSuffix := strings.Replace(t.Name(), "/", "_", -1)
+	fmt.Fprintf(os.Stdout, "Cluster suffix: %s", clusterSuffix)
+	s9y := newSingularity(envDesc.SingularityURL())
+	s9y.ClusterSuffix = clusterSuffix
+	state := sous.StateFixture(sous.StateFixtureOpts{
+		ClusterCount:  3,
+		ManifestCount: 3,
+		ClusterSuffix: clusterSuffix,
+	})
+	addURLsToState(state, envDesc)
 	return fixtureConfig{
-		matrix: makeMatrixCombo(c),
+		matrix:        makeMatrixCombo(c),
+		envDesc:       envDesc,
+		clusterSuffix: clusterSuffix,
+		singularity:   s9y,
+		startState:    state,
 	}
 }
 

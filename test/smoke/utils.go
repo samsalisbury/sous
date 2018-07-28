@@ -279,10 +279,11 @@ var freePortsMu sync.Mutex
 var usedPorts = map[int]struct{}{}
 
 // freePortAddrs returns n listenable addresses on the ip provided in the
-// range min-max. Note that it does not guarantee they are still free by the
+// range 49152-65535. Note that it does not guarantee they are still free by the
 // time you come to bind to them, but makes that more likely by binding and then
 // unbinding from them.
-func freePortAddrs(ip string, n, min, max int) []string {
+func freePortAddrs(ip string, n int) []string {
+	min, max := 49152, 65535
 	freePortsMu.Lock()
 	defer freePortsMu.Unlock()
 	ports := make(map[int]net.Listener, n)

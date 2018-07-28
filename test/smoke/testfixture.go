@@ -1,7 +1,6 @@
 package smoke
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,7 +31,7 @@ type testFixture struct {
 
 var sousBin = mustGetSousBin()
 
-func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixture, getAddrs func(int) []string, combo combination) *testFixture {
+func newTestFixture(t *testing.T, parent *parallelTestFixture, combo combination) *testFixture {
 	t.Helper()
 	t.Parallel()
 	if testing.Short() {
@@ -40,55 +39,39 @@ func newTestFixture(t *testing.T, envDesc desc.EnvDesc, parent *parallelTestFixt
 	}
 	baseDir := getDataDir(t)
 
-	clusterSuffix := strings.Replace(t.Name(), "/", "_", -1)
-	fmt.Fprintf(os.Stdout, "Cluster suffix: %s", clusterSuffix)
-
-	s9y := newSingularity(envDesc.SingularityURL())
-	s9y.ClusterSuffix = clusterSuffix
-
-	state := sous.StateFixture(sous.StateFixtureOpts{
-		ClusterCount:  3,
-		ManifestCount: 3,
-		ClusterSuffix: clusterSuffix,
-	})
-
-	addURLsToState(state, envDesc)
-
-	fcfg := makeFixtureConfig(combo)
-
-	fcfg.startState = state
+	c := makeFixtureConfig(t, combo)
 
 	finished := make(chan struct{})
 
-	c, err := newBunchOfSousServers(t, baseDir, getAddrs, fcfg, finished)
+	boss, err := newBunchOfSousServers(t, baseDir, c, finished)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}
 
-	if err := c.configure(t, envDesc, fcfg); err != nil {
+	if err := boss.configure(t, c.envDesc, c); err != nil {
 		t.Fatalf("configuring test cluster: %s", err)
 	}
 
-	if err := c.Start(t, sousBin); err != nil {
+	if err := boss.Start(t, sousBin); err != nil {
 		t.Fatalf("starting test cluster: %s", err)
 	}
 
-	primaryServer := "http://" + c.Instances[0].Addr
+	primaryServer := "http://" + boss.Instances[0].Addr
 	userEmail := "sous_client1@example.com"
 
 	tf := &testFixture{
-		Cluster:       *c,
+		Cluster:       *boss,
 		BaseDir:       baseDir,
-		Singularity:   s9y,
-		ClusterSuffix: clusterSuffix,
+		Singularity:   c.singularity,
+		ClusterSuffix: c.clusterSuffix,
 		Parent:        parent,
 		TestName:      t.Name(),
 		UserEmail:     userEmail,
-		Projects:      fcfg.matrix.projects,
+		Projects:      c.matrix.projects,
 		Finished:      finished,
 	}
 	client := makeClient(t, tf, baseDir, sousBin)
-	if err := client.Configure(primaryServer, envDesc.RegistryName(), userEmail); err != nil {
+	if err := client.Configure(primaryServer, c.envDesc.RegistryName(), userEmail); err != nil {
 		t.Fatal(err)
 	}
 	tf.Client = client
