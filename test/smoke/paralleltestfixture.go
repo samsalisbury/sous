@@ -105,6 +105,25 @@ func (pf *parallelTestFixture) RunMatrix(tests ...PTest) {
 	}
 }
 
+// Test is a test.
+type Test func(t *testing.T, f *testFixture)
+
+func (pf *parallelTestFixture) Run(name string, test Test) {
+	for _, c := range pf.Matrix.combinations() {
+		c := c
+		pf.T.Run(c.String()+"/"+name, func(t *testing.T) {
+			pf.parent.wg.Add(1)
+			f := pf.newIsolatedFixture(t, c)
+			defer func() {
+				defer pf.parent.wg.Done()
+				pf.recordTestStatus(t)
+				f.Teardown(t)
+			}()
+			test(t, f)
+		})
+	}
+}
+
 func (pf *parallelTestFixture) recordTestStatus(t *testing.T) {
 	t.Helper()
 	name := t.Name()
