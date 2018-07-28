@@ -22,7 +22,7 @@ func TestMain(m *testing.M) {
 	}
 
 	if runRealTests {
-		pfs = newParallelTestFixtureSet()
+		pfs = newParallelTestFixtureSet(newTestFixture)
 		resetSingularity()
 	}
 	exitCode := m.Run()

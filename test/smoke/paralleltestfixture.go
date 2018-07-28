@@ -9,8 +9,8 @@ import (
 
 type (
 	parallelTestFixture struct {
-		T                  *testing.T
-		Matrix             matrixDef
+		t                  *testing.T
+		matrix             matrixDef
 		testNames          map[string]struct{}
 		testNamesMu        sync.RWMutex
 		testNamesPassed    map[string]struct{}
@@ -23,19 +23,21 @@ type (
 	}
 
 	parallelTestFixtureSet struct {
-		GetAddrs func(int) []string
-		mu       sync.Mutex
-		fixtures map[string]*parallelTestFixture
-		wg       sync.WaitGroup
+		GetAddrs       func(int) []string
+		mu             sync.Mutex
+		fixtures       map[string]*parallelTestFixture
+		wg             sync.WaitGroup
+		fixtureFactory FixtureFactory
 	}
 )
 
-func newParallelTestFixtureSet() *parallelTestFixtureSet {
+func newParallelTestFixtureSet(ff FixtureFactory) *parallelTestFixtureSet {
 	if err := stopPIDs(); err != nil {
 		panic(err)
 	}
 	return &parallelTestFixtureSet{
-		fixtures: map[string]*parallelTestFixture{},
+		fixtureFactory: ff,
+		fixtures:       map[string]*parallelTestFixture{},
 	}
 }
 
@@ -50,8 +52,8 @@ func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 	t.Helper()
 	t.Parallel()
 	pf := &parallelTestFixture{
-		T:                t,
-		Matrix:           m,
+		t:                t,
+		matrix:           m,
 		testNames:        map[string]struct{}{},
 		testNamesPassed:  map[string]struct{}{},
 		testNamesSkipped: map[string]struct{}{},
@@ -75,27 +77,37 @@ func (pf *parallelTestFixture) recordTestStarted(t *testing.T) {
 	pf.testNames[name] = struct{}{}
 }
 
-// PTest is a test to run in parallel.
-type PTest struct {
-	Name string
-	Test func(*testing.T, *testFixture)
+// Test is a test.
+type Test func(*testing.T, Context)
+
+// FixtureFactory generates Fixtures from test and combination.
+type FixtureFactory func(*testing.T, combination) Fixture
+
+// Fixture is able to set up and tear down.
+type Fixture interface {
+	Teardown(*testing.T)
 }
 
-// Test is a test.
-type Test func(t *testing.T, f *testFixture)
+// Context is passed to each test case.
+type Context struct {
+	matrix combination
+	// F is the fixture returned from FixtureFactory().F()
+	F interface{}
+}
 
 func (pf *parallelTestFixture) Run(name string, test Test) {
-	for _, c := range pf.Matrix.combinations() {
+	for _, c := range pf.matrix.combinations() {
 		c := c
-		pf.T.Run(c.String()+"/"+name, func(t *testing.T) {
+		pf.t.Run(c.String()+"/"+name, func(t *testing.T) {
 			pf.parent.wg.Add(1)
-			f := pf.newIsolatedFixture(t, c)
+			f := pf.parent.fixtureFactory(t, c)
 			defer func() {
 				defer pf.parent.wg.Done()
 				pf.recordTestStatus(t)
 				f.Teardown(t)
 			}()
-			test(t, f)
+			pf.recordTestStarted(t)
+			test(t, Context{matrix: c, F: f})
 		})
 	}
 }
@@ -185,7 +197,7 @@ func testNamesSlice(m map[string]struct{}) []string {
 }
 
 func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, missing []string) {
-	t := pf.T
+	t := pf.t
 	t.Helper()
 	total = testNamesSlice(pf.testNames)
 	passed = testNamesSlice(pf.testNamesPassed)
@@ -215,10 +227,4 @@ func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, m
 		}
 	}
 	return total, passed, skipped, failed, missing
-}
-
-func (pf *parallelTestFixture) newIsolatedFixture(t *testing.T, c combination) *testFixture {
-	t.Helper()
-	pf.recordTestStarted(t)
-	return newTestFixture(t, pf, c)
 }

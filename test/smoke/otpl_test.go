@@ -47,7 +47,8 @@ func TestOTPL(t *testing.T) {
 	// projects, not split build projects.
 	pf := pfs.newParallelTestFixture(t, matrix().FixedDimension("project", "simple"))
 
-	pf.Run("artifact-add", func(t *testing.T, f *testFixture) {
+	pf.Run("artifact-add", func(t *testing.T, c Context) {
+		f := c.F.(*testFixture)
 		client := f.setupProject(t, f.Projects.HTTPServer())
 
 		flags := &sousFlags{tag: "1.2.3", repo: "github.com/some-user/project1"}
@@ -66,8 +67,8 @@ func TestOTPL(t *testing.T) {
 		}
 	})
 
-	pf.Run("build-init-deploy", func(t *testing.T, f *testFixture) {
-
+	pf.Run("build-init-deploy", func(t *testing.T, c Context) {
+		f := c.F.(*testFixture)
 		client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 			"config/cluster1/singularity.json": `
 				{
@@ -106,9 +107,10 @@ func TestOTPL(t *testing.T) {
 		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
-	pf.Run("fail-unknown-fields", func(t *testing.T, f *testFixture) {
+	pf.Run("fail-unknown-fields", func(t *testing.T, c Context) {
 
 		t.Skipf("WIP")
+		f := c.F.(*testFixture)
 
 		client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
 			"config/cluster1/singularity.json": `
