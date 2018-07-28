@@ -25,7 +25,7 @@ func initBuildDeploy(t *testing.T, client *sousClient, flags *sousFlags, transfo
 }
 
 func TestSmoke(t *testing.T) {
-	pf := pfs.newParallelTestFixture(t, Matrix())
+	pf := pfs.newParallelTestFixture(t, matrix())
 
 	pf.RunMatrix(
 

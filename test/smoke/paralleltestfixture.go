@@ -46,9 +46,9 @@ func newParallelTestFixtureSet() *parallelTestFixtureSet {
 
 func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrixDef) *parallelTestFixture {
 	if flags.printMatrix {
-		matrix := m.FixtureConfigs()
+		matrix := m.combinations()
 		for _, m := range matrix {
-			fmt.Printf("%s/%s\n", t.Name(), m.Desc)
+			fmt.Printf("%s/%s\n", t.Name(), m)
 		}
 		t.Skip("Just printing test matrix (-ls-matrix flag set)")
 	}

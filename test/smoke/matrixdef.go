@@ -4,16 +4,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	sous "github.com/opentable/sous/lib"
 )
-
-type fixtureConfig struct {
-	dbPrimary  bool
-	startState *sous.State
-	projects   projectList
-	Desc       string
-}
 
 type matrixDef struct {
 	OrderedDimensionNames []string
@@ -82,21 +73,6 @@ func (m matrixDef) clone(include func(dimension, value string) bool) matrixDef {
 		n.Dimensions[name] = nv
 	}
 	return n
-}
-
-// TODO SS: Remove this from MatrixDef and write a helper func to do the same.
-func (m *matrixDef) FixtureConfigs() []fixtureConfig {
-	cs := m.combinations()
-	fcfgs := make([]fixtureConfig, len(cs))
-	for i, c := range m.combinations() {
-		m := c.Map()
-		fcfgs[i] = fixtureConfig{
-			Desc:      c.String(),
-			dbPrimary: m["store"].(bool),
-			projects:  m["project"].(projectList),
-		}
-	}
-	return fcfgs
 }
 
 func (m *matrixDef) combinations() []combination {
