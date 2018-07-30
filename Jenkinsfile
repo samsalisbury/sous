@@ -11,11 +11,11 @@ pipeline {
     stage('Git statuses') {
       steps {
         githubNotify context: 'Jenkins/Test/Unit', description: 'Unit Tests', status: 'PENDING'
-        githubNotify context: 'Jenkins/Test/Static-Check', description: 'Static Check Tests', status: 'PENDING'
-        githubNotify context: 'Jenkins/Test/TestSmoke/git/split', description: 'Smoke Git Split Tests', status: 'PENDING'
-        githubNotify context: 'Jenkins/Test/TestSmoke/git/simple', description: 'Smoke Git Simple Tests', status: 'PENDING'
-        githubNotify context: 'Jenkins/Test/TestOTPL/git/simple', description: 'OTPL Git Simple Tests', status: 'PENDING'
-        githubNotify context: 'Jenkins Overall Success', description: 'Pipeline Status', status: 'PENDING'
+          githubNotify context: 'Jenkins/Test/Static-Check', description: 'Static Check Tests', status: 'PENDING'
+          githubNotify context: 'Jenkins/Test/TestSmoke/git/split', description: 'Smoke Git Split Tests', status: 'PENDING'
+          githubNotify context: 'Jenkins/Test/TestSmoke/git/simple', description: 'Smoke Git Simple Tests', status: 'PENDING'
+          githubNotify context: 'Jenkins/Test/TestOTPL/git/simple', description: 'OTPL Git Simple Tests', status: 'PENDING'
+          githubNotify context: 'Jenkins Overall Success', description: 'Pipeline Status', status: 'PENDING'
       }
     }
     stage('Inited Values') {
@@ -126,35 +126,37 @@ pipeline {
           agent { label 'mesos-qa-uswest2' }
           steps {
             echo "smoke test TestSomke/git/simple step"
-              sh '''#!/usr/bin/env bash
-              set -x
-              set -e
+              retry(2) {
+                sh '''#!/usr/bin/env bash
+                  set -x
+                  set -e
 
-              echo $PATH
-              PATH=$PATH:/usr/local/go/bin export PATH
-              echo $PATH
+                  echo $PATH
+                  PATH=$PATH:/usr/local/go/bin export PATH
+                  echo $PATH
 
-              echo "Setting up GOPATH"
+                  echo "Setting up GOPATH"
 
-              mkdir -p godir/src/github.com/opentable
-              ln -sfn $PWD $PWD/godir/src/github.com/opentable/sous
-              export GOPATH=$PWD/godir
-              cd $PWD/godir/src/github.com/opentable/sous
+                  mkdir -p godir/src/github.com/opentable
+                  ln -sfn $PWD $PWD/godir/src/github.com/opentable/sous
+                  export GOPATH=$PWD/godir
+                  cd $PWD/godir/src/github.com/opentable/sous
 
-              echo $GOPATH
-              echo $PWD
-
-
-              echo "Running Tests"
-
-              echo "Setting up git identity for test"
-              git config --global user.email "sous-internal@opentable.onmicrosoft.com"
-              git config --global user.name "Jenkins Run"
+                  echo $GOPATH
+                  echo $PWD
 
 
-              GO_TEST_RUN=TestSmoke/git/simple make test-smoke
+                  echo "Running Tests"
 
-              '''
+                  echo "Setting up git identity for test"
+                  git config --global user.email "sous-internal@opentable.onmicrosoft.com"
+                  git config --global user.name "Jenkins Run"
+
+
+                  GO_TEST_RUN=TestSmoke/git/simple make test-smoke
+
+                  '''
+              }
           }
           post {
             success {
@@ -169,35 +171,37 @@ pipeline {
           agent { label 'mesos-qa-uswest2' }
           steps {
             echo "smoke test TestSomke/git/split step"
-              sh '''#!/usr/bin/env bash
-              set -x
-              set -e
+              retry(2) {
+                sh '''#!/usr/bin/env bash
+                  set -x
+                  set -e
 
-              echo $PATH
-              PATH=$PATH:/usr/local/go/bin export PATH
-              echo $PATH
+                  echo $PATH
+                  PATH=$PATH:/usr/local/go/bin export PATH
+                  echo $PATH
 
-              echo "Setting up GOPATH"
+                  echo "Setting up GOPATH"
 
-              mkdir -p godir/src/github.com/opentable
-              ln -sfn $PWD $PWD/godir/src/github.com/opentable/sous
-              export GOPATH=$PWD/godir
-              cd $PWD/godir/src/github.com/opentable/sous
+                  mkdir -p godir/src/github.com/opentable
+                  ln -sfn $PWD $PWD/godir/src/github.com/opentable/sous
+                  export GOPATH=$PWD/godir
+                  cd $PWD/godir/src/github.com/opentable/sous
 
-              echo $GOPATH
-              echo $PWD
-
-
-              echo "Running Tests"
-
-              echo "Setting up git identity for test"
-              git config --global user.email "sous-internal@opentable.onmicrosoft.com"
-              git config --global user.name "Jenkins Run"
+                  echo $GOPATH
+                  echo $PWD
 
 
-              GO_TEST_RUN=TestSmoke/git/split make test-smoke
+                  echo "Running Tests"
 
-              '''
+                  echo "Setting up git identity for test"
+                  git config --global user.email "sous-internal@opentable.onmicrosoft.com"
+                  git config --global user.name "Jenkins Run"
+
+
+                  GO_TEST_RUN=TestSmoke/git/split make test-smoke
+
+                  '''
+              }
           }
           post {
             success {
@@ -212,35 +216,37 @@ pipeline {
           agent { label 'mesos-qa-uswest2' }
           steps {
             echo "smoke test TestOTPL/git/simple step"
-              sh '''#!/usr/bin/env bash
-              set -x
-              set -e
+              retry(2) {
+                sh '''#!/usr/bin/env bash
+                  set -x
+                  set -e
 
-              echo $PATH
-              PATH=$PATH:/usr/local/go/bin export PATH
-              echo $PATH
+                  echo $PATH
+                  PATH=$PATH:/usr/local/go/bin export PATH
+                  echo $PATH
 
-              echo "Setting up GOPATH"
+                  echo "Setting up GOPATH"
 
-              mkdir -p godir/src/github.com/opentable
-              ln -sfn $PWD $PWD/godir/src/github.com/opentable/sous
-              export GOPATH=$PWD/godir
-              cd $PWD/godir/src/github.com/opentable/sous
+                  mkdir -p godir/src/github.com/opentable
+                  ln -sfn $PWD $PWD/godir/src/github.com/opentable/sous
+                  export GOPATH=$PWD/godir
+                  cd $PWD/godir/src/github.com/opentable/sous
 
-              echo $GOPATH
-              echo $PWD
-
-
-              echo "Running Tests"
-
-              echo "Setting up git identity for test"
-              git config --global user.email "sous-internal@opentable.onmicrosoft.com"
-              git config --global user.name "Jenkins Run"
+                  echo $GOPATH
+                  echo $PWD
 
 
-              GO_TEST_RUN=TestOTPL/git/simple make test-smoke
+                  echo "Running Tests"
 
-              '''
+                  echo "Setting up git identity for test"
+                  git config --global user.email "sous-internal@opentable.onmicrosoft.com"
+                  git config --global user.name "Jenkins Run"
+
+
+                  GO_TEST_RUN=TestOTPL/git/simple make test-smoke
+
+                  '''
+              }
           }
           post {
             success {
@@ -255,25 +261,27 @@ pipeline {
           agent { label 'mesos-qa-uswest2' }
           steps {
             echo "integration test"
-              sh '''#!/usr/bin/env bash
-              set -x
-              set -e
+              retry(2) {
+                sh '''#!/usr/bin/env bash
+                  set -x
+                  set -e
 
-              echo $PATH
-              PATH=$PATH:/usr/local/go/bin export PATH
-              echo $PATH
+                  echo $PATH
+                  PATH=$PATH:/usr/local/go/bin export PATH
+                  echo $PATH
 
-              echo "Setting up GOPATH"
+                  echo "Setting up GOPATH"
 
-              mkdir -p godir/src/github.com/opentable
-              ln -s $PWD ./godir/src/github.com/opentable/sous
-              export GOPATH=$GOPATH:$PWD/godir
-              cd $PWD/godir/src/github.com/opentable/sous
-              echo $GOPATH
+                  mkdir -p godir/src/github.com/opentable
+                  ln -s $PWD ./godir/src/github.com/opentable/sous
+                  export GOPATH=$GOPATH:$PWD/godir
+                  cd $PWD/godir/src/github.com/opentable/sous
+                  echo $GOPATH
 
-              echo "Running Tests"
-              make test-integration
-              '''
+                  echo "Running Tests"
+                  make test-integration
+                  '''
+              }
           }
         }
       }
@@ -282,7 +290,6 @@ pipeline {
   post {
     always {
       echo 'This will always run'
-
     }
     success {
       echo 'This will run only if successful'
@@ -295,7 +302,7 @@ pipeline {
 
             notifier.notifyResult()
         }
-        githubNotify context: 'Jenkins Overall Success', description: 'PIPELINE all Passed!!!', status: 'SUCCESS'
+      githubNotify context: 'Jenkins Overall Success', description: 'PIPELINE all Passed!!!', status: 'SUCCESS'
     }
     failure {
       echo 'This will run only if failed'
@@ -308,7 +315,7 @@ pipeline {
 
             notifier.notifyResult()
         }
-        githubNotify context: 'Jenkins Overall Success', description: 'PIPELINE FAILED', status: 'FAILURE'
+      githubNotify context: 'Jenkins Overall Success', description: 'PIPELINE FAILED', status: 'FAILURE'
     }
     unstable {
       echo 'This will run only if the run was marked as unstable'
