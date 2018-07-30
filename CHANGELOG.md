@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com.opentable/sous/compare/0.5.117...master)
+### Changed
+* Client: `SOUS_USE_SOUS_SEVER` env var must now be exactly uppercase `YES`
+  in order to be considered "on". Previously any value, even empty string
+  was considered "on". This change makes it easier to use in scripts.
 
 ## [0.5.117](//github.com.opentable/sous/compare/0.5.116...0.5.117)
 ### Changed
