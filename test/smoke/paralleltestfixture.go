@@ -8,9 +8,10 @@ import (
 )
 
 type (
-	parallelTestFixture struct {
+	// Runner runs tests defined in a Matrix.
+	Runner struct {
 		t                  *testing.T
-		matrix             matrixDef
+		matrix             Matrix
 		testNames          map[string]struct{}
 		testNamesMu        sync.RWMutex
 		testNamesPassed    map[string]struct{}
@@ -19,31 +20,43 @@ type (
 		testNamesSkippedMu sync.Mutex
 		testNamesFailed    map[string]struct{}
 		testNamesFailedMu  sync.Mutex
-		parent             *parallelTestFixtureSet
+		parent             *Supervisor
 	}
 
-	parallelTestFixtureSet struct {
-		GetAddrs       func(int) []string
+	// Supervisor supervises a set of Runners, and collates their results.
+	// There should be exactly one global Supervisor in every package that uses
+	// testmatrix.
+	Supervisor struct {
 		mu             sync.Mutex
-		fixtures       map[string]*parallelTestFixture
+		GetAddrs       func(int) []string
+		fixtures       map[string]*Runner
 		wg             sync.WaitGroup
 		fixtureFactory FixtureFactory
 	}
 )
 
-func newParallelTestFixtureSet(ff FixtureFactory) *parallelTestFixtureSet {
+// NewSupervisor returns a new *Supervisor ready to produce test fixtures for
+// your tests using ff. NewSupervisor should be called at most once per package.
+// Calline NewSupervisor more than once will split up test summaries and lead to
+// less useful output. In future it may panic to prevent this.
+func NewSupervisor(ff FixtureFactory) *Supervisor {
 	if err := stopPIDs(); err != nil {
 		panic(err)
 	}
-	return &parallelTestFixtureSet{
+	return &Supervisor{
 		fixtureFactory: ff,
-		fixtures:       map[string]*parallelTestFixture{},
+		fixtures:       map[string]*Runner{},
 	}
 }
 
-func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrixDef) *parallelTestFixture {
+// NewRunner returns a new *Runner ready to run tests with all possible
+// combinations of the provided Matrix. NewRunner should be called exactly once
+// in each top-level TestXXX(t *testing.T) function in your package. Calling it
+// more than once per top-level test may cause undefined behaviour and may
+// panic.
+func (pfs *Supervisor) NewRunner(t *testing.T, m Matrix) *Runner {
 	if flags.printMatrix {
-		matrix := m.combinations()
+		matrix := m.scenarios()
 		for _, m := range matrix {
 			fmt.Printf("%s/%s\n", t.Name(), m)
 		}
@@ -51,7 +64,7 @@ func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 	}
 	t.Helper()
 	t.Parallel()
-	pf := &parallelTestFixture{
+	pf := &Runner{
 		t:                t,
 		matrix:           m,
 		testNames:        map[string]struct{}{},
@@ -66,7 +79,7 @@ func (pfs *parallelTestFixtureSet) newParallelTestFixture(t *testing.T, m matrix
 	return pf
 }
 
-func (pf *parallelTestFixture) recordTestStarted(t *testing.T) {
+func (pf *Runner) recordTestStarted(t *testing.T) {
 	t.Helper()
 	name := t.Name()
 	pf.testNamesMu.Lock()
@@ -81,7 +94,7 @@ func (pf *parallelTestFixture) recordTestStarted(t *testing.T) {
 type Test func(*testing.T, Context)
 
 // FixtureFactory generates Fixtures from test and combination.
-type FixtureFactory func(*testing.T, combination) Fixture
+type FixtureFactory func(*testing.T, Scenario) Fixture
 
 // Fixture is able to set up and tear down.
 type Fixture interface {
@@ -90,13 +103,16 @@ type Fixture interface {
 
 // Context is passed to each test case.
 type Context struct {
-	matrix combination
+	Scenario Scenario
 	// F is the fixture returned from FixtureFactory().F()
 	F interface{}
 }
 
-func (pf *parallelTestFixture) Run(name string, test Test) {
-	for _, c := range pf.matrix.combinations() {
+// Run is analogous to *testing.T.Run, but takes a method that includes a
+// Context as well as *testing.T. Run runs the defined test with all possible
+// matrix combinations in parallel.
+func (pf *Runner) Run(name string, test Test) {
+	for _, c := range pf.matrix.scenarios() {
 		c := c
 		pf.t.Run(c.String()+"/"+name, func(t *testing.T) {
 			pf.parent.wg.Add(1)
@@ -107,12 +123,12 @@ func (pf *parallelTestFixture) Run(name string, test Test) {
 				f.Teardown(t)
 			}()
 			pf.recordTestStarted(t)
-			test(t, Context{matrix: c, F: f})
+			test(t, Context{Scenario: c, F: f})
 		})
 	}
 }
 
-func (pf *parallelTestFixture) recordTestStatus(t *testing.T) {
+func (pf *Runner) recordTestStatus(t *testing.T) {
 	t.Helper()
 	name := t.Name()
 	pf.testNamesMu.RLock()
@@ -154,7 +170,7 @@ func (pf *parallelTestFixture) recordTestStatus(t *testing.T) {
 // total. It reports tests failed, skipped, passed, and missing (when a test has
 // failed to report back any status, which should not happen under normal
 // circumstances.
-func (pfs *parallelTestFixtureSet) PrintSummary() {
+func (pfs *Supervisor) PrintSummary() {
 	pfs.wg.Wait()
 	pfs.mu.Lock()
 	defer pfs.mu.Unlock()
@@ -196,7 +212,7 @@ func testNamesSlice(m map[string]struct{}) []string {
 	return s
 }
 
-func (pf *parallelTestFixture) printSummary() (total, passed, skipped, failed, missing []string) {
+func (pf *Runner) printSummary() (total, passed, skipped, failed, missing []string) {
 	t := pf.t
 	t.Helper()
 	total = testNamesSlice(pf.testNames)

@@ -26,8 +26,8 @@ type matrixCombo struct {
 }
 
 // matrix returns the defined sous smoke test matrix.
-func matrix() matrixDef {
-	m := newMatrix()
+func matrix() Matrix {
+	m := New()
 	m.AddDimension("store", "GDM storage to use", map[string]interface{}{
 		"db":  true,
 		"git": false,
@@ -39,7 +39,7 @@ func matrix() matrixDef {
 	return m
 }
 
-func makeFixtureConfig(t *testing.T, c combination) fixtureConfig {
+func makeFixtureConfig(t *testing.T, c Scenario) fixtureConfig {
 	envDesc := getEnvDesc()
 	clusterSuffix := strings.Replace(t.Name(), "/", "_", -1)
 	fmt.Fprintf(os.Stdout, "Cluster suffix: %s", clusterSuffix)
@@ -60,7 +60,7 @@ func makeFixtureConfig(t *testing.T, c combination) fixtureConfig {
 	}
 }
 
-func makeMatrixCombo(c combination) matrixCombo {
+func makeMatrixCombo(c Scenario) matrixCombo {
 	m := c.Map()
 	return matrixCombo{
 		dbPrimary: m["store"].(bool),

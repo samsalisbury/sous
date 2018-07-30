@@ -30,7 +30,7 @@ type testFixture struct {
 
 var sousBin = mustGetSousBin()
 
-func newTestFixture(t *testing.T, combo combination) Fixture {
+func newTestFixture(t *testing.T, combo Scenario) Fixture {
 	t.Helper()
 	baseDir := getDataDir(t)
 

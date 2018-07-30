@@ -24,13 +24,22 @@ func initBuildDeploy(t *testing.T, client *sousClient, flags *sousFlags, transfo
 	client.MustRun(t, "deploy", flags.SousDeployFlags())
 }
 
+type matrixRunner struct{ r *Runner }
+
+func (m *matrixRunner) Run(name string, test func(*testing.T, *testFixture)) {
+	m.r.Run(name, func(t *testing.T, c Context) { test(t, c.F.(*testFixture)) })
+}
+
+func newMatrixRunner(t *testing.T, m matrixDef) matrixRunner {
+	return matrixRunner{r: sup.NewRunner(t, m)}
+}
+
 func TestSmoke(t *testing.T) {
-	pf := pfs.newParallelTestFixture(t, matrix())
 
-	pf.Run("simple", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
+	m := newMatrixRunner(t, matrix())
 
-		client := f.setupProject(t, f.Projects.HTTPServer())
+	m.Run("simple", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer())
 
 		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 		reqID := f.DefaultSingReqID(t, flags)
@@ -42,9 +51,8 @@ func TestSmoke(t *testing.T) {
 		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
-	pf.Run("fail-zero-instances", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
-		client := f.setupProject(t, f.Projects.HTTPServer())
+	m.Run("fail-zero-instances", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer())
 
 		flags := &sousFlags{kind: "http-service", tag: "1.2.3", repo: "github.com/user1/repo1"}
 
@@ -53,12 +61,11 @@ func TestSmoke(t *testing.T) {
 		client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
 	})
 
-	pf.Run("fail-container-crash", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
+	m.Run("fail-container-crash", func(t *testing.T, f *testFixture) {
 
 		// TODO SS: Remove this once fail-container-crash-rafactor works.
 
-		client := f.setupProject(t, f.Projects.Failer())
+		client := setupProject(t, f, f.Projects.Failer())
 
 		flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
 
@@ -81,13 +88,12 @@ func TestSmoke(t *testing.T) {
 		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
-	pf.Run("fail-container-crash-rafactor", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
+	m.Run("fail-container-crash-rafactor", func(t *testing.T, f *testFixture) {
 
 		// TODO SS: Fix this test.
 		t.Skipf("This test fails, figure out why it's not equivalent to test above.")
 
-		client := f.setupProject(t, f.Projects.Failer())
+		client := setupProject(t, f, f.Projects.Failer())
 
 		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
@@ -101,9 +107,8 @@ func TestSmoke(t *testing.T) {
 		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
-	pf.Run("flavors", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
-		client := f.setupProject(t, f.Projects.HTTPServer())
+	m.Run("flavors", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer())
 
 		flags := &sousFlags{
 			kind: "http-service", tag: "1.2.3", cluster: "cluster1",
@@ -118,9 +123,8 @@ func TestSmoke(t *testing.T) {
 		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
-	pf.Run("pause-unpause", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
-		client := f.setupProject(t, f.Projects.HTTPServer())
+	m.Run("pause-unpause", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer())
 
 		flags := &sousFlags{kind: "http-service", tag: "1", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
@@ -143,9 +147,8 @@ func TestSmoke(t *testing.T) {
 		assertActiveStatus(t, f, reqID)
 	})
 
-	pf.Run("scheduled", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
-		client := f.setupProject(t, f.Projects.Sleeper())
+	m.Run("scheduled", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.Sleeper())
 
 		flags := &sousFlags{kind: "scheduled", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
@@ -167,9 +170,8 @@ func TestSmoke(t *testing.T) {
 		assertNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
-	pf.Run("custom-reqid-first-deploy", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
-		client := f.setupProject(t, f.Projects.HTTPServer())
+	m.Run("custom-reqid-first-deploy", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer())
 
 		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
@@ -185,9 +187,8 @@ func TestSmoke(t *testing.T) {
 		assertNonNilHealthCheckOnLatestDeploy(t, f, customID)
 	})
 
-	pf.Run("custom-reqid-second-deploy", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
-		client := f.setupProject(t, f.Projects.HTTPServer())
+	m.Run("custom-reqid-second-deploy", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer())
 
 		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 
@@ -215,9 +216,8 @@ func TestSmoke(t *testing.T) {
 		assertActiveStatus(t, f, originalReqID)
 	})
 
-	pf.Run("change-reqid", func(t *testing.T, c Context) {
-		f := c.F.(*testFixture)
-		client := f.setupProject(t, f.Projects.HTTPServer())
+	m.Run("change-reqid", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer())
 
 		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
 

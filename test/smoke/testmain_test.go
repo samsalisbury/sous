@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-var pfs *parallelTestFixtureSet
+var sup *Supervisor
 
 func TestMain(m *testing.M) {
 	flag.BoolVar(&flags.printMatrix, "ls", false, "list test matrix names")
@@ -22,11 +22,11 @@ func TestMain(m *testing.M) {
 	}
 
 	if runRealTests {
-		pfs = newParallelTestFixtureSet(newTestFixture)
+		sup = NewSupervisor(newTestFixture)
 		resetSingularity()
 	}
 	exitCode := m.Run()
-	pfs.PrintSummary()
+	sup.PrintSummary()
 	os.Exit(exitCode)
 }
 
