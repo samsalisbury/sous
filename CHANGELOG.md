@@ -11,6 +11,10 @@ with respect to its command line interface and HTTP interface
 * A race condition during whole-cluster resolutions meant the final status
   was sometimes inaccurately recorded. Real world implications of this are not
   completely clear, users are not expected to notice much difference.
+### Changed
+* Client: `SOUS_USE_SOUS_SEVER` env var must now be exactly uppercase `YES`
+  in order to be considered "on". Previously any value, even empty string
+  was considered "on". This change makes it easier to use in scripts.
 
 ## [0.5.117](//github.com.opentable/sous/compare/0.5.116...0.5.117)
 ### Changed
