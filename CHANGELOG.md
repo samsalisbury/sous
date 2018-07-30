@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com.opentable/sous/compare/0.5.117...master)
+### Fixed
+* A race condition during whole-cluster resolutions meant the final status
+  was sometimes inaccurately recorded. Real world implications of this are not
+  completely clear, users are not expected to notice much difference.
 
 ## [0.5.117](//github.com.opentable/sous/compare/0.5.116...0.5.117)
 ### Changed
