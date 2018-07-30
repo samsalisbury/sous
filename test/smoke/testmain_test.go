@@ -33,16 +33,12 @@ func newRunner(t *testing.T, m testmatrix.Matrix) runner {
 func TestMain(m *testing.M) {
 	flag.Parse()
 	testmatrix.Quiet = quiet()
-	if sup = testmatrix.Init(matrix, newTestFixture); sup != nil {
+	sup = testmatrix.Init(matrix, newTestFixture, func() error {
 		resetSingularity()
-		if err := stopPIDs(); err != nil {
-			panic(err)
-		}
-	}
+		return stopPIDs()
+	})
 	exitCode := m.Run()
-	//if sup != nil {
 	sup.PrintSummary()
-	//}
 	os.Exit(exitCode)
 }
 
