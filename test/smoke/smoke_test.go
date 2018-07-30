@@ -26,7 +26,7 @@ func initBuildDeploy(t *testing.T, client *sousClient, flags *sousFlags, transfo
 
 func TestSmoke(t *testing.T) {
 
-	m := newMatrixRunner(t, matrix())
+	m := newRunner(t, matrix())
 
 	m.Run("simple", func(t *testing.T, f *testFixture) {
 		client := setupProject(t, f, f.Projects.HTTPServer())

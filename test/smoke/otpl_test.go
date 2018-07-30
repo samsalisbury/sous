@@ -45,7 +45,7 @@ func TestOTPL(t *testing.T) {
 
 	// FixedDimension is because otpl deploy can only work with simple dockerfile
 	// projects, not split build projects.
-	pf := newMatrixRunner(t, matrix().FixedDimension("project", "simple"))
+	pf := newRunner(t, matrix().FixedDimension("project", "simple"))
 
 	pf.Run("artifact-add", func(t *testing.T, f *testFixture) {
 		client := setupProject(t, f, f.Projects.HTTPServer())
