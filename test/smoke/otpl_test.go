@@ -45,33 +45,30 @@ func TestOTPL(t *testing.T) {
 
 	// FixedDimension is because otpl deploy can only work with simple dockerfile
 	// projects, not split build projects.
-	pf := pfs.newParallelTestFixture(t, Matrix().FixedDimension("project", "simple"))
+	pf := newRunner(t, matrix().FixedDimension("project", "simple"))
 
-	pf.RunMatrix(
+	pf.Run("artifact-add", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer())
 
-		PTest{Name: "artifact-add", Test: func(t *testing.T, f *testFixture) {
-			client := f.setupProject(t, f.Projects.HTTPServer())
+		flags := &sousFlags{tag: "1.2.3", repo: "github.com/some-user/project1"}
 
-			flags := &sousFlags{tag: "1.2.3", repo: "github.com/some-user/project1"}
+		dockerRef := dockerBuildAddArtifact(t, f, client, flags)
 
-			dockerRef := dockerBuildAddArtifact(t, f, client, flags)
+		output := client.MustRun(t, "artifact get", flags)
 
-			output := client.MustRun(t, "artifact get", flags)
+		if !strings.Contains(output, dockerRef) {
+			// TODO SS: Figure out how to do this assertion given that we do
+			// not store the Docker tag sent, only the  digest.
+			//t.Errorf("output did not contain %q; was:\n%s", dockerRef, output)
+		} else {
+			// TODO SS: Remove next line once we have the assertion above.
+			t.Logf(output)
+		}
+	})
 
-			if !strings.Contains(output, dockerRef) {
-				// TODO SS: Figure out how to do this assertion given that we do
-				// not store the Docker tag sent, only the  digest.
-				//t.Errorf("output did not contain %q; was:\n%s", dockerRef, output)
-			} else {
-				// TODO SS: Remove next line once we have the assertion above.
-				t.Logf(output)
-			}
-		}},
-
-		PTest{Name: "build-init-deploy", Test: func(t *testing.T, f *testFixture) {
-
-			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
-				"config/cluster1/singularity.json": `
+	pf.Run("build-init-deploy", func(t *testing.T, f *testFixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer().Merge(filemap.FileMap{
+			"config/cluster1/singularity.json": `
 				{
 					"requestId": "request1",
 					"resources": {
@@ -80,7 +77,7 @@ func TestOTPL(t *testing.T) {
 						"numPorts": 3
 					}
 				}`,
-				"config/cluster1/singularity-request.json": `
+			"config/cluster1/singularity-request.json": `
 				{
 					"id": "request1",
 					"requestType": "SERVICE",
@@ -89,31 +86,31 @@ func TestOTPL(t *testing.T) {
 					],
 					"instances": 3
 				}`,
-			}))
+		}))
 
-			flags := &sousFlags{
-				kind:    "http-service",
-				repo:    "github.com/build-init-deploy-user/project1",
-				tag:     "1.2.3",
-				cluster: "cluster1",
-			}
+		flags := &sousFlags{
+			kind:    "http-service",
+			repo:    "github.com/build-init-deploy-user/project1",
+			tag:     "1.2.3",
+			cluster: "cluster1",
+		}
 
-			dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
+		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
 
-			client.MustRun(t, "deploy", flags.SousDeployFlags())
+		client.MustRun(t, "deploy", flags.SousDeployFlags())
 
-			reqID := f.DefaultSingReqID(t, flags)
-			assertActiveStatus(t, f, reqID)
-			assertSingularityRequestTypeService(t, f, reqID)
-			assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
-		}},
+		reqID := f.DefaultSingReqID(t, flags)
+		assertActiveStatus(t, f, reqID)
+		assertSingularityRequestTypeService(t, f, reqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+	})
 
-		PTest{Name: "fail-unknown-fields", Test: func(t *testing.T, f *testFixture) {
+	pf.Run("fail-unknown-fields", func(t *testing.T, f *testFixture) {
 
-			t.Skipf("WIP")
+		t.Skipf("WIP")
 
-			client := f.setupProject(t, f.Projects.HTTPServer().Merge(filemap.FileMap{
-				"config/cluster1/singularity.json": `
+		client := setupProject(t, f, f.Projects.HTTPServer().Merge(filemap.FileMap{
+			"config/cluster1/singularity.json": `
 				{
 					"requestId": "request1",
 					"resources": {
@@ -122,7 +119,7 @@ func TestOTPL(t *testing.T) {
 						"numPorts": 3
 					}
 				}`,
-				"config/cluster1/singularity-request.json": `
+			"config/cluster1/singularity-request.json": `
 				{
 					id: "request1",
 					"requestType": "WORKER",
@@ -134,8 +131,7 @@ func TestOTPL(t *testing.T) {
 					"rackSensitive": false,
 					"loadBalanced": false
 				}`,
-			}))
-			client.MustRun(t, "version", nil)
-		}},
-	)
+		}))
+		client.MustRun(t, "version", nil)
+	})
 }

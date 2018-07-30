@@ -29,18 +29,25 @@ func quiet() bool {
 	return os.Getenv("SMOKE_TEST_QUIET") == "YES"
 }
 
+func rtLog(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", a...)
+}
+
 func addGitEnvVars(env map[string]string) {
-	env["GIT_CONFIG_NOSYSTEM"] = "yes"
-	env["HOME"] = "nowhere"
-	env["PREFIX"] = "nowhere"
+	env["GIT_CONFIG_NOSYSTEM"] = "1"
+	env["GIT_CONFIG_NOGLOBAL"] = "1"
+	env["HOME"] = "none"
+	env["XGD_CONFIG_HOME"] = "none"
+	env["PREFIX"] = "none"
 	env["GIT_COMMITTER_NAME"] = "Tester"
 	env["GIT_COMMITTER_EMAIL"] = "tester@example.com"
 	env["GIT_AUTHOR_NAME"] = "Tester"
 	env["GIT_AUTHOR_EMAIL"] = "tester@example.com"
-}
-
-func rtLog(format string, a ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", a...)
+	env["PATH"] = os.Getenv("PATH")
+	env["DOCKER_HOST"] = os.Getenv("DOCKER_HOST")
+	env["DOCKER_MACHINE_NAME"] = os.Getenv("DOCKER_MACHINE_NAME")
+	env["DOCKER_TLS_VERIFY"] = os.Getenv("DOCKER_TLS_VERIFY")
+	env["DOCKER_CERT_PATH"] = os.Getenv("DOCKER_CERT_PATH")
 }
 
 func getEnvDesc() desc.EnvDesc {
@@ -236,7 +243,6 @@ var perCommandTimeout = 5 * time.Minute
 func mkCMD(dir, name string, args ...string) (*exec.Cmd, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(context.Background(), perCommandTimeout)
 	c := exec.CommandContext(ctx, name, args...)
-	c.Env = os.Environ()
 	c.Dir = dir
 	return c, cancel
 }
@@ -279,10 +285,11 @@ var freePortsMu sync.Mutex
 var usedPorts = map[int]struct{}{}
 
 // freePortAddrs returns n listenable addresses on the ip provided in the
-// range min-max. Note that it does not guarantee they are still free by the
+// range 49152-65535. Note that it does not guarantee they are still free by the
 // time you come to bind to them, but makes that more likely by binding and then
 // unbinding from them.
-func freePortAddrs(ip string, n, min, max int) []string {
+func freePortAddrs(ip string, n int) []string {
+	min, max := 49152, 65535
 	freePortsMu.Lock()
 	defer freePortsMu.Unlock()
 	ports := make(map[int]net.Listener, n)

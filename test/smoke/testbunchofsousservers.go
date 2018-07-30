@@ -24,7 +24,7 @@ type bunchOfSousServers struct {
 	Stop         func() error
 }
 
-func newBunchOfSousServers(t *testing.T, baseDir string, getAddrs func(int) []string, fcfg fixtureConfig, finished <-chan struct{}) (*bunchOfSousServers, error) {
+func newBunchOfSousServers(t *testing.T, baseDir string, fcfg fixtureConfig, finished <-chan struct{}) (*bunchOfSousServers, error) {
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func newBunchOfSousServers(t *testing.T, baseDir string, getAddrs func(int) []st
 
 	count := len(state.Defs.Clusters)
 	instances := make([]*sousServer, count)
-	addrs := getAddrs(count)
+	addrs := freePortAddrs("127.0.0.1", count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
 		inst, err := makeInstance(t, binPath, i, clusterName, baseDir, addrs[i], finished)
@@ -131,7 +131,7 @@ func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg 
 				Host:   host,
 				Port:   dbport,
 			},
-			DatabasePrimary: fcfg.dbPrimary,
+			DatabasePrimary: fcfg.matrix.dbPrimary,
 			Docker: docker.Config{
 				RegistryHost: envDesc.RegistryName(),
 			},

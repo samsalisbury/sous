@@ -154,8 +154,9 @@ func splitBuild(p program) filemap.FileMap {
 	}
 }
 
-func (f *testFixture) setupProject(t *testing.T, fm filemap.FileMap) *sousClient {
+func setupProject(t *testing.T, f *testFixture, fm filemap.FileMap) *sousClient {
 	t.Helper()
+
 	// Setup project git repo.
 	g := newGitClient(t, f, f.Client.BaseDir)
 
