@@ -64,7 +64,7 @@ func (pfs *Supervisor) NewRunner(t *testing.T, m Matrix) *Runner {
 // failed to report back any status, which should not happen under normal
 // circumstances.
 func (pfs *Supervisor) PrintSummary() {
-	pfs.wg.Wait()
+	//pfs.wg.Wait()
 	pfs.mu.Lock()
 	defer pfs.mu.Unlock()
 	var total, passed, skipped, failed, missing []string

@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 	"testing"
+	"time"
 )
 
 // Runner runs tests defined in a Matrix.
@@ -58,13 +59,25 @@ func (pf *Runner) Run(name string, test Test) {
 	for _, c := range pf.matrix.scenarios() {
 		c := c
 		pf.t.Run(c.String()+"/"+name, func(t *testing.T) {
-			t.Parallel()
 			pf.parent.wg.Add(1)
+			t.Parallel()
 			f := pf.parent.fixtureFactory(t, c)
 			defer func() {
+				timeout := 10 * time.Second
 				defer pf.parent.wg.Done()
 				pf.recordTestStatus(t)
-				f.Teardown(t)
+				select {
+				case <-time.After(10 * time.Second):
+					rtLog("ERROR: Teardown took longer than %s", timeout)
+				case <-func() <-chan struct{} {
+					c := make(chan struct{})
+					go func() {
+						f.Teardown(t)
+						close(c)
+					}()
+					return c
+				}():
+				}
 			}()
 			pf.recordTestStarted(t)
 			test(t, Context{Scenario: c, F: f})
