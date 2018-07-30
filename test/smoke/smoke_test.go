@@ -24,16 +24,6 @@ func initBuildDeploy(t *testing.T, client *sousClient, flags *sousFlags, transfo
 	client.MustRun(t, "deploy", flags.SousDeployFlags())
 }
 
-type matrixRunner struct{ r *Runner }
-
-func (m *matrixRunner) Run(name string, test func(*testing.T, *testFixture)) {
-	m.r.Run(name, func(t *testing.T, c Context) { test(t, c.F.(*testFixture)) })
-}
-
-func newMatrixRunner(t *testing.T, m matrixDef) matrixRunner {
-	return matrixRunner{r: sup.NewRunner(t, m)}
-}
-
 func TestSmoke(t *testing.T) {
 
 	m := newMatrixRunner(t, matrix())
