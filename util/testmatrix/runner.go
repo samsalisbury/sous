@@ -58,6 +58,7 @@ func (pf *Runner) Run(name string, test Test) {
 	for _, c := range pf.matrix.scenarios() {
 		c := c
 		pf.t.Run(c.String()+"/"+name, func(t *testing.T) {
+			t.Parallel()
 			pf.parent.wg.Add(1)
 			f := pf.parent.fixtureFactory(t, c)
 			defer func() {
