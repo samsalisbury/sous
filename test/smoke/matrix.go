@@ -8,6 +8,7 @@ import (
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/testmatrix"
 )
 
 type fixtureConfig struct {
@@ -26,8 +27,8 @@ type matrixCombo struct {
 }
 
 // matrix returns the defined sous smoke test matrix.
-func matrix() Matrix {
-	m := New()
+func matrix() testmatrix.Matrix {
+	m := testmatrix.New()
 	m.AddDimension("store", "GDM storage to use", map[string]interface{}{
 		"db":  true,
 		"git": false,
@@ -39,7 +40,7 @@ func matrix() Matrix {
 	return m
 }
 
-func makeFixtureConfig(t *testing.T, c Scenario) fixtureConfig {
+func makeFixtureConfig(t *testing.T, c testmatrix.Scenario) fixtureConfig {
 	envDesc := getEnvDesc()
 	clusterSuffix := strings.Replace(t.Name(), "/", "_", -1)
 	fmt.Fprintf(os.Stdout, "Cluster suffix: %s", clusterSuffix)
@@ -60,7 +61,7 @@ func makeFixtureConfig(t *testing.T, c Scenario) fixtureConfig {
 	}
 }
 
-func makeMatrixCombo(c Scenario) matrixCombo {
+func makeMatrixCombo(c testmatrix.Scenario) matrixCombo {
 	m := c.Map()
 	return matrixCombo{
 		dbPrimary: m["store"].(bool),

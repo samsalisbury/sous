@@ -29,6 +29,10 @@ func quiet() bool {
 	return os.Getenv("SMOKE_TEST_QUIET") == "YES"
 }
 
+func rtLog(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", a...)
+}
+
 func addGitEnvVars(env map[string]string) {
 	env["GIT_CONFIG_NOSYSTEM"] = "yes"
 	env["HOME"] = "nowhere"
@@ -37,10 +41,6 @@ func addGitEnvVars(env map[string]string) {
 	env["GIT_COMMITTER_EMAIL"] = "tester@example.com"
 	env["GIT_AUTHOR_NAME"] = "Tester"
 	env["GIT_AUTHOR_EMAIL"] = "tester@example.com"
-}
-
-func rtLog(format string, a ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", a...)
 }
 
 func getEnvDesc() desc.EnvDesc {

@@ -1,4 +1,4 @@
-package smoke
+package testmatrix
 
 import (
 	"fmt"
@@ -40,9 +40,6 @@ type (
 // Calline NewSupervisor more than once will split up test summaries and lead to
 // less useful output. In future it may panic to prevent this.
 func NewSupervisor(ff FixtureFactory) *Supervisor {
-	if err := stopPIDs(); err != nil {
-		panic(err)
-	}
 	return &Supervisor{
 		fixtureFactory: ff,
 		fixtures:       map[string]*Runner{},
@@ -55,7 +52,7 @@ func NewSupervisor(ff FixtureFactory) *Supervisor {
 // more than once per top-level test may cause undefined behaviour and may
 // panic.
 func (pfs *Supervisor) NewRunner(t *testing.T, m Matrix) *Runner {
-	if flags.printMatrix {
+	if Flags.PrintMatrix {
 		matrix := m.scenarios()
 		for _, m := range matrix {
 			fmt.Printf("%s/%s\n", t.Name(), m)
@@ -212,6 +209,14 @@ func testNamesSlice(m map[string]struct{}) []string {
 	return s
 }
 
+// Quiet causes less output to be produced if set to true.
+// You must not change the value of Quiet after calling Init.
+var Quiet bool
+
+func rtLog(format string, a ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", a...)
+}
+
 func (pf *Runner) printSummary() (total, passed, skipped, failed, missing []string) {
 	t := pf.t
 	t.Helper()
@@ -220,7 +225,7 @@ func (pf *Runner) printSummary() (total, passed, skipped, failed, missing []stri
 	skipped = testNamesSlice(pf.testNamesSkipped)
 	failed = testNamesSlice(pf.testNamesFailed)
 
-	if !quiet() {
+	if !Quiet {
 		summary := fmt.Sprintf("%s summary: %d failed; %d skipped; %d passed (total %d)",
 			t.Name(), len(failed), len(skipped), len(passed), len(total))
 		t.Log(summary)

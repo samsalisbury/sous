@@ -9,6 +9,7 @@ import (
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/testmatrix"
 	"github.com/samsalisbury/semv"
 )
 
@@ -30,7 +31,7 @@ type testFixture struct {
 
 var sousBin = mustGetSousBin()
 
-func newTestFixture(t *testing.T, combo Scenario) Fixture {
+func newTestFixture(t *testing.T, combo testmatrix.Scenario) testmatrix.Fixture {
 	t.Helper()
 	baseDir := getDataDir(t)
 
