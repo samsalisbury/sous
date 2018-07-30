@@ -127,13 +127,13 @@ func NewResolveRecorder(intended Deployments, ls logging.LogSink, f func(*Resolv
 	// Execute the main function (f) over this resolve recorder.
 	go func() {
 		f(rr)
-		close(rr.Log)
 		rr.write(func() {
+			defer close(rr.finished)
+			defer close(rr.Log)
 			rr.status.Finished = time.Now()
 			if rr.err == nil {
 				rr.status.Phase = "finished"
 			}
-			close(rr.finished)
 		})
 	}()
 	return rr
