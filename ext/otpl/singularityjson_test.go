@@ -50,8 +50,7 @@ func TestParseSingularityJSON_err_fields(t *testing.T) {
 
 	cases := []string{
 		`{"invalid": {}}`,
-		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`,
-		`
+		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`, `
 		{
 			"requestId": "anything",
 			"resources": {
@@ -63,6 +62,18 @@ func TestParseSingularityJSON_err_fields(t *testing.T) {
 				"ENV_1": "val 1"
 			},
 			"something_invalid": "yes"
+		}`,
+		// Missing requestId
+		`{
+			"resources": {
+				"numPorts": 1,
+				"memoryMb": 1,
+				"cpus": 1
+			}
+		}`,
+		// Missing resources.
+		`{
+			"requestId": "anything"
 		}`,
 	}
 
@@ -112,17 +123,34 @@ func TestParseSingularityRequestJSON_err_fields(t *testing.T) {
 
 	cases := []string{
 		`{"invalid": {}}`,
-		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`,
-		`
+		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`, `
 		{
 			"id": "anything",
 			"instances": 1,
 			"owners": ["owner1@example.com"],
 			"something_invalid": "yes"
 		}`,
+		// Missing id
+		`
+		{
+			"instances": 1,
+			"owners": ["owner1@example.com"]
+		}`,
+		// Missing instances
+		`
+		{
+			"id": "anything",
+			"owners": ["owner1@example.com"]
+		}`,
+		// Missing owners
+		`
+		{
+			"id": "anything",
+			"instances": 1
+		}`,
 	}
 
-	const wantPrefix = `unrecognised fields:`
+	const wantPrefix = `missing or unrecognised fields:`
 
 	for i, in := range cases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
