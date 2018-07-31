@@ -16,7 +16,7 @@ type (
 	// contains only recognised fields.
 	SingularityJSON struct {
 		RequestID string               `json:"requestId"`
-		Resources SingularityResources `json:"resources,omitempty"`
+		Resources SingularityResources `json:"resources"`
 		Env       sous.Env             `json:"env,omitempty"`
 	}
 	// SingularityResources represents the resources section in SingularityJSON.

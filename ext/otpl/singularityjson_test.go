@@ -13,6 +13,7 @@ func TestParseSingularityJSON_ok(t *testing.T) {
 
 	in := `
 	{
+		"requestId": "anything",
 		"resources": {
 			"numPorts": 1,
 			"memoryMb": 1,
@@ -24,6 +25,7 @@ func TestParseSingularityJSON_ok(t *testing.T) {
 	}`
 
 	want := SingularityJSON{
+		RequestID: "anything",
 		Resources: SingularityResources{
 			"numPorts": 1,
 			"memoryMb": 1,
@@ -51,6 +53,7 @@ func TestParseSingularityJSON_err_fields(t *testing.T) {
 		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`,
 		`
 		{
+			"requestId": "anything",
 			"resources": {
 				"numPorts": 1,
 				"memoryMb": 1,
@@ -59,11 +62,11 @@ func TestParseSingularityJSON_err_fields(t *testing.T) {
 			"env": {
 				"ENV_1": "val 1"
 			},
-			"blahBlahInvalid": "hello"
+			"something_invalid": "yes"
 		}`,
 	}
 
-	const wantPrefix = `unrecognised fields:`
+	const wantPrefix = `missing or unrecognised fields:`
 
 	for i, in := range cases {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
@@ -83,11 +86,13 @@ func TestParseSingularityRequestJSON_ok(t *testing.T) {
 
 	in := `
 	{
+		"id": "anything",
 		"instances": 1,
 		"owners": ["owner1@example.com"]
 	}`
 
 	want := SingularityRequestJSON{
+		ID:        "anything",
 		Instances: 1,
 		Owners:    []string{"owner1@example.com"},
 	}
@@ -110,9 +115,10 @@ func TestParseSingularityRequestJSON_err_fields(t *testing.T) {
 		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`,
 		`
 		{
+			"id": "anything",
 			"instances": 1,
 			"owners": ["owner1@example.com"],
-			"blahBlahInvalid": "hello"
+			"something_invalid": "yes"
 		}`,
 	}
 
@@ -138,27 +144,51 @@ func TestParseSingularityJSON_invalidResources(t *testing.T) {
 		in, err string
 	}{
 		{
-			in:  `{"resources": {"numPorts": 1,"memoryMb": 1,"cpus": 1,"blah": 1}}`,
+			in: `
+			{
+				"requestId": "anything",
+				"resources": {"numPorts": 1,"memoryMb": 1,"cpus": 1,"blah": 1}
+			}`,
 			err: `invalid resource name "blah"`,
 		},
 		{
-			in:  `{"resources": {"numPorts": 1,"memoryMb": 1}}`,
+			in: `
+			{
+				"requestId": "anything",
+				"resources": {"numPorts": 1,"memoryMb": 1}
+			}`,
 			err: `missing resource(s): cpus`,
 		},
 		{
-			in:  `{"resources": {"numPorts": 1,"cpus": 1}}`,
+			in: `
+			{
+				"requestId": "anything",
+				"resources": {"numPorts": 1,"cpus": 1}
+			}`,
 			err: `missing resource(s): memoryMb`,
 		},
 		{
-			in:  `{"resources": {"memoryMb": 1,"cpus": 1}}`,
+			in: `
+			{
+				"requestId": "anything",
+				"resources": {"memoryMb": 1,"cpus": 1}
+			}`,
 			err: `missing resource(s): numPorts`,
 		},
 		{
-			in:  `{"resources": {"memoryMb": 1}}`,
+			in: `
+			{
+				"requestId": "anything",
+				"resources": {"memoryMb": 1}
+			}`,
 			err: `missing resource(s): cpus, numPorts`,
 		},
 		{
-			in:  `{}`,
+			in: `
+			{
+				"requestId": "anything",
+				"resources": {}
+			}`,
 			err: `missing resource(s): cpus, memoryMb, numPorts`,
 		},
 	}
@@ -183,18 +213,6 @@ func TestSingularityResources_SousResources(t *testing.T) {
 		Singularity SingularityResources
 		Sous        sous.Resources
 	}{
-		{ // This won't really happen.
-			SingularityResources{
-				"cpu":    1,
-				"ports":  1,
-				"memory": 1,
-			},
-			sous.Resources{
-				"cpu":    "1",
-				"ports":  "1",
-				"memory": "1",
-			},
-		},
 		{ // Mapping singularity resource names to Sous ones.
 			SingularityResources{
 				"cpu":      1,
