@@ -172,6 +172,26 @@ func TestParseSingularityRequestJSON_err_fields(t *testing.T) {
 	}
 }
 
+func TestParseSingularityRequestJSON_err_requestType(t *testing.T) {
+	in := `
+	{
+		"id": "anything",
+		"requestType": "SOMETHING_INVALID",
+		"instances": 1,
+		"owners": ["owner1@example.com"]
+	}`
+
+	const want = `invalid requestType "SOMETHING_INVALID"`
+	_, gotErr := parseSingularityRequestJSON(in)
+	if gotErr == nil {
+		t.Fatalf("got nil; want error")
+	}
+	got := gotErr.Error()
+	if got != want {
+		t.Errorf("got error %q; want %q", got, want)
+	}
+}
+
 func TestParseSingularityJSON_invalidResources(t *testing.T) {
 
 	cases := []struct {

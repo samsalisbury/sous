@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/opentable/sous/ext/singularity"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/jsonutil"
 )
@@ -46,8 +47,13 @@ func parseSingularityJSON(rawJSON string) (SingularityJSON, error) {
 
 func parseSingularityRequestJSON(rawJSON string) (SingularityRequestJSON, error) {
 	v := SingularityRequestJSON{}
-	err := jsonutil.StrictParseJSON(rawJSON, &v)
-	return v, err
+	if err := jsonutil.StrictParseJSON(rawJSON, &v); err != nil {
+		return v, err
+	}
+	if _, ok := singularity.MapRequestTypeToManifestKind(v.RequestType); !ok {
+		return v, fmt.Errorf("invalid requestType %q", v.RequestType)
+	}
+	return v, nil
 }
 
 // SousResources returns the equivalent sous.Resources.
