@@ -15,15 +15,13 @@ import (
 	"github.com/opentable/sous/util/shell"
 )
 
-type (
-	// ManifestParser parses sous.DeploySpecs from otpl-deploy config files.
-	// NOTE: otpl-deploy config is an internal tool at OpenTable, one day this
-	// code will be removed.
-	ManifestParser struct {
-		Log logging.LogSink
-		WD  shell.Shell
-	}
-)
+// ManifestParser parses sous.DeploySpecs from otpl-deploy config files.
+// NOTE: otpl-deploy config is an internal tool at OpenTable, one day this
+// code will be removed.
+type ManifestParser struct {
+	Log logging.LogSink
+	WD  shell.Shell
+}
 
 // NewManifestParser generates a new ManifestParser with default logging.
 func NewManifestParser(ls logging.LogSink) *ManifestParser {
