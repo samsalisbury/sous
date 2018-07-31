@@ -184,7 +184,8 @@ func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfi
 
 	v, err := parseSingularityJSON(rawJSON)
 	if err != nil {
-		messages.ReportLogFieldsMessageToConsole("error parsing singularity.json", logging.WarningLevel, mp.Log, path.Join(wd.Dir(), "singularity.json"), err)
+		m := fmt.Sprintf("error parsing singularity.json: %s", err)
+		messages.ReportLogFieldsMessageToConsole(m, logging.WarningLevel, mp.Log, path.Join(wd.Dir(), "singularity.json"), err)
 		return nil
 	}
 
@@ -213,7 +214,8 @@ func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfi
 
 	request, err := parseSingularityRequestJSON(rawSRJSON)
 	if err != nil {
-		messages.ReportLogFieldsMessageToConsole("error parsing singularity-request.json", logging.WarningLevel, mp.Log, path.Join(wd.Dir(), "singularity-request.json"), err)
+		m := fmt.Sprintf("error parsing singularity-request.json: %s", err)
+		messages.ReportLogFieldsMessageToConsole(m, logging.WarningLevel, mp.Log, path.Join(wd.Dir(), "singularity-request.json"), err)
 		return nil
 	}
 
