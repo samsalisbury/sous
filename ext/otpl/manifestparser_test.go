@@ -15,10 +15,13 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	// Setup: write some files to disk.
 	files := filemap.FileMap{
 		"config/cluster1/singularity-request.json": `{
+			"id": "request-1",
+			"requestType": "SERVICE",
 	        "owners": ["owner1@example.com"],
 	        "instances": 2
 	    }`,
 		"config/cluster1/singularity.json": `{
+		  "requestId": "request-1",
 	      "resources": {
 	          "cpus": 0.002,
 	          "memoryMb": 96,
@@ -29,10 +32,13 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	      }
 	    }`,
 		"config/cluster1.flavor1/singularity-request.json": `{
+			"id": "request-2",
+			"requestType": "SERVICE",
 	        "owners": ["owner1@example.com"],
 	        "instances": 2
 	    }`,
 		"config/cluster1.flavor1/singularity.json": `{
+		  "requestId": "request-2",
 	      "resources": {
 	          "cpus": 0.002,
 	          "memoryMb": 96,
