@@ -98,14 +98,16 @@ func TestParseSingularityRequestJSON_ok(t *testing.T) {
 	in := `
 	{
 		"id": "anything",
+		"requestType": "SERVICE",
 		"instances": 1,
 		"owners": ["owner1@example.com"]
 	}`
 
 	want := SingularityRequestJSON{
-		ID:        "anything",
-		Instances: 1,
-		Owners:    []string{"owner1@example.com"},
+		ID:          "anything",
+		RequestType: "SERVICE",
+		Instances:   1,
+		Owners:      []string{"owner1@example.com"},
 	}
 
 	got, err := parseSingularityRequestJSON(in)
@@ -126,6 +128,7 @@ func TestParseSingularityRequestJSON_err_fields(t *testing.T) {
 		`{"env": {"ENV_1": "val 1"}, "invalid": {}}`, `
 		{
 			"id": "anything",
+			"requestType": "SERVICE",
 			"instances": 1,
 			"owners": ["owner1@example.com"],
 			"something_invalid": "yes"
@@ -133,6 +136,7 @@ func TestParseSingularityRequestJSON_err_fields(t *testing.T) {
 		// Missing id
 		`
 		{
+			"requestType": "SERVICE",
 			"instances": 1,
 			"owners": ["owner1@example.com"]
 		}`,
@@ -140,12 +144,14 @@ func TestParseSingularityRequestJSON_err_fields(t *testing.T) {
 		`
 		{
 			"id": "anything",
+			"requestType": "SERVICE",
 			"owners": ["owner1@example.com"]
 		}`,
 		// Missing owners
 		`
 		{
 			"id": "anything",
+			"requestType": "SERVICE",
 			"instances": 1
 		}`,
 	}

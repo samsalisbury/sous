@@ -27,9 +27,9 @@ type (
 		ID          string `json:"id"`
 		RequestType string `json:"requestType"`
 		// Instances is the number of instances in this deployment.
-		Instances int `json:"instances,omitempty"`
+		Instances int `json:"instances"`
 		// Owners is a comma-separated list of email addresses.
-		Owners []string `json:"owners,omitempty"`
+		Owners []string `json:"owners"`
 	}
 )
 
