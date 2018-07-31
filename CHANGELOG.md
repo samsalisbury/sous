@@ -15,8 +15,11 @@ with respect to its command line interface and HTTP interface
 * Client: `SOUS_USE_SOUS_SEVER` env var must now be exactly uppercase `YES`
   in order to be considered "on". Previously any value, even empty string
   was considered "on". This change makes it easier to use in scripts.
-* Client: sous init with -use-otpl-deploy flag now fails unless it recognises
-  all fields in the singularity.json and singularity-request.json files.
+* Client: complete overhaul of parsing singularity.json and singularity-request.json
+  files. sous init with -use-otpl-deploy flag now fails unless it recognises all
+  fields in the singularity.json and singularity-request.json files, and requires
+  that there be a singularity-request.json file (where before it was optional).
+  There is also a bunch more validation, too much to list here.
 
 ## [0.5.117](//github.com.opentable/sous/compare/0.5.116...0.5.117)
 ### Changed
