@@ -31,6 +31,7 @@ type (
 	// file. Note that the json tags are essential to validating parsed JSON
 	// contains only recognised fields.
 	SingularityJSON struct {
+		RequestID string               `json:"requestId"`
 		Resources SingularityResources `json:"resources,omitempty"`
 		Env       sous.Env             `json:"env,omitempty"`
 	}
@@ -39,6 +40,8 @@ type (
 	// SingularityRequestJSON represents JSON in an otpl-deploy
 	// singularity-request.json file.
 	SingularityRequestJSON struct {
+		ID          string `json:"id"`
+		RequestType string `json:"requestType"`
 		// Instances is the number of instances in this deployment.
 		Instances int `json:"instances,omitempty"`
 		// Owners is a comma-separated list of email addresses.
