@@ -1,14 +1,13 @@
 package otpl
 
 import (
-	"encoding/json"
 	"fmt"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/jsonutil"
 )
 
 type (
@@ -34,6 +33,23 @@ type (
 	}
 )
 
+func parseSingularityJSON(rawJSON string) (SingularityJSON, error) {
+	v := SingularityJSON{}
+	if err := jsonutil.StrictParseJSON(rawJSON, &v); err != nil {
+		return v, err
+	}
+	if err := validateResources(v); err != nil {
+		return v, err
+	}
+	return v, nil
+}
+
+func parseSingularityRequestJSON(rawJSON string) (SingularityRequestJSON, error) {
+	v := SingularityRequestJSON{}
+	err := jsonutil.StrictParseJSON(rawJSON, &v)
+	return v, err
+}
+
 // SousResources returns the equivalent sous.Resources.
 func (sr SingularityResources) SousResources() sous.Resources {
 	r := make(sous.Resources, len(sr))
@@ -51,47 +67,6 @@ var resourceNameSingToSous = map[string]string{
 	"cpus":     "cpus",
 	"numPorts": "ports",
 	"memoryMb": "memory",
-}
-
-func strictParseJSON(rawJSON string, v interface{}) error {
-	comp := map[string]interface{}{}
-	if err := json.Unmarshal([]byte(rawJSON), v); err != nil {
-		return err
-	}
-	if err := json.Unmarshal([]byte(rawJSON), &comp); err != nil {
-		return err
-	}
-	compJSONb, err := json.Marshal(comp)
-	if err != nil {
-		return err
-	}
-	understoodJSONb, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-	understoodJSON := string(understoodJSONb)
-	compJSON := string(compJSONb)
-
-	equal, err := equalJSON(compJSON, understoodJSON)
-	if err != nil {
-		return err
-	}
-	if !equal {
-		return fmt.Errorf("unrecognised fields:\n%sunderstood:\n%s",
-			compJSON, understoodJSON)
-	}
-	return nil
-}
-
-func equalJSON(a, b string) (bool, error) {
-	var aVal, bVal interface{}
-	if err := json.Unmarshal([]byte(a), &aVal); err != nil {
-		return false, err
-	}
-	if err := json.Unmarshal([]byte(b), &bVal); err != nil {
-		return false, err
-	}
-	return reflect.DeepEqual(aVal, bVal), nil
 }
 
 func validateResources(v SingularityJSON) error {
@@ -113,21 +88,4 @@ func validateResources(v SingularityJSON) error {
 		return fmt.Errorf("missing resource(s): %s", strings.Join(missing, ", "))
 	}
 	return nil
-}
-
-func parseSingularityJSON(rawJSON string) (SingularityJSON, error) {
-	v := SingularityJSON{}
-	if err := strictParseJSON(rawJSON, &v); err != nil {
-		return v, err
-	}
-	if err := validateResources(v); err != nil {
-		return v, err
-	}
-	return v, nil
-}
-
-func parseSingularityRequestJSON(rawJSON string) (SingularityRequestJSON, error) {
-	v := SingularityRequestJSON{}
-	err := strictParseJSON(rawJSON, &v)
-	return v, err
 }

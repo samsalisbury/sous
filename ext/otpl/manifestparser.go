@@ -111,7 +111,7 @@ func (mp *ManifestParser) ParseManifests(wd shell.Shell) sous.Manifests {
 }
 
 // GetClusterAndFlavor returns the cluster and flavor by extracting values
-// from the otplDeployConfig name.  The pattern is {cluster}.{flavor} as
+// from the otplDeployConfig name. The pattern is {cluster}.{flavor} as
 // defined in the otpl scripts.
 func getClusterAndFlavor(s *otplDeployConfig) (string, string) {
 	splitName := strings.Split(s.Name, ".")
