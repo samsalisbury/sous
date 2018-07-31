@@ -106,32 +106,37 @@ func TestOTPL(t *testing.T) {
 	})
 
 	pf.Run("fail-unknown-fields", func(t *testing.T, f *testFixture) {
-
-		t.Skipf("WIP")
-
 		client := setupProject(t, f, f.Projects.HTTPServer().Merge(filemap.FileMap{
 			"config/cluster1/singularity.json": `
-				{
-					"requestId": "request1",
-					"resources": {
-						"cpus": 0.01,
-						"memoryMb": 1,
-						"numPorts": 3
-					}
-				}`,
+			{
+				"requestId": "request1",
+				"resources": {
+					"cpus": 0.01,
+					"memoryMb": 1,
+					"numPorts": 3
+				}
+			}`,
 			"config/cluster1/singularity-request.json": `
-				{
-					id: "request1",
-					"requestType": "WORKER",
-					"owners": [
-					    "test-user1@example.com"
-					],
-					"slavePlacement": "SEPARATE_BY_REQUEST",
-					"instances": 3,
-					"rackSensitive": false,
-					"loadBalanced": false
-				}`,
+			{
+				id: "request1",
+				"requestType": "WORKER",
+				"owners": [
+				    "test-user1@example.com"
+				],
+				"slavePlacement": "SEPARATE_BY_REQUEST",
+				"instances": 3,
+				"rackSensitive": false,
+				"loadBalanced": false
+			}`,
 		}))
-		client.MustRun(t, "version", nil)
+
+		flags := &sousFlags{
+			kind:    "http-service",
+			repo:    "github.com/build-init-deploy-user/project1",
+			tag:     "1.2.3",
+			cluster: "cluster1",
+		}
+
+		client.MustFail(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
 	})
 }
