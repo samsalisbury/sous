@@ -5,10 +5,10 @@ package otpl
 import (
 	"fmt"
 	"path"
-	"sync"
 
 	"strings"
 
+	"github.com/opentable/sous/ext/singularity"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
@@ -31,23 +31,25 @@ func NewManifestParser(ls logging.LogSink) *ManifestParser {
 type otplDeployConfig struct {
 	// Name is "<cluster>".
 	// It is unique for all OTPL configs in a single project by flavor.
-	Name   string
-	Owners []string
-	Spec   *sous.DeploySpec
+	Name                   string
+	RequestID, RequestType string
+	Owners                 []string
+	Spec                   *sous.DeploySpec
 }
 
 type otplDeployManifest struct {
+	Kind   sous.ManifestKind
 	Owners sous.OwnerSet
 	Specs  sous.DeploySpecs
 }
 
-type otplDeployManifests map[string]otplDeployManifest
+type otplDeployManifests map[string]*otplDeployManifest
 
-func getDeployManifest(manifests otplDeployManifests, key string) otplDeployManifest {
+func getDeployManifest(manifests otplDeployManifests, key string) *otplDeployManifest {
 	if manifest, ok := manifests[key]; ok {
 		return manifest
 	}
-	manifest := otplDeployManifest{
+	manifest := &otplDeployManifest{
 		Owners: sous.OwnerSet{},
 		Specs:  sous.DeploySpecs{},
 	}
@@ -58,56 +60,55 @@ func getDeployManifest(manifests otplDeployManifests, key string) otplDeployMani
 // ParseManifests searches the working directory of wd to find otpl-deploy
 // config files in their standard locations (config/{cluster-name}] or
 // config/{cluster-name}.{flavor}), and converts them to sous.DeploySpecs.
-func (mp *ManifestParser) ParseManifests(wd shell.Shell) sous.Manifests {
+func (mp *ManifestParser) ParseManifests(wd shell.Shell) (sous.Manifests, error) {
 	wd = wd.Clone()
-	manifests := sous.NewManifests()
 	if err := wd.CD("config"); err != nil {
-		return manifests
+		return sous.NewManifests(), fmt.Errorf("entering config directory: %s", err)
 	}
 	l, err := wd.List()
 	if err != nil {
-		messages.ReportLogFieldsMessageToConsole("error list of clone", logging.WarningLevel, mp.Log, err)
-		return manifests
+		return sous.NewManifests(), fmt.Errorf("reading current directory: %s", err)
 	}
-	c := make(chan *otplDeployConfig)
-	wg := sync.WaitGroup{}
-	wg.Add(len(l))
-	go func() { wg.Wait(); close(c) }()
+	var c []*otplDeployConfig
 	for _, f := range l {
 		f := f
-		go func() {
-			defer wg.Done()
-			if !f.IsDir() {
-				return
-			}
-			wd := wd.Clone()
-			if err := wd.CD(f.Name()); err != nil {
-				messages.ReportLogFieldsMessageToConsole("error cloning", logging.WarningLevel, mp.Log, err)
-				return
-			}
-			if otplConfig := mp.parseSingleOTPLConfig(wd); otplConfig != nil {
-				c <- otplConfig
-			}
-		}()
+		if !f.IsDir() {
+			continue
+		}
+		wd := wd.Clone()
+		if err := wd.CD(f.Name()); err != nil {
+			return sous.NewManifests(), fmt.Errorf("entering directory %q: %s", f.Name(), err)
+		}
+		otplConfig, err := mp.parseSingleOTPLConfigErr(wd)
+		if err != nil {
+			return sous.NewManifests(), fmt.Errorf("parsing otpl deploy config: %s", err)
+		}
+		c = append(c, otplConfig)
 	}
 	deployManifests := otplDeployManifests{}
-	for s := range c {
+	for _, s := range c {
 		cluster, flavor := getClusterAndFlavor(s)
 		deployManifest := getDeployManifest(deployManifests, flavor)
 		deployManifest.Specs[cluster] = *s.Spec
+		kind, ok := singularity.MapRequestTypeToManifestKind(s.RequestType)
+		if !ok {
+			return sous.NewManifests(), fmt.Errorf("invalid request type %q for deployment %q", s.RequestType, s.Name)
+		}
+		deployManifest.Kind = kind
 		for _, o := range s.Owners {
 			deployManifest.Owners.Add(o)
 		}
 	}
-
+	manifests := sous.NewManifests()
 	for flavor, dm := range deployManifests {
 		manifests.Add(&sous.Manifest{
+			Kind:        dm.Kind,
 			Flavor:      flavor,
 			Deployments: dm.Specs,
 			Owners:      dm.Owners.Slice(),
 		})
 	}
-	return manifests
+	return manifests, nil
 }
 
 // GetClusterAndFlavor returns the cluster and flavor by extracting values
@@ -123,26 +124,18 @@ func getClusterAndFlavor(s *otplDeployConfig) (string, string) {
 	return cluster, flavor
 }
 
-// ParseSingleOTPLConfig returns a single sous.DeploySpec from the working
-// directory of wd. It assumes that this directory contains at least a file
-// called singularity.json, and optionally an additional file called
-// singularity-requst.json.
-func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfig {
+func (mp *ManifestParser) parseSingleOTPLConfigErr(wd shell.Shell) (*otplDeployConfig, error) {
 	if !wd.Exists("singularity.json") {
-		messages.ReportLogFieldsMessageToConsole("no singularity.json present", logging.WarningLevel, mp.Log, wd.Dir())
-		return nil
+		return nil, fmt.Errorf("no singularity.json present")
 	}
 	rawJSON, err := wd.Stdout("cat", "singularity.json")
 	if err != nil {
-		messages.ReportLogFieldsMessageToConsole("error reading path", logging.WarningLevel, mp.Log, path.Join(wd.Dir(), "singularity.json"), err)
-		return nil
+		return nil, fmt.Errorf("error reading singularity.json: %s", err)
 	}
 
 	v, err := parseSingularityJSON(rawJSON)
 	if err != nil {
-		m := fmt.Sprintf("error parsing singularity.json: %s", err)
-		messages.ReportLogFieldsMessageToConsole(m, logging.WarningLevel, mp.Log, path.Join(wd.Dir(), "singularity.json"), err)
-		return nil
+		return nil, fmt.Errorf("error parsing singularity.json: %s", err)
 	}
 
 	if v.Env == nil {
@@ -153,29 +146,40 @@ func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfi
 		Name: path.Base(wd.Dir()),
 		Spec: &sous.DeploySpec{
 			DeployConfig: sous.DeployConfig{
-				Resources: v.Resources.SousResources(),
-				Env:       v.Env,
+				SingularityRequestID: v.RequestID,
+				Resources:            v.Resources.SousResources(),
+				Env:                  v.Env,
 			},
 		},
 	}
 	if !wd.Exists("singularity-request.json") {
-		messages.ReportLogFieldsMessageToConsole("no singularity-request.json", logging.WarningLevel, mp.Log, wd.Dir())
-		return deploySpec
+		return nil, fmt.Errorf("no singularity-request.json present")
 	}
 	rawSRJSON, err := wd.Stdout("cat", "singularity-request.json")
 	if err != nil {
-		messages.ReportLogFieldsMessageToConsole("failed to read singularity-request.json: "+err.Error(), logging.WarningLevel, mp.Log, err)
-		return deploySpec
+		return nil, fmt.Errorf("reading singularity-request.json: %s", err)
 	}
 
 	request, err := parseSingularityRequestJSON(rawSRJSON)
 	if err != nil {
-		m := fmt.Sprintf("error parsing singularity-request.json: %s", err)
-		messages.ReportLogFieldsMessageToConsole(m, logging.WarningLevel, mp.Log, path.Join(wd.Dir(), "singularity-request.json"), err)
-		return nil
+		return nil, fmt.Errorf("error parsing singularity-request.json: %s", err)
 	}
 
 	deploySpec.Spec.NumInstances = request.Instances
 	deploySpec.Owners = request.Owners
-	return deploySpec
+	deploySpec.RequestType = request.RequestType
+	return deploySpec, nil
+}
+
+// ParseSingleOTPLConfig returns a single sous.DeploySpec from the working
+// directory of wd. It assumes that this directory contains at least a file
+// called singularity.json, and optionally an additional file called
+// singularity-requst.json.
+func (mp *ManifestParser) parseSingleOTPLConfig(wd shell.Shell) *otplDeployConfig {
+	o, err := mp.parseSingleOTPLConfigErr(wd)
+	if err != nil {
+		messages.ReportLogFieldsMessage(err.Error(), logging.WarningLevel, mp.Log, wd.Dir())
+		return nil
+	}
+	return o
 }

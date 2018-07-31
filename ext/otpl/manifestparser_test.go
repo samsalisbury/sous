@@ -62,7 +62,10 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 		}
 
 		ls, _ := logging.NewLogSinkSpy()
-		actual = NewManifestParser(ls).ParseManifests(wd)
+		actual, err = NewManifestParser(ls).ParseManifests(wd)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}); fileMapErr != nil {
 		t.Fatal(fileMapErr)
 	}
