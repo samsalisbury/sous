@@ -11,13 +11,17 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newDetectedOTPLConfig(ls LogSink, wd LocalWorkDirShell, otplFlags *config.OTPLFlags) (detectedOTPLDeployManifest, error) {
+func newDetectedOTPLConfig(ls LogSink, wd LocalWorkDirShell, otplFlags *config.OTPLFlags) detectedOTPLDeployManifest {
 	if otplFlags.IgnoreOTPLDeploy {
-		return detectedOTPLDeployManifest{sous.NewManifests()}, nil
+		return detectedOTPLDeployManifest{sous.NewManifests()}
 	}
 	otplParser := otpl.NewManifestParser(ls)
-	otplDeploySpecs := otplParser.ParseManifests(wd.Sh)
-	return detectedOTPLDeployManifest{otplDeploySpecs}, nil
+	otplDeploySpecs, err := otplParser.ParseManifests(wd.Sh)
+	if err != nil {
+		// This is OK, we are detecting these speculatively.
+		return detectedOTPLDeployManifest{sous.NewManifests()}
+	}
+	return detectedOTPLDeployManifest{otplDeploySpecs}
 }
 
 func newUserSelectedOTPLDeploySpecs(
