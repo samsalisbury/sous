@@ -6,41 +6,39 @@ import (
 	"flag"
 	"os"
 	"testing"
+
+	"github.com/opentable/sous/util/testmatrix"
 )
 
-var pfs *parallelTestFixtureSet
+// sup is the global matrix supervisor, used to collate all test results.
+var sup *testmatrix.Supervisor
 
-// Matrix returns the defined sous smoke test matrix.
-func Matrix() matrixDef {
-	m := newMatrix()
-	m.AddDimension("store", "GDM storage to use", map[string]interface{}{
-		"db":  true,
-		"git": false,
-	})
-	m.AddDimension("project", "type of project to build", map[string]interface{}{
-		"simple": projects.SingleDockerfile,
-		"split":  projects.SplitBuild,
-	})
-	return m
+// runner is a wrapper around Runner allowing fully baked fixtures to be
+// passed directly to tests, rather than the test having to unwrap scenarios
+// themselves.
+type runner struct{ *testmatrix.Runner }
+
+// Run is analogous to Runner.Run, but accepts a func in terms of strongly typed
+// fixture rather than having to manually unwrap scenarios.
+func (r *runner) Run(name string, test func(*testing.T, *testFixture)) {
+	r.Runner.Run(name, func(t *testing.T, c testmatrix.Context) { test(t, c.F.(*testFixture)) })
+}
+
+// newRunner should be called once at the start of every top-level package
+// test to produce that test's matrixRunner.
+func newRunner(t *testing.T, m testmatrix.Matrix) runner {
+	return runner{Runner: sup.NewRunner(t, m)}
 }
 
 func TestMain(m *testing.M) {
-	flag.BoolVar(&flags.printMatrix, "ls", false, "list test matrix names")
-	flag.BoolVar(&flags.printDimensions, "dimensions", false, "list test matrix dimensions")
 	flag.Parse()
-
-	runRealTests := !(flags.printMatrix || flags.printDimensions)
-
-	if flags.printDimensions {
-		Matrix().PrintDimensions()
-	}
-
-	if runRealTests {
-		pfs = newParallelTestFixtureSet()
+	testmatrix.Quiet = quiet()
+	sup = testmatrix.Init(matrix, newTestFixture, func() error {
 		resetSingularity()
-	}
+		return stopPIDs()
+	})
 	exitCode := m.Run()
-	pfs.PrintSummary()
+	sup.PrintSummary()
 	os.Exit(exitCode)
 }
 

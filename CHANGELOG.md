@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com.opentable/sous/compare/0.5.117...master)
-## Changed
+### Fixed
+* A race condition during whole-cluster resolutions meant the final status
+  was sometimes inaccurately recorded. Real world implications of this are not
+  completely clear, users are not expected to notice much difference.
+### Changed
+* Client: `SOUS_USE_SOUS_SEVER` env var must now be exactly uppercase `YES`
+  in order to be considered "on". Previously any value, even empty string
+  was considered "on". This change makes it easier to use in scripts.
 * Client: sous init with -use-otpl-deploy flag now fails unless it recognises
   all fields in the singularity.json and singularity-request.json files.
 

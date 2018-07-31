@@ -204,7 +204,7 @@ func (di *SousGraph) GetDeploy(opts DeployActionOpts) (actions.Action, error) {
 	rf := (*sous.ResolveFilter)(scoop.ResolveFilter)
 
 	client := scoop.HTTP.HTTPClient
-	if _, exists := os.LookupEnv("SOUS_USE_SOUS_SERVER"); exists == true {
+	if os.Getenv("SOUS_USE_SOUS_SERVER") == "YES" {
 		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("TraceID: %s", scoop.TraceID), logging.DebugLevel, scoop.LogSink.LogSink, scoop.TraceID)
 		c, err := restful.NewClient(scoop.Config.Config.Server, scoop.LogSink.LogSink.Child(opts.DFF.Cluster+".http-client"), map[string]string{"OT-RequestId": string(scoop.TraceID)})
 		if err != nil {
