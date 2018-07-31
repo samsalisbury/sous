@@ -71,10 +71,11 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 		&sous.Manifest{
 			Flavor: "",
 			Owners: []string{"owner1@example.com"},
-			Kind:   "",
+			Kind:   "http-service",
 			Deployments: sous.DeploySpecs{
 				"cluster1": sous.DeploySpec{
 					DeployConfig: sous.DeployConfig{
+						SingularityRequestID: "request-1",
 						Resources: sous.Resources{
 							"cpus":   "0.002",
 							"memory": "96",
@@ -94,10 +95,11 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 		&sous.Manifest{
 			Flavor: "flavor1",
 			Owners: []string{"owner1@example.com"},
-			Kind:   "",
+			Kind:   "http-service",
 			Deployments: sous.DeploySpecs{
 				"cluster1": sous.DeploySpec{
 					DeployConfig: sous.DeployConfig{
+						SingularityRequestID: "request-2",
 						Resources: sous.Resources{
 							"cpus":   "0.002",
 							"memory": "96",
