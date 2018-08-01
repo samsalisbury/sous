@@ -31,11 +31,12 @@ type fixture struct {
 
 var sousBin = mustGetSousBin()
 
-func newFixture(t *testing.T, combo testmatrix.Scenario) testmatrix.Fixture {
+// newFixture transforms a testmatrix.Scenario into a sous-specific fixture.
+func newFixture(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
 	t.Helper()
 	baseDir := getDataDir(t)
 
-	c := makeFixtureConfig(t, combo)
+	c := makeFixtureConfig(t, s)
 
 	finished := make(chan struct{})
 
@@ -62,7 +63,7 @@ func newFixture(t *testing.T, combo testmatrix.Scenario) testmatrix.Fixture {
 		ClusterSuffix: c.clusterSuffix,
 		TestName:      t.Name(),
 		UserEmail:     userEmail,
-		Projects:      c.matrix.projects,
+		Projects:      c.scenario.projects,
 		Finished:      finished,
 	}
 	client := makeClient(t, tf, baseDir, sousBin)
