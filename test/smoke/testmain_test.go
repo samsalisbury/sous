@@ -20,8 +20,8 @@ type runner struct{ *testmatrix.Runner }
 
 // Run is analogous to Runner.Run, but accepts a func in terms of strongly typed
 // fixture rather than having to manually unwrap scenarios.
-func (r *runner) Run(name string, test func(*testing.T, *testFixture)) {
-	r.Runner.Run(name, func(t *testing.T, c testmatrix.Context) { test(t, c.F.(*testFixture)) })
+func (r *runner) Run(name string, test func(*testing.T, *fixture)) {
+	r.Runner.Run(name, func(t *testing.T, c testmatrix.Context) { test(t, c.F.(*fixture)) })
 }
 
 // newRunner should be called once at the start of every top-level package
@@ -33,7 +33,7 @@ func newRunner(t *testing.T, m testmatrix.Matrix) runner {
 func TestMain(m *testing.M) {
 	flag.Parse()
 	testmatrix.Quiet = quiet()
-	sup = testmatrix.Init(matrix, newTestFixture, func() error {
+	sup = testmatrix.Init(matrix, newFixture, func() error {
 		resetSingularity()
 		return stopPIDs()
 	})

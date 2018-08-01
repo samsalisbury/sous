@@ -21,15 +21,15 @@ type sousClient struct {
 	// Config is set after calling Configure()
 	Config config.Config
 	// Fixture is the test fixture this client belongs to.
-	Fixture *testFixture
+	Fixture *fixture
 }
 
-func makeClient(t *testing.T, fixture *testFixture, baseDir, sousBin string) *sousClient {
+func makeClient(t *testing.T, f *fixture, baseDir, sousBin string) *sousClient {
 	clientName := "client1"
 	baseDir = path.Join(baseDir, clientName)
 	c := &sousClient{
-		Bin:     NewBin(t, sousBin, clientName, baseDir, fixture.Finished),
-		Fixture: fixture,
+		Bin:     NewBin(t, sousBin, clientName, baseDir, f.Finished),
+		Fixture: f,
 	}
 
 	c.Bin.Env["SOUS_CONFIG_DIR"] = c.Bin.ConfigDir

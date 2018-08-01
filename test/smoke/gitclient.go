@@ -6,7 +6,7 @@ type gitClient struct {
 	Bin
 }
 
-func newGitClient(t *testing.T, f *testFixture, baseDir string) *gitClient {
+func newGitClient(t *testing.T, f *fixture, baseDir string) *gitClient {
 	bin := NewBin(t, "git", "gitclient1", baseDir, f.Finished)
 	addGitEnvVars(bin.Env)
 	return &gitClient{

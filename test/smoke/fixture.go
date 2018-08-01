@@ -13,7 +13,7 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-type testFixture struct {
+type fixture struct {
 	EnvDesc     desc.EnvDesc
 	Cluster     bunchOfSousServers
 	Client      *sousClient
@@ -31,7 +31,7 @@ type testFixture struct {
 
 var sousBin = mustGetSousBin()
 
-func newTestFixture(t *testing.T, combo testmatrix.Scenario) testmatrix.Fixture {
+func newFixture(t *testing.T, combo testmatrix.Scenario) testmatrix.Fixture {
 	t.Helper()
 	baseDir := getDataDir(t)
 
@@ -55,7 +55,7 @@ func newTestFixture(t *testing.T, combo testmatrix.Scenario) testmatrix.Fixture 
 	primaryServer := "http://" + boss.Instances[0].Addr
 	userEmail := "sous_client1@example.com"
 
-	tf := &testFixture{
+	tf := &fixture{
 		Cluster:       *boss,
 		BaseDir:       baseDir,
 		Singularity:   c.singularity,
@@ -76,7 +76,7 @@ func newTestFixture(t *testing.T, combo testmatrix.Scenario) testmatrix.Fixture 
 // Teardown performs conditional cleanup of resources used in the test.
 // This includes stopping servers and deleting intermediate test data (config
 // files, git repos, logs etc.) in the case that the test passed.
-func (f *testFixture) Teardown(t *testing.T) {
+func (f *fixture) Teardown(t *testing.T) {
 	t.Helper()
 	close(f.Finished)
 	if shouldStopServers(t) {
@@ -99,7 +99,7 @@ func shouldCleanFiles(t *testing.T) bool {
 	return !t.Failed()
 }
 
-func (f *testFixture) Clean(t *testing.T) {
+func (f *fixture) Clean(t *testing.T) {
 	t.Helper()
 	contents, err := ioutil.ReadDir(f.BaseDir)
 	if err != nil {
@@ -126,7 +126,7 @@ func (f *testFixture) Clean(t *testing.T) {
 // DeploymentID derived from the passed flags. If flags do not have both
 // repo and cluster set this task is impossible and thus fails the test
 // immediately.
-func (f *testFixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
+func (f *fixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
 	t.Helper()
 	if flags.repo == "" {
 		t.Fatalf("flags.repo empty")
@@ -148,14 +148,14 @@ func (f *testFixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
 }
 
 // IsolatedClusterName returns a cluster name unique to this test fixture.
-func (f *testFixture) IsolatedClusterName(baseName string) string {
+func (f *fixture) IsolatedClusterName(baseName string) string {
 	return baseName + f.ClusterSuffix
 }
 
 // IsolatedVersionTag returns an all-lowercase unique version tag (unique per
 // test-run, subsequent runs will use the same tag). These version tags are
 // compatible natively as both Sous and Docker tags for convenience.
-func (f *testFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
+func (f *fixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
 	t.Helper()
 	v, err := semv.Parse(baseTag)
 	if err != nil {
@@ -173,7 +173,7 @@ func (f *testFixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
 
 // KnownToFailHere cauuses the test to be skipped from this point on if
 // the environment variable EXCLUDE_KNOWN_FAILING_TESTS=YES.
-func (f *testFixture) KnownToFailHere(t *testing.T) {
+func (f *fixture) KnownToFailHere(t *testing.T) {
 	t.Helper()
 	const skipKnownFailuresEnvVar = "EXCLUDE_KNOWN_FAILING_TESTS"
 	if os.Getenv(skipKnownFailuresEnvVar) == "YES" {
