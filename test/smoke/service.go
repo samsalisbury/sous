@@ -130,6 +130,9 @@ func (s *Service) DumpTail(t *testing.T, n int) {
 		rtLog("ERROR unable to read log file %s: %s", path, err)
 	}
 	lines := strings.Split(string(b), "\n")
+	if len(lines) < n {
+		n = len(lines)
+	}
 	out := strings.Join(lines[len(lines)-n:], "\n") + "\n"
 	prefix := fmt.Sprintf("%s:%s:combined> ", t.Name(), s.InstanceName)
 	outPipe, err := prefixedPipe(prefix)

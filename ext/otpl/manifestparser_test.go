@@ -10,59 +10,18 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-func TestSingularityResources_SousResources(t *testing.T) {
-	tests := []struct {
-		Singularity SingularityResources
-		Sous        sous.Resources
-	}{
-		{ // This won't really happen.
-			SingularityResources{
-				"cpu":    1,
-				"ports":  1,
-				"memory": 1,
-			},
-			sous.Resources{
-				"cpu":    "1",
-				"ports":  "1",
-				"memory": "1",
-			},
-		},
-		{ // Mapping singularity resource names to Sous ones.
-			SingularityResources{
-				"cpu":      1,
-				"numPorts": 1,
-				"memoryMb": 1,
-			},
-			sous.Resources{
-				"cpu":    "1",
-				"ports":  "1",
-				"memory": "1",
-			},
-		},
-	}
-
-	for i, test := range tests {
-		input := test.Singularity
-		expected := test.Sous
-
-		actual := input.SousResources()
-		if !actual.Equal(expected) {
-			t.Errorf("got resources %# v; want %# v; for input %d %# v",
-				actual, expected, i, input)
-		}
-	}
-}
-
 func TestManifestParser_ParseManifest(t *testing.T) {
 
 	// Setup: write some files to disk.
 	files := filemap.FileMap{
 		"config/cluster1/singularity-request.json": `{
+			"id": "request-1",
+			"requestType": "SERVICE",
 	        "owners": ["owner1@example.com"],
-	        "instances": 2,
-	        "other fields": "are ignored"
+	        "instances": 2
 	    }`,
 		"config/cluster1/singularity.json": `{
+		  "requestId": "request-1",
 	      "resources": {
 	          "cpus": 0.002,
 	          "memoryMb": 96,
@@ -70,15 +29,16 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	      },
 	      "env": {
 	          "SOME_VAR": "22"
-	      },
-	      "other fields": "are ignored"
+	      }
 	    }`,
 		"config/cluster1.flavor1/singularity-request.json": `{
+			"id": "request-2",
+			"requestType": "SERVICE",
 	        "owners": ["owner1@example.com"],
-	        "instances": 2,
-	        "other fields": "are ignored"
+	        "instances": 2
 	    }`,
 		"config/cluster1.flavor1/singularity.json": `{
+		  "requestId": "request-2",
 	      "resources": {
 	          "cpus": 0.002,
 	          "memoryMb": 96,
@@ -87,8 +47,7 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 	      "env": {
 	          "SOME_VAR": "22",
 	          "OT_ENV_FLAVOR": "flavor1"
-	      },
-	      "other fields": "are ignored"
+	      }
 	    }`,
 	}
 
@@ -103,21 +62,23 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 		}
 
 		ls, _ := logging.NewLogSinkSpy()
-		// Shebang...
-		actual = NewManifestParser(ls).ParseManifests(wd)
+		actual, err = NewManifestParser(ls).ParseManifests(wd)
+		if err != nil {
+			t.Fatal(err)
+		}
 	}); fileMapErr != nil {
 		t.Fatal(fileMapErr)
 	}
 
 	expected := sous.NewManifests(
 		&sous.Manifest{
-			//Source: sous.MustParseSourceLocation("github.com/test/project"),
 			Flavor: "",
 			Owners: []string{"owner1@example.com"},
-			Kind:   "",
+			Kind:   "http-service",
 			Deployments: sous.DeploySpecs{
 				"cluster1": sous.DeploySpec{
 					DeployConfig: sous.DeployConfig{
+						SingularityRequestID: "request-1",
 						Resources: sous.Resources{
 							"cpus":   "0.002",
 							"memory": "96",
@@ -135,13 +96,13 @@ func TestManifestParser_ParseManifest(t *testing.T) {
 			},
 		},
 		&sous.Manifest{
-			//Source: sous.MustParseSourceLocation("github.com/test/project"),
 			Flavor: "flavor1",
 			Owners: []string{"owner1@example.com"},
-			Kind:   "",
+			Kind:   "http-service",
 			Deployments: sous.DeploySpecs{
 				"cluster1": sous.DeploySpec{
 					DeployConfig: sous.DeployConfig{
+						SingularityRequestID: "request-2",
 						Resources: sous.Resources{
 							"cpus":   "0.002",
 							"memory": "96",

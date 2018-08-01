@@ -16,7 +16,6 @@ import (
 )
 
 var illegalDeployIDChars = regexp.MustCompile(`[^a-zA-Z0-9_]`)
-var illegalRequestIDChars = regexp.MustCompile(`[^a-zA-Z0-9_-]`)
 
 // SanitizeDeployID replaces characters forbidden in a Singularity deploy ID
 // with underscores.

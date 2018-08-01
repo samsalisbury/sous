@@ -451,21 +451,32 @@ func (db *deploymentBuilder) unpackDeployConfig() error {
 }
 
 func (db *deploymentBuilder) determineManifestKind() error {
-	switch db.request.RequestType {
-	default:
+	kind, ok := MapRequestTypeToManifestKind(string(db.request.RequestType))
+	if !ok {
 		return fmt.Errorf("Unrecognized request type returned by Singularity: %v", db.request.RequestType)
-	case dtos.SingularityRequestRequestTypeSERVICE:
-		db.Target.Kind = sous.ManifestKindService
-	case dtos.SingularityRequestRequestTypeWORKER:
-		db.Target.Kind = sous.ManifestKindWorker
-	case dtos.SingularityRequestRequestTypeON_DEMAND:
-		db.Target.Kind = sous.ManifestKindOnDemand
-	case dtos.SingularityRequestRequestTypeSCHEDULED:
-		db.Target.Kind = sous.ManifestKindScheduled
-	case dtos.SingularityRequestRequestTypeRUN_ONCE:
-		db.Target.Kind = sous.ManifestKindOnce
 	}
+	db.Target.Kind = kind
 	return nil
+}
+
+// MapRequestTypeToManifestKind returns the ManifestKind and true if the mapping
+// is possible; an indefined value and false otherwise.
+func MapRequestTypeToManifestKind(requestType string) (sous.ManifestKind, bool) {
+	var k sous.ManifestKind
+	switch dtos.SingularityRequestRequestType(requestType) {
+	default:
+		return k, false
+	case dtos.SingularityRequestRequestTypeSERVICE:
+		return sous.ManifestKindService, true
+	case dtos.SingularityRequestRequestTypeWORKER:
+		return sous.ManifestKindWorker, true
+	case dtos.SingularityRequestRequestTypeON_DEMAND:
+		return sous.ManifestKindOnDemand, true
+	case dtos.SingularityRequestRequestTypeSCHEDULED:
+		return sous.ManifestKindScheduled, true
+	case dtos.SingularityRequestRequestTypeRUN_ONCE:
+		return sous.ManifestKindOnce, true
+	}
 }
 
 func (db *deploymentBuilder) extractSchedule() error {
