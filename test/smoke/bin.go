@@ -34,6 +34,9 @@ type Bin struct {
 	// prior to execution; the args it returns are what is finally used.
 	MassageArgs  func([]string) []string
 	TestFinished <-chan struct{}
+
+	// This should is set to true for servers etc, it enables crash detection.
+	ShouldStillBeRunningAfterTest bool
 }
 
 // NewBin returns a new minimal Bin, all files will be created in subdirectories
@@ -261,7 +264,7 @@ func (c *Bin) configureCommand(i invocation) (*PreparedCmd, error) {
 				panic(err)
 			}
 		}()
-		if !cmd.ProcessState.Exited() {
+		if !c.ShouldStillBeRunningAfterTest || !cmd.ProcessState.Exited() {
 			return nil
 		}
 		exitCode := tryGetExitCode("cmd.ProcessState.Sys()", cmd.ProcessState.Sys())

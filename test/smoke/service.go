@@ -21,6 +21,7 @@ type Service struct {
 
 // NewService returns a new service bound to the provided binary.
 func NewService(bin Bin) *Service {
+	bin.ShouldStillBeRunningAfterTest = true
 	return &Service{
 		Bin:             bin,
 		ReadyForCleanup: make(chan struct{}),
