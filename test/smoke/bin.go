@@ -32,7 +32,7 @@ type Bin struct {
 	Env map[string]string
 	// MassageArgs is called on the total set of args passed to the command,
 	// prior to execution; the args it returns are what is finally used.
-	MassageArgs  func(*testing.T, []string) []string
+	MassageArgs  func([]string) []string
 	TestFinished <-chan struct{}
 }
 
@@ -164,15 +164,18 @@ type PreparedCmd struct {
 	invocation
 	Cmd      *exec.Cmd
 	Cancel   func()
-	PreRun   func()
-	PostRun  func()
+	PreRun   func() error
+	PostRun  func() error
 	executed *ExecutedCMD
 }
 
 // Run runs the command.
 func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*ExecutedCMD, error) {
-	cmd := c.Command(t, subcmd, f, args...)
-	err := cmd.runWithTimeout(3 * time.Minute)
+	cmd, err := c.Command(subcmd, f, args...)
+	if err != nil {
+		return nil, fmt.Errorf("setting up command failed: %s", err)
+	}
+	err = cmd.runWithTimeout(3 * time.Minute)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 	}
@@ -180,9 +183,9 @@ func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*Execut
 }
 
 // Command returns the prepared command.
-func (c *Bin) Command(t *testing.T, subcmd string, f Flags, args ...string) *PreparedCmd {
-	i := c.newInvocation(t, subcmd, f, args...)
-	return c.configureCommand(t, i)
+func (c *Bin) Command(subcmd string, f Flags, args ...string) (*PreparedCmd, error) {
+	i := c.newInvocation(subcmd, f, args...)
+	return c.configureCommand(i)
 }
 
 // invocation is the invocation directly from the test, without any formatting
@@ -194,12 +197,11 @@ type invocation struct {
 	finalArgs    []string
 }
 
-func (c *Bin) newInvocation(t *testing.T, subcmd string, f Flags, args ...string) invocation {
-	t.Helper()
+func (c *Bin) newInvocation(subcmd string, f Flags, args ...string) invocation {
 	i := invocation{name: c.BinName, subcmd: subcmd, flags: f, args: args}
 	i.finalArgs = i.allArgs()
 	if c.MassageArgs != nil {
-		i.finalArgs = c.MassageArgs(t, i.finalArgs)
+		i.finalArgs = c.MassageArgs(i.finalArgs)
 	}
 	return i
 }
@@ -210,17 +212,15 @@ func (i invocation) String() string {
 	return fmt.Sprintf("%s %s", i.name, quotedArgsString(i.finalArgs))
 }
 
-func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
-	t.Helper()
-
+func (c *Bin) configureCommand(i invocation) (*PreparedCmd, error) {
 	executed := newExecutedCMD(i)
 
 	cmd, cancel := c.cmd(i.finalArgs)
 
 	outFile, errFile, combinedFile :=
-		openFileAppendOnly(t, c.LogDir, "stdout"),
-		openFileAppendOnly(t, c.LogDir, "stderr"),
-		openFileAppendOnly(t, c.LogDir, "combined")
+		mustOpenFileAppendOnly(c.LogDir, "stdout"),
+		mustOpenFileAppendOnly(c.LogDir, "stderr"),
+		mustOpenFileAppendOnly(c.LogDir, "combined")
 
 	allFiles := io.MultiWriter(outFile, errFile, combinedFile)
 
@@ -228,7 +228,14 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	stderrWriters := []io.Writer{errFile, combinedFile, executed.Stderr, executed.Combined}
 
 	if !quiet() {
-		stdout, stderr := prefixWithTestName(t, c.InstanceName)
+		stdout, err := prefixedPipe("%s:%s:stdout> ", c.TestName, c.InstanceName)
+		if err != nil {
+			return nil, err
+		}
+		stderr, err := prefixedPipe("%s:%s:stderr> ", c.TestName, c.InstanceName)
+		if err != nil {
+			return nil, err
+		}
 		stdoutWriters = append(stdoutWriters, stdout)
 		stderrWriters = append(stderrWriters, stderr)
 	}
@@ -236,30 +243,35 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 	cmd.Stdout = io.MultiWriter(stdoutWriters...)
 	cmd.Stderr = io.MultiWriter(stderrWriters...)
 
-	preRun := func() {
+	preRun := func() error {
 		relPath := "/"
 		if cmd.Dir != "" {
-			relPath += mustGetRelPath(t, c.BaseDir, cmd.Dir)
+			relPath += mustGetRelPath(c.BaseDir, cmd.Dir)
 		}
 		cmdStr := fmt.Sprintf("%s$> %s", relPath, i)
 		rtLog("%s:%s", c.ID(), cmdStr)
 		fmt.Fprintf(allFiles, cmdStr)
+		return nil
 	}
 
-	postRun := func() {
-		if !cmd.ProcessState.Success() {
-			exitCode := tryGetExitCode("cmd.ProcessState.Sys()", cmd.ProcessState.Sys())
-			if exitCode != -1 {
-				rtLog("%s:error> exit code %d; combined logs follow:", c.ID(), exitCode)
+	postRun := func() error {
+		defer func() {
+			cancel()
+			if err := closeFiles(outFile, errFile, combinedFile); err != nil {
+				panic(err)
 			}
-			prefixedOut, err := prefixedPipe("%s:combined> ", c.ID())
-			if err != nil {
-				t.Fatal(err)
-			}
-			fmt.Fprintf(prefixedOut, executed.Combined.String())
+		}()
+		if !cmd.ProcessState.Exited() {
+			return nil
 		}
-		cancel()
-		closeFiles(t, outFile, errFile, combinedFile)
+		exitCode := tryGetExitCode("cmd.ProcessState.Sys()", cmd.ProcessState.Sys())
+		rtLog("%s:error:early-exit> exit code %d; combined log tail follows", c.ID(), exitCode)
+		prefixedOut, err := prefixedPipe("%s:combined> ", c.ID())
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(prefixedOut, executed.Combined.String())
+		return fmt.Errorf("process exited early: %s: exit code %d", c.ID(), exitCode)
 	}
 
 	return &PreparedCmd{
@@ -269,7 +281,7 @@ func (c *Bin) configureCommand(t *testing.T, i invocation) *PreparedCmd {
 		PostRun:    postRun,
 		executed:   executed,
 		invocation: i,
-	}
+	}, nil
 }
 
 func (c *PreparedCmd) runWithTimeout(timeout time.Duration) error {
@@ -287,11 +299,10 @@ func (c *PreparedCmd) runWithTimeout(timeout time.Duration) error {
 	return <-errCh
 }
 
-func mustGetRelPath(t *testing.T, base, target string) string {
-	t.Helper()
+func mustGetRelPath(base, target string) string {
 	relPath, err := filepath.Rel(base, target)
 	if err != nil {
-		t.Fatalf("getting relative dir: %s", err)
+		panic(fmt.Errorf("getting relative dir: %s", err))
 	}
 	return relPath
 }

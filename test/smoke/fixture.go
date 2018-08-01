@@ -1,6 +1,7 @@
 package smoke
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -13,61 +14,94 @@ import (
 	"github.com/samsalisbury/semv"
 )
 
-type fixture struct {
-	EnvDesc     desc.EnvDesc
-	Cluster     bunchOfSousServers
-	Client      *sousClient
-	BaseDir     string
-	Singularity *testSingularity
+// fixtureBase is generic fixture stuff.
+type fixtureBase struct {
+	TestName string
+	BaseDir  string
+	Finished chan struct{}
+
+	knownToFail bool
+}
+
+// fixtureConfig is a priori sous-specific fixture stuff.
+type fixtureConfig struct {
+	fixtureBase
+	Scenario scenario
 	// ClusterSuffix is used to add a suffix to each generated cluster name.
 	// This can be used to segregate parallel tests.
 	ClusterSuffix string
-	TestName      string
+	EnvDesc       desc.EnvDesc
 	UserEmail     string
 	Projects      projectList
-	knownToFail   bool
-	Finished      chan struct{}
+	InitialState  *sous.State
+
+	Singularity *testSingularity
+}
+
+// fixture is the full rich fixture object passed to tests.
+type fixture struct {
+	fixtureConfig
+	Cluster bunchOfSousServers
+	Client  *sousClient
 }
 
 var sousBin = mustGetSousBin()
 
+func newFixtureConfig(testName string, s testmatrix.Scenario) fixtureConfig {
+	base := fixtureBase{
+		TestName: testName,
+		BaseDir:  getDataDir(testName),
+		Finished: make(chan struct{}),
+	}
+
+	scenario := unwrapScenario(s)
+	envDesc := getEnvDesc()
+	clusterSuffix := strings.Replace(testName, "/", "_", -1)
+	s9y := newSingularity(envDesc.SingularityURL())
+	s9y.ClusterSuffix = clusterSuffix
+	state := sous.StateFixture(sous.StateFixtureOpts{
+		ClusterCount:  3,
+		ManifestCount: 3,
+		ClusterSuffix: clusterSuffix,
+	})
+	addURLsToState(state, envDesc)
+	return fixtureConfig{
+		fixtureBase:   base,
+		Scenario:      scenario,
+		ClusterSuffix: clusterSuffix,
+		EnvDesc:       getEnvDesc(),
+		UserEmail:     "sous_client1@example.com",
+		Projects:      scenario.projects,
+		InitialState:  state,
+		Singularity:   s9y,
+	}
+}
+
 // newFixture transforms a testmatrix.Scenario into a sous-specific fixture.
 func newFixture(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
 	t.Helper()
-	baseDir := getDataDir(t)
 
-	c := makeFixtureConfig(t, s)
+	config := newFixtureConfig(t.Name(), s)
 
-	finished := make(chan struct{})
-
-	boss, err := newBunchOfSousServers(t, baseDir, c, finished)
+	boss, err := newBunchOfSousServers(t, config)
 	if err != nil {
 		t.Fatalf("setting up test cluster: %s", err)
 	}
 
-	if err := boss.configure(t, c.envDesc, c); err != nil {
+	if err := boss.configure(t, config); err != nil {
 		t.Fatalf("configuring test cluster: %s", err)
 	}
 
-	if err := boss.Start(t, sousBin); err != nil {
-		t.Fatalf("starting test cluster: %s", err)
-	}
+	boss.Start(t)
 
 	primaryServer := "http://" + boss.Instances[0].Addr
-	userEmail := "sous_client1@example.com"
 
 	tf := &fixture{
+		fixtureConfig: config,
 		Cluster:       *boss,
-		BaseDir:       baseDir,
-		Singularity:   c.singularity,
-		ClusterSuffix: c.clusterSuffix,
-		TestName:      t.Name(),
-		UserEmail:     userEmail,
-		Projects:      c.scenario.projects,
-		Finished:      finished,
 	}
-	client := makeClient(t, tf, baseDir, sousBin)
-	if err := client.Configure(primaryServer, c.envDesc.RegistryName(), userEmail); err != nil {
+	client := makeClient(t, config, sousBin)
+	if err := client.Configure(primaryServer, config.EnvDesc.RegistryName(), config.UserEmail); err != nil {
 		t.Fatal(err)
 	}
 	tf.Client = client
@@ -149,21 +183,20 @@ func (f *fixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
 }
 
 // IsolatedClusterName returns a cluster name unique to this test fixture.
-func (f *fixture) IsolatedClusterName(baseName string) string {
+func (f *fixtureConfig) IsolatedClusterName(baseName string) string {
 	return baseName + f.ClusterSuffix
 }
 
 // IsolatedVersionTag returns an all-lowercase unique version tag (unique per
 // test-run, subsequent runs will use the same tag). These version tags are
 // compatible natively as both Sous and Docker tags for convenience.
-func (f *fixture) IsolatedVersionTag(t *testing.T, baseTag string) string {
-	t.Helper()
+func (f *fixtureConfig) IsolatedVersionTag(baseTag string) string {
 	v, err := semv.Parse(baseTag)
 	if err != nil {
-		t.Fatalf("version tag %q not semver: %s", baseTag, err)
+		panic(fmt.Errorf("version tag %q not semver: %s", baseTag, err))
 	}
 	if v.Meta != "" {
-		t.Fatalf("version tag %q contains metatdata field", baseTag)
+		panic(fmt.Errorf("version tag %q contains metatdata field", baseTag))
 	}
 	suffix := strings.Replace(f.ClusterSuffix, "_", "-", -1)
 	if v.Pre != "" {

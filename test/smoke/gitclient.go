@@ -20,7 +20,7 @@ type gitRepoSpec struct {
 
 func (g *gitClient) configureRepo(t *testing.T, dir string, spec gitRepoSpec) string {
 	g.Bin.Configure()
-	g.Bin.Dir = makeEmptyDir(t, g.Bin.BaseDir, dir)
+	g.Bin.Dir = makeEmptyDir(g.Bin.BaseDir, dir)
 	g.MustRun(t, "init", nil)
 	g.MustRun(t, "remote", nil, "add", "origin", spec.OriginURL)
 	g.MustRun(t, "config", nil, "user.name", spec.UserName)

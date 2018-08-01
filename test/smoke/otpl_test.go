@@ -29,7 +29,7 @@ func dockerBuildAddArtifact(t *testing.T, f *fixture, client *sousClient, flags 
 	}
 	reg := client.Config.Docker.RegistryHost
 	repo := flags.repo
-	dockerTag := f.IsolatedVersionTag(t, tag)
+	dockerTag := f.IsolatedVersionTag(tag)
 	dockerRepo := fmt.Sprintf("%s/%s", reg, repo)
 	dockerRef = fmt.Sprintf("%s:%s", dockerRepo, dockerTag)
 

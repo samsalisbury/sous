@@ -19,17 +19,16 @@ import (
 type sousClient struct {
 	Bin
 	// Config is set after calling Configure()
-	Config config.Config
-	// Fixture is the test fixture this client belongs to.
-	Fixture *fixture
+	Config        config.Config
+	FixtureConfig fixtureConfig
 }
 
-func makeClient(t *testing.T, f *fixture, baseDir, sousBin string) *sousClient {
+func makeClient(t *testing.T, f fixtureConfig, sousBin string) *sousClient {
 	clientName := "client1"
-	baseDir = path.Join(baseDir, clientName)
+	baseDir := path.Join(f.BaseDir, clientName)
 	c := &sousClient{
-		Bin:     NewBin(t, sousBin, clientName, baseDir, f.Finished),
-		Fixture: f,
+		Bin:           NewBin(t, sousBin, clientName, baseDir, f.Finished),
+		FixtureConfig: f,
 	}
 
 	c.Bin.Env["SOUS_CONFIG_DIR"] = c.Bin.ConfigDir
@@ -75,14 +74,13 @@ func (c *sousClient) Configure(server, dockerReg, userEmail string) error {
 	})
 }
 
-func (c *sousClient) insertClusterSuffix(t *testing.T, args []string) []string {
-	t.Helper()
+func (c *sousClient) insertClusterSuffix(args []string) []string {
 	for i, s := range args {
 		if s == "-cluster" && len(args) > i+1 {
-			args[i+1] = c.Fixture.IsolatedClusterName(args[i+1])
+			args[i+1] = c.FixtureConfig.IsolatedClusterName(args[i+1])
 		}
 		if s == "-tag" && len(args) > i+1 {
-			args[i+1] = c.Fixture.IsolatedVersionTag(t, args[i+1])
+			args[i+1] = c.FixtureConfig.IsolatedVersionTag(args[i+1])
 		}
 	}
 	return args
@@ -106,8 +104,11 @@ func (c *sousClient) TransformManifest(t *testing.T, flags *sousFlags, transform
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
 	// TODO SS: remove below invocation, make a top-level RunWithStdin or something.
-	i := c.newInvocation(t, "manifest set", flags)
-	manifestSetCmd := c.configureCommand(t, i)
+	i := c.newInvocation("manifest set", flags)
+	manifestSetCmd, err := c.configureCommand(i)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer manifestSetCmd.Cancel()
 	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
 	if err := manifestSetCmd.runWithTimeout(3 * time.Minute); err != nil {
@@ -117,7 +118,7 @@ func (c *sousClient) TransformManifest(t *testing.T, flags *sousFlags, transform
 
 func (c *sousClient) setSingularityRequestID(t *testing.T, clusterName, singReqID string) ManifestTransform {
 	return func(m sous.Manifest) sous.Manifest {
-		clusterName := c.Fixture.IsolatedClusterName(clusterName)
+		clusterName := c.FixtureConfig.IsolatedClusterName(clusterName)
 		d, ok := m.Deployments[clusterName]
 		if !ok {
 			t.Fatalf("no deployment for %q", clusterName)

@@ -58,8 +58,10 @@ func seedDB(config *config.Config, state *sous.State) error {
 	return mgr.WriteState(state, sous.User{})
 }
 
-func (i *sousServer) configure(config *config.Config, remoteGDMDir string, fcfg fixtureConfig) error {
-	if err := seedDB(config, fcfg.startState); err != nil {
+func (i *sousServer) configure(config *config.Config, remoteGDMDir string, f fixtureConfig) error {
+
+	// TODO SS: Seed DB only when test starts.
+	if err := seedDB(config, f.InitialState); err != nil {
 		return err
 	}
 
@@ -94,8 +96,6 @@ func (i *sousServer) configure(config *config.Config, remoteGDMDir string, fcfg 
 }
 
 func (i *sousServer) Start(t *testing.T) {
-	t.Helper()
-
 	if !quiet() {
 		fmt.Fprintf(os.Stderr, "==> Instance %q config:\n", i.ClusterName)
 	}

@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/storage"
 	sous "github.com/opentable/sous/lib"
@@ -24,33 +23,34 @@ type bunchOfSousServers struct {
 	Stop         func() error
 }
 
-func newBunchOfSousServers(t *testing.T, baseDir string, fcfg fixtureConfig, finished <-chan struct{}) (*bunchOfSousServers, error) {
-	if err := os.MkdirAll(baseDir, 0777); err != nil {
+func newBunchOfSousServers(t *testing.T, f fixtureConfig) (*bunchOfSousServers, error) {
+	// TODO SS: This should have already happened..
+	if err := os.MkdirAll(f.BaseDir, 0777); err != nil {
 		return nil, err
 	}
 
-	state := fcfg.startState
-
-	gdmDir := path.Join(baseDir, "remote-gdm")
-	if err := createRemoteGDM(gdmDir, state); err != nil {
+	gdmDir := path.Join(f.BaseDir, "remote-gdm")
+	if err := createRemoteGDM(gdmDir, f.InitialState); err != nil {
 		return nil, err
 	}
 
 	binPath := sousBin
+
+	state := f.InitialState
 
 	count := len(state.Defs.Clusters)
 	instances := make([]*sousServer, count)
 	addrs := freePortAddrs("127.0.0.1", count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
-		inst, err := makeInstance(t, binPath, i, clusterName, baseDir, addrs[i], finished)
+		inst, err := makeInstance(t, binPath, i, clusterName, f.BaseDir, addrs[i], f.Finished)
 		if err != nil {
 			return nil, errors.Wrapf(err, "making test instance %d", i)
 		}
 		instances[i] = inst
 	}
 	return &bunchOfSousServers{
-		BaseDir:      baseDir,
+		BaseDir:      f.BaseDir,
 		RemoteGDMDir: gdmDir,
 		Count:        count,
 		Instances:    instances,
@@ -96,7 +96,7 @@ func createRemoteGDM(gdmDir string, state *sous.State) error {
 	return nil
 }
 
-func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
+func (c *bunchOfSousServers) configure(t *testing.T, f fixtureConfig) error {
 	t.Helper()
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
@@ -131,9 +131,9 @@ func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg 
 				Host:   host,
 				Port:   dbport,
 			},
-			DatabasePrimary: fcfg.scenario.dbPrimary,
+			DatabasePrimary: f.Scenario.dbPrimary,
 			Docker: docker.Config{
-				RegistryHost: envDesc.RegistryName(),
+				RegistryHost: f.EnvDesc.RegistryName(),
 			},
 			User: sous.User{
 				Name:  "Sous Server " + i.ClusterName,
@@ -141,14 +141,15 @@ func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg 
 			},
 		}
 		config.Logging.Basic.Level = "debug"
-		if err := i.configure(config, c.RemoteGDMDir, fcfg); err != nil {
+		if err := i.configure(config, c.RemoteGDMDir, f); err != nil {
 			return errors.Wrapf(err, "configuring instance %d", i)
 		}
 	}
 	return nil
 }
 
-func (c *bunchOfSousServers) Start(t *testing.T, sousBin string) error {
+func (c *bunchOfSousServers) Start(t *testing.T) {
+	t.Helper()
 	var started []*sousServer
 	// Set the stop func first in case starting returns early.
 	c.Stop = func() error {
@@ -165,7 +166,7 @@ func (c *bunchOfSousServers) Start(t *testing.T, sousBin string) error {
 	}
 	for _, i := range c.Instances {
 		i.Start(t)
+		// Note: the value of started is only used in the closure above.
 		started = append(started, i)
 	}
-	return nil
 }

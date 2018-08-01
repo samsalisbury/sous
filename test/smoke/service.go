@@ -30,8 +30,10 @@ func NewService(bin Bin) *Service {
 // Start starts this service.
 func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string) {
 	t.Helper()
-
-	prepared := s.Command(t, subcmd, flags, args...)
+	prepared, err := s.Command(subcmd, flags, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	prepared.PreRun()
 
@@ -41,7 +43,7 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 	}
 
 	if cmd.Process == nil {
-		panic("cmd.Process nil after cmd.Start")
+		t.Fatal("cmd.Process nil after cmd.Start")
 	}
 	s.Proc = cmd.Process
 	writePID(t, s.Proc.Pid)
