@@ -41,6 +41,31 @@ func dockerBuildAddArtifact(t *testing.T, f *fixture, client *sousClient, flags 
 	return dockerRef
 }
 
+// makeOTPLConfig creates valid otpl-deploy config files using reqID as the
+// request ID and envFull as the <env>[.<flavor>] string used by otpl-deploy.
+func makeOTPLConfig(reqID, envFull string) filemap.FileMap {
+	return filemap.FileMap{
+		"config/" + envFull + "/singularity.json": `
+				{
+					"requestId": "` + reqID + `",
+					"resources": {
+						"cpus": 0.01,
+						"memoryMb": 1,
+						"numPorts": 3
+					}
+				}`,
+		"config/" + envFull + "/singularity-request.json": `
+				{
+					"id": "` + reqID + `",
+					"requestType": "SERVICE",
+					"owners": [
+					    "test-user1@example.com"
+					],
+					"instances": 3
+				}`,
+	}
+}
+
 func TestOTPL(t *testing.T) {
 
 	// FixedDimension is because otpl deploy can only work with simple dockerfile
@@ -66,69 +91,109 @@ func TestOTPL(t *testing.T) {
 		}
 	})
 
-	pf.Run("build-init-deploy", func(t *testing.T, f *fixture) {
-		client := setupProject(t, f, f.Projects.HTTPServer().Merge(filemap.FileMap{
-			"config/cluster1/singularity.json": `
-				{
-					"requestId": "request1",
-					"resources": {
-						"cpus": 0.01,
-						"memoryMb": 1,
-						"numPorts": 3
-					}
-				}`,
-			"config/cluster1/singularity-request.json": `
-				{
-					"id": "request1",
-					"requestType": "SERVICE",
-					"owners": [
-					    "test-user1@example.com"
-					],
-					"instances": 3
-				}`,
-		}))
+	pf.Run("root-noflavor", func(t *testing.T, f *fixture) {
+		reqID := f.IsolatedRequestID("request1")
+		cluster := f.IsolatedClusterName("cluster1")
+		client := setupProject(t, f, f.Projects.HTTPServer().Merge(
+			makeOTPLConfig(reqID, cluster)))
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/build-init-deploy-user/project1",
+			repo:    "github.com/user1/project1",
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
 
 		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
 
+		m := client.getManifest(t, flags)
+		d := assertManifestExactlyOneDeployment(t, m, cluster)
+
+		if got := d.SingularityRequestID; got != reqID {
+			t.Fatalf("got sing req id %q; want %q", got, reqID)
+		}
+
 		client.MustRun(t, "deploy", flags.SousDeployFlags())
 
-		reqID := f.DefaultSingReqID(t, flags)
 		assertActiveStatus(t, f, reqID)
 		assertSingularityRequestTypeService(t, f, reqID)
 		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
-	pf.Run("fail-unknown-fields", func(t *testing.T, f *fixture) {
-		client := setupProject(t, f, f.Projects.HTTPServer().Merge(filemap.FileMap{
-			"config/cluster1/singularity.json": `
-			{
-				"requestId": "request1",
-				"resources": {
-					"cpus": 0.01,
-					"memoryMb": 1,
-					"numPorts": 3
-				}
-			}`,
-			"config/cluster1/singularity-request.json": `
-			{
-				id: "request1",
-				"requestType": "WORKER",
-				"owners": [
-				    "test-user1@example.com"
-				],
-				"slavePlacement": "SEPARATE_BY_REQUEST",
-				"instances": 3,
-				"rackSensitive": false,
-				"loadBalanced": false
-			}`,
-		}))
+	pf.Run("root-withflavor", func(t *testing.T, f *fixture) {
+		reqID := f.IsolatedRequestID("request1")
+		cluster := f.IsolatedClusterName("cluster1")
+		client := setupProject(t, f, f.Projects.HTTPServer().Merge(
+			makeOTPLConfig(reqID, cluster+".flavor1")))
+
+		flags := &sousFlags{
+			flavor:  "flavor1",
+			kind:    "http-service",
+			repo:    "github.com/user1/project1",
+			tag:     "1.2.3",
+			cluster: "cluster1",
+		}
+
+		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
+
+		m := client.getManifest(t, flags)
+		d := assertManifestExactlyOneDeployment(t, m, cluster)
+
+		if got := d.SingularityRequestID; got != reqID {
+			t.Fatalf("got sing req id %q; want %q", got, reqID)
+		}
+
+		client.MustRun(t, "deploy", flags.SousDeployFlags())
+
+		assertActiveStatus(t, f, reqID)
+		assertSingularityRequestTypeService(t, f, reqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+	})
+
+	pf.Run("root-withoffset", func(t *testing.T, f *fixture) {
+		reqID := f.IsolatedRequestID("request1")
+		cluster := f.IsolatedClusterName("cluster1")
+		client := setupProject(t, f,
+			filemap.Merge(
+				f.Projects.HTTPServer(),
+				makeOTPLConfig(reqID, cluster),
+			).PrefixAll("offset1"),
+		)
+
+		client.Dir = client.Dir + "/offset1"
+
+		flags := &sousFlags{
+			kind:    "http-service",
+			repo:    "github.com/user1/project1",
+			tag:     "1.2.3",
+			cluster: "cluster1",
+		}
+
+		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
+
+		m := client.getManifest(t, flags)
+		if got := m.ID().Source.Dir; got != "offset1" {
+			t.Fatalf("got offset %q; want %q", got, "offset1")
+		}
+
+		d := assertManifestExactlyOneDeployment(t, m, cluster)
+
+		if got := d.SingularityRequestID; got != reqID {
+			t.Fatalf("got sing req id %q; want %q", got, reqID)
+		}
+
+		client.MustRun(t, "deploy", flags.SousDeployFlags())
+
+		assertActiveStatus(t, f, reqID)
+		assertSingularityRequestTypeService(t, f, reqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+	})
+
+	pf.Run("fail-init-unknown-fields", func(t *testing.T, f *fixture) {
+		reqID := f.IsolatedRequestID("request1")
+		cluster := f.IsolatedClusterName("cluster1")
+		client := setupProject(t, f, f.Projects.HTTPServer().Merge(
+			makeOTPLConfig(reqID, cluster)))
 
 		flags := &sousFlags{
 			kind:    "http-service",
