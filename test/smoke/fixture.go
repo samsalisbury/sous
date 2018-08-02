@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
@@ -115,6 +116,7 @@ func (f *fixture) Teardown(t *testing.T) {
 	t.Helper()
 	close(f.Finished)
 	if shouldStopServers(t) {
+		time.Sleep(time.Second) // TODO: Fix synchronisation.
 		if err := f.Cluster.Stop(); err != nil {
 			t.Errorf("failed to stop cluster: %s", err)
 		}
@@ -131,6 +133,9 @@ func shouldStopServers(t *testing.T) bool {
 
 func shouldCleanFiles(t *testing.T) bool {
 	// TODO SS: Make this configurable.
+	if sup.TestCount() == 1 {
+		return false // When running a single test do not clean up.
+	}
 	return !t.Failed()
 }
 
@@ -182,9 +187,20 @@ func (f *fixture) DefaultSingReqID(t *testing.T, flags *sousFlags) string {
 	return f.Singularity.DefaultReqID(t, did)
 }
 
+func ensureSuffix(s, suffix string) string {
+	if strings.HasSuffix(s, suffix) {
+		return s
+	}
+	return s + suffix
+}
+
 // IsolatedClusterName returns a cluster name unique to this test fixture.
 func (f *fixtureConfig) IsolatedClusterName(baseName string) string {
-	return baseName + f.ClusterSuffix
+	return ensureSuffix(baseName, f.ClusterSuffix)
+}
+
+func (f *fixtureConfig) IsolatedRequestID(baseName string) string {
+	return ensureSuffix(baseName, f.ClusterSuffix)
 }
 
 // IsolatedVersionTag returns an all-lowercase unique version tag (unique per
@@ -199,6 +215,9 @@ func (f *fixtureConfig) IsolatedVersionTag(baseTag string) string {
 		panic(fmt.Errorf("version tag %q contains metatdata field", baseTag))
 	}
 	suffix := strings.Replace(f.ClusterSuffix, "_", "-", -1)
+	if strings.HasSuffix(baseTag, suffix) {
+		return baseTag
+	}
 	if v.Pre != "" {
 		return strings.ToLower(baseTag + suffix)
 	}
