@@ -61,7 +61,8 @@ func (s *Service) detectPrematureExit(t *testing.T, cmd *exec.Cmd) {
 	// In this case the process ended before the test finished.
 	case wr := <-s.waitChan(cmd):
 		rtLog("SERVER CRASHED: exit code %d: %s; logs follow:", wr.exitCode(), id)
-		s.DumpTail(t, 25)
+		s.DumpTail(t, 3)
+		rtLog("END SERVER CRASH LOG")
 	// In this case the process is still running.
 	case <-s.TestFinished:
 		// OK, test finished before this process exited.
