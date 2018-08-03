@@ -158,9 +158,9 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousClient {
 	t.Helper()
 
 	// Setup project git repo.
-	g := newGitClient(t, f, f.Client.BaseDir)
+	g := newGitClient(t, f, "gitclient1")
 
-	projectDir := g.configureRepo(t, "projects/project1", gitRepoSpec{
+	projectDir := g.configureRepo(t, f, "projects/project1", gitRepoSpec{
 		UserName:  "Sous User 1",
 		UserEmail: "sous-user1@example.com",
 		OriginURL: "git@github.com:user1/repo1.git",
