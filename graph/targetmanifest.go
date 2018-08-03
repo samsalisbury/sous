@@ -10,8 +10,8 @@ import (
 // RefinedResolveFilter is a sous.ResolveFilter refined by user-requested flags.
 type RefinedResolveFilter sous.ResolveFilter
 
-// OT_ENV_FLAVOR is the environment name to use for flavors.
-const OT_ENV_FLAVOR = "OT_ENV_FLAVOR"
+// OTEnvFlavor is the environment name to use for flavors.
+const OTEnvFlavor = "OT_ENV_FLAVOR"
 
 func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDiscovery) (*RefinedResolveFilter, error) {
 	c := discovered.GetContext()
@@ -115,7 +115,7 @@ func newTargetManifest(auto userSelectedOTPLDeployManifest, tmid TargetManifestI
 
 	if tmid.Flavor != "" {
 		for _, d := range deploySpecs {
-			d.Env[OT_ENV_FLAVOR] = tmid.Flavor
+			d.Env[OTEnvFlavor] = tmid.Flavor
 		}
 	}
 

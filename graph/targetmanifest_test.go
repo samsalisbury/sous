@@ -260,7 +260,7 @@ func TestNewTargetManifest(t *testing.T) {
 						CheckReadyProtocol: "HTTP",
 						CheckReadyURIPath:  "/health",
 					},
-					Env: map[string](string){OT_ENV_FLAVOR: flavor},
+					Env: map[string](string){OTEnvFlavor: flavor},
 				},
 			},
 		},

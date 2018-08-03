@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func newDetectedOTPLConfig(ls LogSink, wd LocalWorkDirShell, otplFlags *config.OTPLFlags) detectedOTPLDeployManifest {
+func newDetectedOTPLConfig(ls LogSink, wd LocalWorkDirShell, otplFlags *config.OTPLFlags, sc *sous.SourceContext) detectedOTPLDeployManifest {
 	if otplFlags.IgnoreOTPLDeploy {
 		return detectedOTPLDeployManifest{sous.NewManifests()}
 	}
@@ -20,6 +20,14 @@ func newDetectedOTPLConfig(ls LogSink, wd LocalWorkDirShell, otplFlags *config.O
 	if err != nil {
 		// This is OK, we are detecting these speculatively.
 		return detectedOTPLDeployManifest{sous.NewManifests()}
+	}
+
+	// TODO SS: Find a better way to get the right offset...
+	for k, man := range otplDeploySpecs.Snapshot() {
+		s := man.Source
+		s.Dir = sc.OffsetDir
+		man.Source = s
+		otplDeploySpecs.Set(k, man)
 	}
 	return detectedOTPLDeployManifest{otplDeploySpecs}
 }
