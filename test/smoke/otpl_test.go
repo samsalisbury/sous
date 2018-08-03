@@ -41,31 +41,6 @@ func dockerBuildAddArtifact(t *testing.T, f *fixture, client *sousClient, flags 
 	return dockerRef
 }
 
-// makeOTPLConfig creates valid otpl-deploy config files using reqID as the
-// request ID and envFull as the <env>[.<flavor>] string used by otpl-deploy.
-func makeOTPLConfig(reqID, envFull string) filemap.FileMap {
-	return filemap.FileMap{
-		"config/" + envFull + "/singularity.json": `
-				{
-					"requestId": "` + reqID + `",
-					"resources": {
-						"cpus": 0.01,
-						"memoryMb": 1,
-						"numPorts": 3
-					}
-				}`,
-		"config/" + envFull + "/singularity-request.json": `
-				{
-					"id": "` + reqID + `",
-					"requestType": "SERVICE",
-					"owners": [
-					    "test-user1@example.com"
-					],
-					"instances": 3
-				}`,
-	}
-}
-
 func TestOTPL(t *testing.T) {
 
 	// FixedDimension is because otpl deploy can only work with simple dockerfile
@@ -189,15 +164,45 @@ func TestOTPL(t *testing.T) {
 		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
-	pf.Run("fail-init-unknown-fields", func(t *testing.T, f *fixture) {
+	pf.Run("fail-init-unknown-fields-req", func(t *testing.T, f *fixture) {
 		reqID := f.IsolatedRequestID("request1")
 		cluster := f.IsolatedClusterName("cluster1")
-		client := setupProject(t, f, f.Projects.HTTPServer().Merge(
-			makeOTPLConfig(reqID, cluster)))
+		otplConfig := makeOTPLConfig(reqID, cluster, func(req, dep *interface{}) {
+			reqMap := (*req).(map[string]interface{})
+			reqMap["invalidfield1"] = 0
+			*req = reqMap
+		})
+		client := setupProject(t, f, filemap.Merge(
+			f.Projects.HTTPServer(),
+			otplConfig,
+		))
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/build-init-deploy-user/project1",
+			repo:    "github.com/user1/project1",
+			tag:     "1.2.3",
+			cluster: "cluster1",
+		}
+
+		client.MustFail(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
+	})
+
+	pf.Run("fail-init-unknown-fields-dep", func(t *testing.T, f *fixture) {
+		reqID := f.IsolatedRequestID("request1")
+		cluster := f.IsolatedClusterName("cluster1")
+		otplConfig := makeOTPLConfig(reqID, cluster, func(req, dep *interface{}) {
+			depMap := (*dep).(map[string]interface{})
+			depMap["invalidfield1"] = 0
+			*dep = depMap
+		})
+		client := setupProject(t, f, filemap.Merge(
+			f.Projects.HTTPServer(),
+			otplConfig,
+		))
+
+		flags := &sousFlags{
+			kind:    "http-service",
+			repo:    "github.com/user1/project1",
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
