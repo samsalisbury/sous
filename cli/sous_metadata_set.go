@@ -3,7 +3,6 @@ package cli
 import (
 	"flag"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	sous "github.com/opentable/sous/lib"
@@ -59,8 +58,6 @@ func (smg *SousMetadataSet) Execute(args []string) cmdr.Result {
 		}
 		depspec.Metadata[key] = value
 	}
-
-	spew.Dump(mani)
 
 	if _, err := up.Update(&mani, smg.User.HTTPHeaders()); err != nil {
 		return EnsureErrorResult(err)
