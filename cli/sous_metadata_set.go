@@ -54,9 +54,8 @@ func (smg *SousMetadataSet) Execute(args []string) cmdr.Result {
 		}
 
 		if depspec.Metadata == nil {
-			foo := mani.Deployments[cname].Metadata
-			foo = make(map[string]string)
-			depspec.Metadata = foo
+			depspec.Metadata = map[string]string{}
+			mani.Deployments[cname] = depspec
 		}
 		depspec.Metadata[key] = value
 	}
