@@ -11,6 +11,7 @@ with respect to its command line interface and HTTP interface
 * A race condition during whole-cluster resolutions meant the final status
   was sometimes inaccurately recorded. Real world implications of this are not
   completely clear, users are not expected to notice much difference.
+* Client: sous metadata set would panic if no existing metadata was present in manifest prior to set
 ### Changed
 * Client: `SOUS_USE_SOUS_SEVER` env var must now be exactly uppercase `YES`
   in order to be considered "on". Previously any value, even empty string
