@@ -29,6 +29,7 @@ func newDetectedOTPLConfig(ls LogSink, wd LocalWorkDirShell, otplFlags *config.O
 		man.Source.Dir = sc.OffsetDir
 		ms.Add(man)
 	}
+
 	return detectedOTPLDeployManifest{ms}
 }
 
@@ -54,9 +55,7 @@ func newUserSelectedOTPLDeploySpecs(
 		return nowt, nil
 	}
 
-	if tmid.Source.Dir == "" {
-		tmid.Source.Dir = sc.OffsetDir
-	} else if tmid.Source.Dir != sc.OffsetDir {
+	if tmid.Source.Dir != sc.OffsetDir {
 		// TODO SS: Maybe support specifying other offsets eventually, for now
 		// it's hard to know the user's intention (via flags).
 		return nowt, fmt.Errorf("the offset of the current directory is %q; but you specified %q", sc.OffsetDir, tmid.Source.Dir)
@@ -65,35 +64,27 @@ func newUserSelectedOTPLDeploySpecs(
 	mid := sous.ManifestID(tmid)
 	// we don't care about these flags when a manifest already exists
 	if _, ok := state.Manifests.Get(mid); ok {
-		return nowt, nil
+		return nowt, fmt.Errorf("manifest %s already exists", mid)
 	}
 
-	var detectedManifest *sous.Manifest
-
-	if flavoredManifest, ok := detected.Manifests.Single(func(m *sous.Manifest) bool {
-		return m.Flavor == flags.Flavor
-	}); ok {
-		detectedManifest = flavoredManifest
-	} else {
-		flavors := detected.Manifests.Flavors()
-		if flags.Flavor == "" {
-			defer messages.ReportLogFieldsMessageToConsole("use the -flavor flag to pick a flavor", logging.WarningLevel, ls)
-		}
-		return nowt, fmt.Errorf("flavor %q not detected; pick from: %q", flags.Flavor, flavors)
+	selected, err := getSelectedManifest(detected.Manifests, flags, ls)
+	if err != nil {
+		return nowt, err
 	}
 
-	if !flags.UseOTPLDeploy && !flags.IgnoreOTPLDeploy && len(detectedManifest.Deployments) != 0 {
+	if !flags.UseOTPLDeploy && !flags.IgnoreOTPLDeploy && len(selected.Deployments) != 0 {
 		return nowt, errors.New("otpl-deploy detected in config/, please specify either -use-otpl-deploy, or -ignore-otpl-deploy to proceed")
 	}
 	if !flags.UseOTPLDeploy {
 		return nowt, nil
 	}
-	if len(detectedManifest.Deployments) == 0 {
+	if len(selected.Deployments) == 0 {
 		return nowt, errors.New("use of otpl configuration was specified, but no valid deployments were found in config/")
 	}
 	deploySpecs := sous.DeploySpecs{}
-	for clusterName, spec := range detectedManifest.Deployments {
+	for clusterName, spec := range selected.Deployments {
 		if _, ok := state.Defs.Clusters[clusterName]; !ok {
+			// TODO SS: Error if clusters not recognised.
 			messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("otpl-deploy config for cluster %q ignored", clusterName), logging.WarningLevel, ls)
 			continue
 		}
@@ -104,7 +95,18 @@ func newUserSelectedOTPLDeploySpecs(
 	}
 	// Detach the user selected from the detected manifest, in case something
 	// else relies on the detected ones.
-	selectedManifest := detectedManifest.Clone()
+	selectedManifest := selected.Clone()
 	selectedManifest.Deployments = deploySpecs
 	return userSelectedOTPLDeployManifest{selectedManifest}, nil
+}
+
+func getSelectedManifest(detected sous.Manifests, flags *config.OTPLFlags, ls logging.LogSink) (*sous.Manifest, error) {
+	if flavoredManifest, ok := detected.Single(func(m *sous.Manifest) bool { return m.Flavor == flags.Flavor }); ok {
+		return flavoredManifest, nil
+	}
+	flavors := detected.Flavors()
+	if flags.Flavor == "" {
+		defer messages.ReportLogFieldsMessageToConsole("use the -flavor flag to pick a flavor", logging.WarningLevel, ls)
+	}
+	return nil, fmt.Errorf("flavor %q not detected; pick from: %q", flags.Flavor, flavors)
 }

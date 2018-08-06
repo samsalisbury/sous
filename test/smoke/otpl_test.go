@@ -36,7 +36,7 @@ func dockerBuildAddArtifact(t *testing.T, f *fixture, client *sousClient, flags 
 	mustDoCMD(t, client.Dir, "docker", "build", "-t", dockerRef, ".")
 	mustDoCMD(t, client.Dir, "docker", "push", dockerRef)
 
-	client.MustRun(t, "artifact add", nil, "-docker-image", dockerRepo, "-repo", repo, "-tag", tag)
+	client.MustRun(t, "artifact add", flags.SourceIDFlags(), "-docker-image", dockerRepo)
 
 	return dockerRef
 }
@@ -125,7 +125,47 @@ func TestOTPL(t *testing.T) {
 		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
-	pf.Run("root-withoffset", func(t *testing.T, f *fixture) {
+	pf.Run("root-withoffset-flag", func(t *testing.T, f *fixture) {
+		reqID := f.IsolatedRequestID("request1")
+		cluster := f.IsolatedClusterName("cluster1")
+		client := setupProject(t, f,
+			filemap.Merge(
+				f.Projects.HTTPServer(),
+				makeOTPLConfig(reqID, cluster),
+			).PrefixAll("offset1"),
+		)
+
+		client.Dir += "/offset1"
+
+		flags := &sousFlags{
+			kind:    "http-service",
+			repo:    "github.com/user1/repo1",
+			tag:     "1.2.3",
+			cluster: "cluster1",
+			offset:  "offset1",
+		}
+
+		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
+
+		m := client.getManifest(t, flags)
+		if got := m.Source.Dir; got != "offset1" {
+			t.Fatalf("got offset %q; want %q", got, "offset1")
+		}
+
+		d := assertManifestExactlyOneDeployment(t, m, cluster)
+
+		if got := d.SingularityRequestID; got != reqID {
+			t.Fatalf("got sing req id %q; want %q", got, reqID)
+		}
+
+		client.MustRun(t, "deploy", flags.SousDeployFlags())
+
+		assertActiveStatus(t, f, reqID)
+		assertSingularityRequestTypeService(t, f, reqID)
+		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
+	})
+
+	pf.Run("root-withoffset-noflag", func(t *testing.T, f *fixture) {
 		reqID := f.IsolatedRequestID("request1")
 		cluster := f.IsolatedClusterName("cluster1")
 		client := setupProject(t, f,
@@ -147,7 +187,7 @@ func TestOTPL(t *testing.T) {
 		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
 
 		m := client.getManifest(t, flags)
-		if got := m.ID().Source.Dir; got != "offset1" {
+		if got := m.Source.Dir; got != "offset1" {
 			t.Fatalf("got offset %q; want %q", got, "offset1")
 		}
 
