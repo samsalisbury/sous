@@ -21,13 +21,14 @@ type bootstrapCfg struct {
 var bootstrap = &cobra.Command{
 	Use:   "sous-bootstrap",
 	Short: "An operations convenience to bootstrap Sous into execution environments",
-	Long: `In normal operations, Sous should be completely self-sufficient.
-	  However, if it get's badly broken, or for initial deploys, Sous isn't available
-		to deploy itself. sous-bootstrap closes that loop by spinning up a temporary
-		local server and issuing deploy commands against that.
+	Long: `
+In normal operations, Sous should be completely self-sufficient.
+However, if it get's badly broken, or for initial deploys, Sous isn't available
+to deploy itself. sous-bootstrap closes that loop by spinning up a temporary
+local server and issuing deploy commands against that.
 
-		Almost all users should not care this tool exists.
-		If you're asking "what's Sous," you're not in the right place, yet.`,
+Almost all users should not care this tool exists.
+If you're asking "what's Sous," you're not in the right place, yet.`,
 	PreRun: verifyConfig,
 	Run:    wrappedBootstrap,
 }
