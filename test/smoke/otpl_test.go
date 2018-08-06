@@ -50,7 +50,7 @@ func TestOTPL(t *testing.T) {
 	pf.Run("artifact-add", func(t *testing.T, f *fixture) {
 		client := setupProject(t, f, f.Projects.HTTPServer())
 
-		flags := &sousFlags{tag: "1.2.3", repo: "github.com/some-user/project1"}
+		flags := &sousFlags{tag: "1.2.3", repo: "github.com/user1/repo1"}
 
 		dockerRef := dockerBuildAddArtifact(t, f, client, flags)
 
@@ -74,7 +74,7 @@ func TestOTPL(t *testing.T) {
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/user1/project1",
+			repo:    "github.com/user1/repo1",
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
@@ -104,7 +104,7 @@ func TestOTPL(t *testing.T) {
 		flags := &sousFlags{
 			flavor:  "flavor1",
 			kind:    "http-service",
-			repo:    "github.com/user1/project1",
+			repo:    "github.com/user1/repo1",
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
@@ -135,11 +135,11 @@ func TestOTPL(t *testing.T) {
 			).PrefixAll("offset1"),
 		)
 
-		client.Dir = client.Dir + "/offset1"
+		client.Dir += "/offset1"
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/user1/project1",
+			repo:    "github.com/user1/repo1",
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
@@ -179,7 +179,7 @@ func TestOTPL(t *testing.T) {
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/user1/project1",
+			repo:    "github.com/user1/repo1",
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
@@ -202,7 +202,7 @@ func TestOTPL(t *testing.T) {
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/user1/project1",
+			repo:    "github.com/user1/repo1",
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}

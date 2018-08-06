@@ -15,6 +15,7 @@ func newDetectedOTPLConfig(ls LogSink, wd LocalWorkDirShell, otplFlags *config.O
 	if otplFlags.IgnoreOTPLDeploy {
 		return detectedOTPLDeployManifest{sous.NewManifests()}
 	}
+
 	otplParser := otpl.NewManifestParser(ls)
 	otplDeploySpecs, err := otplParser.ParseManifests(wd.Sh)
 	if err != nil {
@@ -22,19 +23,19 @@ func newDetectedOTPLConfig(ls LogSink, wd LocalWorkDirShell, otplFlags *config.O
 		return detectedOTPLDeployManifest{sous.NewManifests()}
 	}
 
-	// TODO SS: Find a better way to get the right offset...
-	for k, man := range otplDeploySpecs.Snapshot() {
-		s := man.Source
-		s.Dir = sc.OffsetDir
-		man.Source = s
-		otplDeploySpecs.Set(k, man)
+	ms := sous.NewManifests()
+
+	for _, man := range otplDeploySpecs.Snapshot() {
+		man.Source.Dir = sc.OffsetDir
+		ms.Add(man)
 	}
-	return detectedOTPLDeployManifest{otplDeploySpecs}
+	return detectedOTPLDeployManifest{ms}
 }
 
 func newUserSelectedOTPLDeploySpecs(
 	detected detectedOTPLDeployManifest,
 	tmid TargetManifestID,
+	sc *sous.SourceContext,
 	flags *config.OTPLFlags,
 	sm *ClientStateManager,
 	ls LogSink,
@@ -52,6 +53,15 @@ func newUserSelectedOTPLDeploySpecs(
 		}
 		return nowt, nil
 	}
+
+	if tmid.Source.Dir == "" {
+		tmid.Source.Dir = sc.OffsetDir
+	} else if tmid.Source.Dir != sc.OffsetDir {
+		// TODO SS: Maybe support specifying other offsets eventually, for now
+		// it's hard to know the user's intention (via flags).
+		return nowt, fmt.Errorf("the offset of the current directory is %q; but you specified %q", sc.OffsetDir, tmid.Source.Dir)
+	}
+
 	mid := sous.ManifestID(tmid)
 	// we don't care about these flags when a manifest already exists
 	if _, ok := state.Manifests.Get(mid); ok {

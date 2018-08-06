@@ -32,7 +32,7 @@ func newRefinedResolveFilter(f *sous.ResolveFilter, discovered *SourceContextDis
 			rrf.SetTag(discovered.TagVersion())
 		}
 	} else {
-		var offset string
+		offset := c.OffsetDir
 		if rrf.Offset.Match != nil {
 			offset = *rrf.Offset.Match
 		}
