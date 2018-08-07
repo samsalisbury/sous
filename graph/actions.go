@@ -176,6 +176,59 @@ func (di *SousGraph) GetAddArtifact(opts ArtifactOpts) (actions.Action, error) {
 	}, nil
 }
 
+func (di *SousGraph) buildJenkinsDefaultMap() map[string]string {
+	return map[string]string{
+		"SOUS_DEPLOY_CI":                "YES",
+		"SOUS_DEPLOY_PP":                "YES",
+		"SOUS_DEPLOY_PROD":              "YES",
+		"SOUS_INTEGRATION_TEST":         "YES",
+		"SOUS_INTEGRATION_TEST_COMMAND": "make integration",
+		"SOUS_SMOKE_TEST":               "YES",
+		"SOUS_SMOKE_TEST_COMMAND":       "make smoke",
+		"SOUS_STATIC_TEST":              "YES",
+		"SOUS_STATIC_TEST_COMMAND":      "make static",
+		"SOUS_UNIT_TEST":                "YES",
+		"SOUS_UNIT_TEST_COMMAND":        "make unit",
+		"SOUS_USE_RC":                   "YES",
+		"SOUS_VERSIONING_SCHEME":        "semver_timestamp",
+	}
+}
+
+// GetJenkins constructs a Jenkins Actions.
+func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
+
+	scoop := struct {
+		HTTP    *ClusterSpecificHTTPClient
+		TargetManifestID graph.TargetManifestID
+		LogSink LogSink
+		User    sous.User
+		Config  LocalSousConfig
+		TraceID sous.TraceID
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+
+	client := scoop.HTTP.HTTPClient
+	if os.Getenv("SOUS_USE_SOUS_SERVER") == "YES" {
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("TraceID: %s", scoop.TraceID), logging.DebugLevel, scoop.LogSink.LogSink, scoop.TraceID)
+		c, err := restful.NewClient(scoop.Config.Config.Server, scoop.LogSink.LogSink.Child("jenkins.http-client"), map[string]string{"OT-RequestId": string(scoop.TraceID)})
+		if err != nil {
+			return nil, err
+		}
+		client = c
+	}
+
+	return &actions.Jenkins{
+		HTTPClient:           client,
+		TargetManifestID      scoop.TargetManifestID
+		LogSink:              scoop.LogSink.LogSink.Child("jenkins", rf, did),
+		User:                 scoop.User,
+		Config:               scoop.Config.Config,
+		DefaultJenkinsConfig: di.buildJenkinsDefaultMap(),
+	}, nil
+}
+
 // DeployActionOpts are options for GetDeploy.
 type DeployActionOpts struct {
 	DFF                              config.DeployFilterFlags
