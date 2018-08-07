@@ -60,6 +60,15 @@ func NewBin(t *testing.T, path, name, baseDir string, finished <-chan struct{}) 
 	}
 }
 
+// CD changes directory (accepts relative or absolute paths).
+func (c *Bin) CD(path string) {
+	if filepath.IsAbs(path) {
+		c.Dir = path
+		return
+	}
+	c.Dir = filepath.Clean(filepath.Join(c.Dir, path))
+}
+
 // ID returns the unique ID of this instance, formatted as:
 // "test-name:instance-name".
 func (c *Bin) ID() string {

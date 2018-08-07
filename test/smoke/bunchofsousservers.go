@@ -3,7 +3,6 @@ package smoke
 import (
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"testing"
 
@@ -29,10 +28,8 @@ func newBunchOfSousServers(t *testing.T, f fixtureConfig) (*bunchOfSousServers, 
 		return nil, err
 	}
 
-	gdmDir := path.Join(f.BaseDir, "remote-gdm")
-	if err := createRemoteGDM(gdmDir, f.InitialState); err != nil {
-		return nil, err
-	}
+	gdmDir := f.newEmptyDir("remote-gdm")
+	createRemoteGDM(t, f, "serverbunch1", gdmDir, f.InitialState)
 
 	binPath := sousBin
 
@@ -60,44 +57,31 @@ func newBunchOfSousServers(t *testing.T, f fixtureConfig) (*bunchOfSousServers, 
 	}, nil
 }
 
-func createRemoteGDM(gdmDir string, state *sous.State) error {
+func createRemoteGDM(t *testing.T, f fixtureConfig, clientName, gdmDir string, state *sous.State) {
 
-	gdmDir2 := gdmDir
-	gdmDir = gdmDir + "-temp"
+	g := newGitClient(t, f, "serverbunch1")
+	tempGDMDir := f.newEmptyDir(gdmDir + "-temp")
+	g.CD(tempGDMDir)
 
-	if err := os.MkdirAll(gdmDir, 0777); err != nil {
-		return err
-	}
+	g.init(t, f, gitRepoSpec{
+		OriginURL: "none",
+		UserName:  "serverbunch1",
+		UserEmail: "serverbunch1@example.org",
+	})
 
-	dsm := storage.NewDiskStateManager(gdmDir, logging.SilentLogSet())
+	dsm := storage.NewDiskStateManager(tempGDMDir, logging.SilentLogSet())
 	if err := dsm.WriteState(state, sous.User{}); err != nil {
-		return err
+		t.Fatalf("writing initial state: %s", err)
 	}
 
-	if err := doCMD(gdmDir, "git", "init"); err != nil {
-		return err
-	}
-	if err := doCMD(gdmDir, "git", "config", "user.name", "Sous Test"); err != nil {
-		return err
-	}
-	if err := doCMD(gdmDir, "git", "config", "user.email", "soustest@example.com"); err != nil {
-		return err
-	}
-	if err := doCMD(gdmDir, "git", "add", "."); err != nil {
-		return err
-	}
-	if err := doCMD(gdmDir, "git", "commit", "-a", "-m", "initial commit"); err != nil {
-		return err
-	}
+	g.MustRun(t, "add", nil, ".")
+	g.MustRun(t, "commit", nil, "-m", "initial commit: "+clientName)
+	g.CD("..")
+	g.MustRun(t, "clone", nil, "--bare", tempGDMDir, gdmDir)
 
-	if err := doCMD(gdmDir+"/..", "git", "clone", "--bare", gdmDir, gdmDir2); err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *bunchOfSousServers) configure(t *testing.T, f fixtureConfig) error {
-	t.Helper()
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr

@@ -158,9 +158,12 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousClient {
 	t.Helper()
 
 	// Setup project git repo.
-	g := newGitClient(t, f, "gitclient1")
+	g := newGitClient(t, f.fixtureConfig, "gitclient1")
 
-	projectDir := g.configureRepo(t, f, "projects/project1", gitRepoSpec{
+	projectDir := f.newEmptyDir("project1")
+	g.CD(projectDir)
+
+	g.init(t, f.fixtureConfig, gitRepoSpec{
 		UserName:  "Sous User 1",
 		UserEmail: "sous-user1@example.com",
 		OriginURL: "git@github.com:user1/repo1.git",
@@ -173,7 +176,7 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousClient {
 		g.MustRun(t, "add", nil, filePath)
 	}
 
-	g.MustRun(t, "commit", nil, "-m", "initial commit")
+	g.MustRun(t, "commit", nil, "-m", "initial commit: "+f.TestName)
 
 	client := f.Client
 	client.Dir = projectDir

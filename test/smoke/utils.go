@@ -84,6 +84,11 @@ func mustGetSousBin() string {
 // full path.
 func makeEmptyDir(baseDir, dir string) string {
 	dir = path.Join(baseDir, dir)
+	makeEmptyDirAbs(dir)
+	return dir
+}
+
+func makeEmptyDirAbs(dir string) {
 	if dirExistsAndIsNotEmpty(dir) {
 		panic(fmt.Errorf("dir %q already exists and is not empty", dir))
 	}
@@ -93,7 +98,6 @@ func makeEmptyDir(baseDir, dir string) string {
 	if err := os.MkdirAll(dir, 0777); err != nil {
 		panic(fmt.Errorf("creating dir %q: %s", dir, err))
 	}
-	return dir
 }
 
 // makeFile attempts to write bytes to baseDir/fileName and returns the full

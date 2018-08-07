@@ -78,10 +78,21 @@ func newFixtureConfig(testName string, s testmatrix.Scenario) fixtureConfig {
 	}
 }
 
+func (f *fixtureBase) absPath(path string) string {
+	if strings.HasPrefix(path, f.BaseDir) {
+		return path
+	}
+	return filepath.Join(f.BaseDir, path)
+}
+
+func (f *fixtureBase) newEmptyDir(path string) string {
+	path = f.absPath(path)
+	makeEmptyDirAbs(path)
+	return path
+}
+
 // newFixture transforms a testmatrix.Scenario into a sous-specific fixture.
 func newFixture(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
-	t.Helper()
-
 	config := newFixtureConfig(t.Name(), s)
 
 	boss, err := newBunchOfSousServers(t, config)

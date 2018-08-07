@@ -9,10 +9,10 @@ type gitClient struct {
 	Bin
 }
 
-func newGitClient(t *testing.T, f *fixture, name string) *gitClient {
+func newGitClient(t *testing.T, f fixtureConfig, name string) *gitClient {
 	t.Helper()
 	baseDir := filepath.Join(f.BaseDir, name)
-	bin := NewBin(t, "git", "gitclient1", baseDir, f.Finished)
+	bin := NewBin(t, "git", name, baseDir, f.Finished)
 	addGitEnvVars(bin.Env)
 	return &gitClient{
 		Bin: bin,
@@ -23,10 +23,9 @@ type gitRepoSpec struct {
 	UserName, UserEmail, OriginURL string
 }
 
-func (g *gitClient) configureRepo(t *testing.T, f *fixture, dir string, spec gitRepoSpec) string {
+func (g *gitClient) init(t *testing.T, f fixtureConfig, spec gitRepoSpec) {
 	t.Helper()
 	g.Bin.Configure()
-	g.Bin.Dir = makeEmptyDir(f.BaseDir, dir)
 
 	// Ensure we cannot see a global git config file.
 	g.MustFail(t, "config", nil, "--global", "-l")
@@ -40,6 +39,4 @@ func (g *gitClient) configureRepo(t *testing.T, f *fixture, dir string, spec git
 
 	// Dump config to logs.
 	g.MustRun(t, "config", nil, "-l")
-
-	return g.Bin.Dir
 }
