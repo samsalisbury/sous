@@ -51,6 +51,11 @@ func (smg *SousMetadataSet) Execute(args []string) cmdr.Result {
 		if !smg.ResolveFilter.FilterClusterName(cname) {
 			continue
 		}
+
+		if depspec.Metadata == nil {
+			depspec.Metadata = map[string]string{}
+			mani.Deployments[cname] = depspec
+		}
 		depspec.Metadata[key] = value
 	}
 
