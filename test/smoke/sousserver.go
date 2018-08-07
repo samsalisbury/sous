@@ -58,7 +58,7 @@ func seedDB(config *config.Config, state *sous.State) error {
 	return mgr.WriteState(state, sous.User{})
 }
 
-func (i *sousServer) configure(config *config.Config, remoteGDMDir string, f fixtureConfig) error {
+func (i *sousServer) configure(t *testing.T, f fixtureConfig, config *config.Config, remoteGDMDir string) error {
 
 	// TODO SS: Seed DB only when test starts.
 	if err := seedDB(config, f.InitialState); err != nil {
@@ -78,19 +78,14 @@ func (i *sousServer) configure(config *config.Config, remoteGDMDir string, f fix
 		"config.yaml": string(configYAML),
 	})
 
-	// TODO SS: use gitclient to do the below setup.
-	gdmDir := i.StateDir
-	if err := doCMD(gdmDir+"/..", "git", "clone", remoteGDMDir, gdmDir); err != nil {
-		return err
-	}
-	username := fmt.Sprintf("Sous Server %s", i.ClusterName)
-	if err := doCMD(gdmDir, "git", "config", "user.name", username); err != nil {
-		return err
-	}
-	email := fmt.Sprintf("sous-%s@example.com", i.ClusterName)
-	if err := doCMD(gdmDir, "git", "config", "user.email", email); err != nil {
-		return err
-	}
+	gdmDir := f.newEmptyDir(i.StateDir)
+	g := newGitClient(t, f, fmt.Sprintf("server%d", i.Num))
+	g.CD(gdmDir)
+	g.cloneIntoCurrentDir(t, f, gitRepoSpec{
+		OriginURL: remoteGDMDir,
+		UserName:  fmt.Sprintf("Sous Server %s", i.ClusterName),
+		UserEmail: fmt.Sprintf("sous-%s@example.com", i.ClusterName),
+	})
 
 	return nil
 }

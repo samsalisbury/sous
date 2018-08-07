@@ -27,12 +27,24 @@ func (g *gitClient) init(t *testing.T, f fixtureConfig, spec gitRepoSpec) {
 	t.Helper()
 	g.Bin.Configure()
 
+	g.MustRun(t, "init", nil)
+	g.MustRun(t, "remote", nil, "add", "origin", spec.OriginURL)
+	g.configRepo(t, spec)
+}
+
+func (g *gitClient) cloneIntoCurrentDir(t *testing.T, f fixtureConfig, spec gitRepoSpec) {
+	t.Helper()
+	g.Bin.Configure()
+
+	g.MustRun(t, "clone", nil, spec.OriginURL, ".")
+	g.configRepo(t, spec)
+}
+
+func (g *gitClient) configRepo(t *testing.T, spec gitRepoSpec) {
 	// Ensure we cannot see a global git config file.
 	g.MustFail(t, "config", nil, "--global", "-l")
-	g.MustRun(t, "init", nil)
 
 	// TODO SS: Speed this up by just writing config file once?
-	g.MustRun(t, "remote", nil, "add", "origin", spec.OriginURL)
 	g.MustRun(t, "config", nil, "user.name", spec.UserName)
 	g.MustRun(t, "config", nil, "user.email", spec.UserEmail)
 	g.MustRun(t, "config", nil, "commit.gpgsign", "false")
