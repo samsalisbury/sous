@@ -37,8 +37,8 @@ func (sj *Jenkins) mergeDefaults(metadata map[string]string) map[string]interfac
 	return merge
 }
 
-// place holder for generating map
-func (sj *Jenkins) generateFileFromMap(jenkinsConfig map[string]interface{}) string {
+// generateJenkinsPipelineString returns string based off the config
+func (sj *Jenkins) generateJenkinsPipelineString(jenkinsConfig map[string]interface{}) string {
 
 	templ := sj.returnTemplate()
 
@@ -48,6 +48,7 @@ func (sj *Jenkins) generateFileFromMap(jenkinsConfig map[string]interface{}) str
 	return pipeLine
 }
 
+// saveFile writes out Jenkinsfile to current folder
 func (sj *Jenkins) saveFile(pipeline string) error {
 
 	//	dir, err := os.Getwd()
@@ -97,7 +98,7 @@ func (sj *Jenkins) Do() error {
 
 	messages.ReportLogFieldsMessageWithIDs("Merged Config Data", logging.ExtraDebug1Level, sj.LogSink, jenkinsConfig)
 
-	jenkinsPipelineString := sj.generateFileFromMap(jenkinsConfig)
+	jenkinsPipelineString := sj.generateJenkinsPipelineString(jenkinsConfig)
 
 	messages.ReportLogFieldsMessageWithIDs("PipeLine", logging.ExtraDebug1Level, sj.LogSink, jenkinsPipelineString)
 
