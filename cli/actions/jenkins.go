@@ -24,7 +24,17 @@ type Jenkins struct {
 
 // mergeDefaults will take the metadata map, and compare with defaults and merge the two
 func (sj *Jenkins) mergeDefaults(metadata map[string]string) map[string]interface{} {
-	return make(map[string]interface{})
+	merge := make(map[string]interface{})
+
+	for k, v := range sj.DefaultJenkinsConfig {
+		if metaValue, OK := metadata[k]; OK {
+			merge[k] = metaValue
+		} else {
+			merge[k] = v
+		}
+	}
+
+	return merge
 }
 
 // place holder for generating map
