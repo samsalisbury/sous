@@ -198,12 +198,12 @@ func (di *SousGraph) buildJenkinsDefaultMap() map[string]string {
 func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
 
 	scoop := struct {
-		HTTP    *ClusterSpecificHTTPClient
-		TargetManifestID graph.TargetManifestID
-		LogSink LogSink
-		User    sous.User
-		Config  LocalSousConfig
-		TraceID sous.TraceID
+		HTTP             *ClusterSpecificHTTPClient
+		TargetManifestID TargetManifestID
+		LogSink          LogSink
+		User             sous.User
+		Config           LocalSousConfig
+		TraceID          sous.TraceID
 	}{}
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
@@ -221,8 +221,8 @@ func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
 
 	return &actions.Jenkins{
 		HTTPClient:           client,
-		TargetManifestID      scoop.TargetManifestID
-		LogSink:              scoop.LogSink.LogSink.Child("jenkins", rf, did),
+		TargetManifestID:     sous.ManifestID(scoop.TargetManifestID),
+		LogSink:              scoop.LogSink.LogSink.Child("jenkins"),
 		User:                 scoop.User,
 		Config:               scoop.Config.Config,
 		DefaultJenkinsConfig: di.buildJenkinsDefaultMap(),
