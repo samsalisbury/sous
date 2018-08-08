@@ -3,6 +3,8 @@ package sous
 import (
 	"reflect"
 	"testing"
+
+	"github.com/samsalisbury/semv"
 )
 
 func TestDeploySpec_ClusterNames(t *testing.T) {
@@ -45,6 +47,28 @@ func TestDeploySpec_Validate(t *testing.T) {
 		got, want := reflect.TypeOf(gotFlaw), reflect.TypeOf(wantFlaw)
 		if got != want {
 			t.Errorf("flaws do not match, got %d:%s; want %s", i, got, want)
+		}
+	}
+}
+
+func TestDeploySpec_Equal(t *testing.T) {
+	cases := []struct {
+		a, b DeploySpec
+		want bool
+	}{
+		{a: DeploySpec{}, b: DeploySpec{}, want: true},
+		{a: DeploySpec{Version: semv.MustParse("1")}, b: DeploySpec{}, want: false},
+	}
+
+	for _, c := range cases {
+		got := c.a.Equal(c.b)
+		if got != c.want {
+			t.Fatalf("got %v.Equal(%v) == %t; want %t", c.a, c.b, got, c.want)
+		}
+
+		gotReverse := c.b.Equal(c.a)
+		if got != gotReverse {
+			t.Errorf("Equal method is not transverse")
 		}
 	}
 }
