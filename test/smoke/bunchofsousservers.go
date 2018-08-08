@@ -3,12 +3,10 @@ package smoke
 import (
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"testing"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/storage"
 	sous "github.com/opentable/sous/lib"
@@ -24,33 +22,32 @@ type bunchOfSousServers struct {
 	Stop         func() error
 }
 
-func newBunchOfSousServers(t *testing.T, baseDir string, fcfg fixtureConfig, finished <-chan struct{}) (*bunchOfSousServers, error) {
-	if err := os.MkdirAll(baseDir, 0777); err != nil {
+func newBunchOfSousServers(t *testing.T, f fixtureConfig) (*bunchOfSousServers, error) {
+	// TODO SS: This should have already happened..
+	if err := os.MkdirAll(f.BaseDir, 0777); err != nil {
 		return nil, err
 	}
 
-	state := fcfg.startState
-
-	gdmDir := path.Join(baseDir, "remote-gdm")
-	if err := createRemoteGDM(gdmDir, state); err != nil {
-		return nil, err
-	}
+	gdmDir := f.newEmptyDir("remote-gdm")
+	createRemoteGDM(t, f, "serverbunch1", gdmDir, f.InitialState)
 
 	binPath := sousBin
+
+	state := f.InitialState
 
 	count := len(state.Defs.Clusters)
 	instances := make([]*sousServer, count)
 	addrs := freePortAddrs("127.0.0.1", count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
-		inst, err := makeInstance(t, binPath, i, clusterName, baseDir, addrs[i], finished)
+		inst, err := makeInstance(t, f, binPath, i, clusterName, addrs[i])
 		if err != nil {
 			return nil, errors.Wrapf(err, "making test instance %d", i)
 		}
 		instances[i] = inst
 	}
 	return &bunchOfSousServers{
-		BaseDir:      baseDir,
+		BaseDir:      f.BaseDir,
 		RemoteGDMDir: gdmDir,
 		Count:        count,
 		Instances:    instances,
@@ -60,44 +57,31 @@ func newBunchOfSousServers(t *testing.T, baseDir string, fcfg fixtureConfig, fin
 	}, nil
 }
 
-func createRemoteGDM(gdmDir string, state *sous.State) error {
+func createRemoteGDM(t *testing.T, f fixtureConfig, clientName, gdmDir string, state *sous.State) {
 
-	gdmDir2 := gdmDir
-	gdmDir = gdmDir + "-temp"
+	g := newGitClient(t, f, "serverbunch1")
+	tempGDMDir := f.newEmptyDir(gdmDir + "-temp")
+	g.CD(tempGDMDir)
 
-	if err := os.MkdirAll(gdmDir, 0777); err != nil {
-		return err
-	}
+	g.init(t, f, gitRepoSpec{
+		OriginURL: "none",
+		UserName:  "serverbunch1",
+		UserEmail: "serverbunch1@example.org",
+	})
 
-	dsm := storage.NewDiskStateManager(gdmDir, logging.SilentLogSet())
+	dsm := storage.NewDiskStateManager(tempGDMDir, logging.SilentLogSet())
 	if err := dsm.WriteState(state, sous.User{}); err != nil {
-		return err
+		t.Fatalf("writing initial state: %s", err)
 	}
 
-	if err := doCMD(gdmDir, "git", "init"); err != nil {
-		return err
-	}
-	if err := doCMD(gdmDir, "git", "config", "user.name", "Sous Test"); err != nil {
-		return err
-	}
-	if err := doCMD(gdmDir, "git", "config", "user.email", "soustest@example.com"); err != nil {
-		return err
-	}
-	if err := doCMD(gdmDir, "git", "add", "."); err != nil {
-		return err
-	}
-	if err := doCMD(gdmDir, "git", "commit", "-a", "-m", "initial commit"); err != nil {
-		return err
-	}
+	g.MustRun(t, "add", nil, ".")
+	g.MustRun(t, "commit", nil, "-m", "initial commit: "+clientName)
+	g.CD("..")
+	g.MustRun(t, "clone", nil, "--bare", tempGDMDir, gdmDir)
 
-	if err := doCMD(gdmDir+"/..", "git", "clone", "--bare", gdmDir, gdmDir2); err != nil {
-		return err
-	}
-	return nil
 }
 
-func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg fixtureConfig) error {
-	t.Helper()
+func (c *bunchOfSousServers) configure(t *testing.T, f fixtureConfig) error {
 	siblingURLs := make(map[string]string, c.Count)
 	for _, i := range c.Instances {
 		siblingURLs[i.ClusterName] = "http://" + i.Addr
@@ -131,9 +115,9 @@ func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg 
 				Host:   host,
 				Port:   dbport,
 			},
-			DatabasePrimary: fcfg.matrix.dbPrimary,
+			DatabasePrimary: f.Scenario.dbPrimary,
 			Docker: docker.Config{
-				RegistryHost: envDesc.RegistryName(),
+				RegistryHost: f.EnvDesc.RegistryName(),
 			},
 			User: sous.User{
 				Name:  "Sous Server " + i.ClusterName,
@@ -141,14 +125,15 @@ func (c *bunchOfSousServers) configure(t *testing.T, envDesc desc.EnvDesc, fcfg 
 			},
 		}
 		config.Logging.Basic.Level = "debug"
-		if err := i.configure(config, c.RemoteGDMDir, fcfg); err != nil {
+		if err := i.configure(t, f, config, c.RemoteGDMDir); err != nil {
 			return errors.Wrapf(err, "configuring instance %d", i)
 		}
 	}
 	return nil
 }
 
-func (c *bunchOfSousServers) Start(t *testing.T, sousBin string) error {
+func (c *bunchOfSousServers) Start(t *testing.T) {
+	t.Helper()
 	var started []*sousServer
 	// Set the stop func first in case starting returns early.
 	c.Stop = func() error {
@@ -165,7 +150,7 @@ func (c *bunchOfSousServers) Start(t *testing.T, sousBin string) error {
 	}
 	for _, i := range c.Instances {
 		i.Start(t)
+		// Note: the value of started is only used in the closure above.
 		started = append(started, i)
 	}
-	return nil
 }

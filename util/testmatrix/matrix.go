@@ -25,8 +25,12 @@ type Binding struct {
 }
 
 // New returns a new Matrix.
-func New() Matrix {
-	return Matrix{dimensions: map[string]map[string]interface{}{}}
+func New(dimensions ...Dimension) Matrix {
+	m := Matrix{dimensions: map[string]map[string]interface{}{}}
+	for _, d := range dimensions {
+		m.AddDimension(d.Name, d.Desc, d.Values)
+	}
+	return m
 }
 
 // PrintDimensions writes the dimensions an allowed values to stdout.

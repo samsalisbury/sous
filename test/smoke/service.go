@@ -21,6 +21,7 @@ type Service struct {
 
 // NewService returns a new service bound to the provided binary.
 func NewService(bin Bin) *Service {
+	bin.ShouldStillBeRunningAfterTest = true
 	return &Service{
 		Bin:             bin,
 		ReadyForCleanup: make(chan struct{}),
@@ -30,8 +31,10 @@ func NewService(bin Bin) *Service {
 // Start starts this service.
 func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string) {
 	t.Helper()
-
-	prepared := s.Command(t, subcmd, flags, args...)
+	prepared, err := s.Command(subcmd, flags, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	prepared.PreRun()
 
@@ -41,7 +44,7 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 	}
 
 	if cmd.Process == nil {
-		panic("cmd.Process nil after cmd.Start")
+		t.Fatal("cmd.Process nil after cmd.Start")
 	}
 	s.Proc = cmd.Process
 	writePID(t, s.Proc.Pid)
@@ -58,7 +61,8 @@ func (s *Service) detectPrematureExit(t *testing.T, cmd *exec.Cmd) {
 	// In this case the process ended before the test finished.
 	case wr := <-s.waitChan(cmd):
 		rtLog("SERVER CRASHED: exit code %d: %s; logs follow:", wr.exitCode(), id)
-		s.DumpTail(t, 25)
+		s.DumpTail(t, 3)
+		rtLog("END SERVER CRASH LOG")
 	// In this case the process is still running.
 	case <-s.TestFinished:
 		// OK, test finished before this process exited.

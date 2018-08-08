@@ -63,6 +63,7 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&si.DeployFilterFlags.Flavor, "flavor", "", flavorFlagHelp)
 	fs.StringVar(&si.DeployFilterFlags.Cluster, "cluster", "", clusterFlagHelp)
 	fs.StringVar(&si.DeployFilterFlags.Repo, "repo", "", repoFlagHelp)
+	fs.StringVar(&si.DeployFilterFlags.Offset, "offset", "", offsetFlagHelp)
 	fs.StringVar(&si.flags.Kind, "kind", "", kindFlagHelp)
 	fs.BoolVar(&si.DryRunFlag, "dryrun", false, "print out the created manifest but do not save it")
 }

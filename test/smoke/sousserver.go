@@ -23,21 +23,20 @@ type sousServer struct {
 	Num int
 }
 
-func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, addr string, finished <-chan struct{}) (*sousServer, error) {
-	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i+1))
-	stateDir := path.Join(baseDir, "state")
-
+func makeInstance(t *testing.T, f fixtureConfig, binPath string, i int, clusterName, addr string) (*sousServer, error) {
 	num := i + 1
 
-	name := fmt.Sprintf("instance%d", num)
+	name := fmt.Sprintf("server%d", num)
 
-	bin := NewBin(t, binPath, name, baseDir, finished)
+	bin := f.newBin(t, binPath, name)
 
 	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
 	bin.Env["SOUS_BUILD_NOPULL"] = "YES"
 	addGitEnvVars(bin.Env)
 
 	service := NewService(bin)
+
+	stateDir := path.Join(bin.BaseDir, "state")
 
 	return &sousServer{
 		Service:     service,
@@ -58,8 +57,10 @@ func seedDB(config *config.Config, state *sous.State) error {
 	return mgr.WriteState(state, sous.User{})
 }
 
-func (i *sousServer) configure(config *config.Config, remoteGDMDir string, fcfg fixtureConfig) error {
-	if err := seedDB(config, fcfg.startState); err != nil {
+func (i *sousServer) configure(t *testing.T, f fixtureConfig, config *config.Config, remoteGDMDir string) error {
+
+	// TODO SS: Seed DB only when test starts.
+	if err := seedDB(config, f.InitialState); err != nil {
 		return err
 	}
 
@@ -76,26 +77,19 @@ func (i *sousServer) configure(config *config.Config, remoteGDMDir string, fcfg 
 		"config.yaml": string(configYAML),
 	})
 
-	// TODO SS: use gitclient to do the below setup.
-	gdmDir := i.StateDir
-	if err := doCMD(gdmDir+"/..", "git", "clone", remoteGDMDir, gdmDir); err != nil {
-		return err
-	}
-	username := fmt.Sprintf("Sous Server %s", i.ClusterName)
-	if err := doCMD(gdmDir, "git", "config", "user.name", username); err != nil {
-		return err
-	}
-	email := fmt.Sprintf("sous-%s@example.com", i.ClusterName)
-	if err := doCMD(gdmDir, "git", "config", "user.email", email); err != nil {
-		return err
-	}
+	gdmDir := f.newEmptyDir(i.StateDir)
+	g := newGitClient(t, f, fmt.Sprintf("server%d", i.Num))
+	g.CD(gdmDir)
+	g.cloneIntoCurrentDir(t, f, gitRepoSpec{
+		OriginURL: remoteGDMDir,
+		UserName:  fmt.Sprintf("Sous Server %s", i.ClusterName),
+		UserEmail: fmt.Sprintf("sous-%s@example.com", i.ClusterName),
+	})
 
 	return nil
 }
 
 func (i *sousServer) Start(t *testing.T) {
-	t.Helper()
-
 	if !quiet() {
 		fmt.Fprintf(os.Stderr, "==> Instance %q config:\n", i.ClusterName)
 	}
