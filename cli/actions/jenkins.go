@@ -19,6 +19,7 @@ type Jenkins struct {
 	LogSink              logging.LogSink
 	User                 sous.User
 	DefaultJenkinsConfig map[string]string
+	Cluster              string
 	*config.Config
 }
 
@@ -75,23 +76,21 @@ func (sj *Jenkins) Do() error {
 	//Write out Jenkins
 	//Push back metadata
 
-	//for now going to assume metadata for Jenkins file is CI-SF located, can change this in future
 	currentConfigMap := make(map[string]string)
 	mani := sous.Manifest{}
 	_, err := sj.HTTPClient.Retrieve("/manifest", sj.TargetManifestID.QueryMap(), &mani, nil)
 
-	// Eventually will make this configuration data in config.yaml
-	clusterWithJenkinsConfig := "CI-SF"
+	clusterWithJenkinsConfig := sj.Cluster
 
 	if len(clusterWithJenkinsConfig) < 1 {
 		messages.ReportLogFieldsMessageToConsole("Please specify the JenkinsConfigCluster variable in sous config", logging.WarningLevel, sj.LogSink)
 		return fmt.Errorf("no config cluster specified")
 	}
 
-	if err != nil || mani.Deployments["CI-SF"].Metadata == nil {
-		messages.ReportLogFieldsMessageWithIDs("Couldn't determine metadata for CI-SF", logging.WarningLevel, sj.LogSink, err)
+	if err != nil || mani.Deployments[clusterWithJenkinsConfig].Metadata == nil {
+		messages.ReportLogFieldsMessageWithIDs(fmt.Sprintf("Couldn't determine metadata for %s", clusterWithJenkinsConfig), logging.WarningLevel, sj.LogSink, err)
 	} else {
-		currentConfigMap = mani.Deployments["CI-SF"].Metadata
+		currentConfigMap = mani.Deployments[clusterWithJenkinsConfig].Metadata
 	}
 
 	jenkinsConfig := sj.mergeDefaults(currentConfigMap)

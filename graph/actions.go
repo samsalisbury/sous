@@ -226,6 +226,7 @@ func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
 		LogSink:              scoop.LogSink.LogSink.Child("jenkins"),
 		User:                 scoop.User,
 		Config:               scoop.Config.Config,
+		Cluster:              opts.DFF.Cluster,
 		DefaultJenkinsConfig: di.buildJenkinsDefaultMap(),
 	}, nil
 }
