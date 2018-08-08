@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
-	"path"
 	"strings"
 	"testing"
 	"time"
@@ -25,9 +24,8 @@ type sousClient struct {
 
 func makeClient(t *testing.T, f fixtureConfig, sousBin string) *sousClient {
 	clientName := "client1"
-	baseDir := path.Join(f.BaseDir, clientName)
 	c := &sousClient{
-		Bin:           NewBin(t, sousBin, clientName, baseDir, f.Finished),
+		Bin:           f.newBin(t, sousBin, clientName),
 		FixtureConfig: f,
 	}
 

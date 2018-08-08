@@ -40,7 +40,7 @@ func newBunchOfSousServers(t *testing.T, f fixtureConfig) (*bunchOfSousServers, 
 	addrs := freePortAddrs("127.0.0.1", count)
 	for i := 0; i < count; i++ {
 		clusterName := state.Defs.Clusters.Names()[i]
-		inst, err := makeInstance(t, binPath, i, clusterName, f.BaseDir, addrs[i], f.Finished)
+		inst, err := makeInstance(t, f, binPath, i, clusterName, addrs[i])
 		if err != nil {
 			return nil, errors.Wrapf(err, "making test instance %d", i)
 		}

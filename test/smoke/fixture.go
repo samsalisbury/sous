@@ -91,6 +91,11 @@ func (f *fixtureBase) newEmptyDir(path string) string {
 	return path
 }
 
+func (f *fixtureBase) newBin(t *testing.T, path, instanceName string) Bin {
+	binBaseDir := f.absPath(filepath.Join("actors", instanceName))
+	return NewBin(t, path, instanceName, binBaseDir, f.BaseDir, f.Finished)
+}
+
 // newFixture transforms a testmatrix.Scenario into a sous-specific fixture.
 func newFixture(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
 	config := newFixtureConfig(t.Name(), s)

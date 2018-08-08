@@ -19,13 +19,21 @@ import (
 
 // Bin represents a binary under test.
 type Bin struct {
-	TestName     string
+	TestName string
+	// BinPath is the absolute path to the executable file.
+	BinPath string
+	// BinName is the name of the executable file.
+	BinName string
+	// BaseDir is the root for logs/config files and other ancillary files.
+	BaseDir   string
+	ConfigDir string
+	LogDir    string
+	// InstanceName is used to identify this instance in test output.
 	InstanceName string
-	BinName      string
-	BaseDir      string
-	BinPath      string
-	ConfigDir    string
-	LogDir       string
+	// RootDir is used to print current directory path in test output.
+	// The printed path is Dir relative to RootDir.
+	RootDir string
+
 	// Dir is the working directory.
 	Dir string
 	// Env are persistent env vars to pass to invocations.
@@ -35,13 +43,14 @@ type Bin struct {
 	MassageArgs  func([]string) []string
 	TestFinished <-chan struct{}
 
-	// This should is set to true for servers etc, it enables crash detection.
+	// ShouldStillBeRunningAfterTest should is set to true for servers etc, it
+	// enables crash detection.
 	ShouldStillBeRunningAfterTest bool
 }
 
 // NewBin returns a new minimal Bin, all files will be created in subdirectories
 // of baseDir.
-func NewBin(t *testing.T, path, name, baseDir string, finished <-chan struct{}) Bin {
+func NewBin(t *testing.T, path, name, baseDir, rootDir string, finished <-chan struct{}) Bin {
 	illegalChars := ":/>"
 	if strings.ContainsAny(name, illegalChars) {
 		log.Panicf("name %q contains at least one illegal character from %q", name, illegalChars)
@@ -50,12 +59,13 @@ func NewBin(t *testing.T, path, name, baseDir string, finished <-chan struct{}) 
 	return Bin{
 		TestName:     t.Name(),
 		BinPath:      path,
-		InstanceName: name,
 		BinName:      binName,
 		BaseDir:      baseDir,
-		Env:          map[string]string{},
 		ConfigDir:    filepath.Join(baseDir, "config"),
 		LogDir:       filepath.Join(baseDir, "logs"),
+		InstanceName: name,
+		RootDir:      rootDir,
+		Env:          map[string]string{},
 		TestFinished: finished,
 	}
 }
@@ -258,7 +268,7 @@ func (c *Bin) configureCommand(i invocation) (*PreparedCmd, error) {
 	preRun := func() error {
 		relPath := "/"
 		if cmd.Dir != "" {
-			relPath += mustGetRelPath(c.BaseDir, cmd.Dir)
+			relPath += mustGetRelPath(c.RootDir, cmd.Dir)
 		}
 		cmdStr := fmt.Sprintf("%s$> %s", relPath, i)
 		rtLog("%s:%s", c.ID(), cmdStr)

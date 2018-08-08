@@ -23,21 +23,20 @@ type sousServer struct {
 	Num int
 }
 
-func makeInstance(t *testing.T, binPath string, i int, clusterName, baseDir, addr string, finished <-chan struct{}) (*sousServer, error) {
-	baseDir = path.Join(baseDir, fmt.Sprintf("instance%d", i+1))
-	stateDir := path.Join(baseDir, "state")
-
+func makeInstance(t *testing.T, f fixtureConfig, binPath string, i int, clusterName, addr string) (*sousServer, error) {
 	num := i + 1
 
-	name := fmt.Sprintf("instance%d", num)
+	name := fmt.Sprintf("server%d", num)
 
-	bin := NewBin(t, binPath, name, baseDir, finished)
+	bin := f.newBin(t, binPath, name)
 
 	bin.Env["SOUS_CONFIG_DIR"] = bin.ConfigDir
 	bin.Env["SOUS_BUILD_NOPULL"] = "YES"
 	addGitEnvVars(bin.Env)
 
 	service := NewService(bin)
+
+	stateDir := path.Join(bin.BaseDir, "state")
 
 	return &sousServer{
 		Service:     service,

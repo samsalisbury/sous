@@ -1,7 +1,6 @@
 package smoke
 
 import (
-	"path/filepath"
 	"testing"
 )
 
@@ -11,8 +10,7 @@ type gitClient struct {
 
 func newGitClient(t *testing.T, f fixtureConfig, name string) *gitClient {
 	t.Helper()
-	baseDir := filepath.Join(f.BaseDir, name)
-	bin := NewBin(t, "git", name, baseDir, f.Finished)
+	bin := f.newBin(t, "git", name)
 	addGitEnvVars(bin.Env)
 	return &gitClient{
 		Bin: bin,
