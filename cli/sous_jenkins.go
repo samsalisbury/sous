@@ -28,7 +28,7 @@ func (sd *SousJenkins) Help() string { return sousJenkinsHelp }
 // AddFlags adds the flags for sous init.
 func (sd *SousJenkins) AddFlags(fs *flag.FlagSet) {
 	//Not sure if I need?
-	//MustAddFlags(fs, &sd.opts.DFF, NewDeployFilterFlagsHelp)
+	MustAddFlags(fs, &sd.opts.DFF, NewDeployFilterFlagsHelp)
 }
 
 // Execute fulfills the cmdr.Executor interface.
