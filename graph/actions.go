@@ -196,7 +196,8 @@ func (di *SousGraph) buildJenkinsDefaultMap() map[string]string {
 
 // GetJenkins constructs a Jenkins Actions.
 func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
-
+	di.guardedAdd("Dryrun", DryrunOption(opts.DryRun))
+	di.guardedAdd("DeployFilterFlags", &opts.DFF)
 	scoop := struct {
 		HTTP             *ClusterSpecificHTTPClient
 		TargetManifestID TargetManifestID

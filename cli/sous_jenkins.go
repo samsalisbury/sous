@@ -10,6 +10,7 @@ import (
 // SousJenkins is the command description for `sous deploy`.
 type SousJenkins struct {
 	SousGraph *graph.SousGraph
+	opts      graph.DeployActionOpts
 }
 
 func init() { TopLevelCommands["jenkins"] = &SousJenkins{} }
@@ -26,11 +27,13 @@ func (sd *SousJenkins) Help() string { return sousJenkinsHelp }
 
 // AddFlags adds the flags for sous init.
 func (sd *SousJenkins) AddFlags(fs *flag.FlagSet) {
+	//Not sure if I need?
+	//MustAddFlags(fs, &sd.opts.DFF, NewDeployFilterFlagsHelp)
 }
 
 // Execute fulfills the cmdr.Executor interface.
 func (sd *SousJenkins) Execute(args []string) cmdr.Result {
-	jenkins, err := sd.SousGraph.GetJenkins()
+	jenkins, err := sd.SousGraph.GetJenkins(sd.opts)
 
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
