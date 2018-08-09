@@ -149,6 +149,7 @@ func (sj *Jenkins) returnJenkinsDefaultMap() map[string]string {
 		"SOUS_USE_RC":                   "YES",
 		"SOUS_VERSIONING_SCHEME":        "semver_timestamp",
 		"SOUS_JENKINSPIPELINE_VERSION":  "0.0.1",
+		"SOUS_RELEASE_BRANCH":           "master",
 	}
 }
 
@@ -227,7 +228,7 @@ pipeline {
     }
     stage('Git statuses deploy CI') {
       when{
-        branch 'master'
+        branch '{{SOUS_RELEASE_BRANCH}}'
           expression { params.SOUS_DEPLOY_CI == 'YES' }
       }
       steps {
@@ -238,7 +239,7 @@ pipeline {
     }
     stage('Git statuses deploy PP') {
       when{
-        branch 'master'
+        branch '{{SOUS_RELEASE_BRANCH}}'
           expression { params.SOUS_DEPLOY_PP == 'YES' }
       }
       steps {
@@ -249,7 +250,7 @@ pipeline {
     }
     stage('Git statuses PROD') {
       when{
-        branch 'master'
+        branch '{{SOUS_RELEASE_BRANCH}}'
           expression { params.SOUS_DEPLOY_PROD == 'YES' }
       }
       steps {
@@ -261,7 +262,7 @@ pipeline {
     }
     stage('Git statuses RC') {
       when{
-        branch 'master'
+        branch '{{SOUS_RELEASE_BRANCH}}'
           expression { params.SOUS_USE_RC == 'YES' }
       }
       steps {
@@ -436,7 +437,7 @@ pipeline {
     }
     stage('Master branch deploy'){
       when{
-        branch 'master'
+        branch '{{SOUS_RELEASE_BRANCH}}'
       }
       parallel {
         stage('Deploy ci-sf') {
