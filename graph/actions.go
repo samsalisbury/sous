@@ -176,25 +176,6 @@ func (di *SousGraph) GetAddArtifact(opts ArtifactOpts) (actions.Action, error) {
 	}, nil
 }
 
-func (di *SousGraph) buildJenkinsDefaultMap() map[string]string {
-	return map[string]string{
-		"SOUS_DEPLOY_CI":                "YES",
-		"SOUS_DEPLOY_PP":                "YES",
-		"SOUS_DEPLOY_PROD":              "YES",
-		"SOUS_INTEGRATION_TEST":         "YES",
-		"SOUS_INTEGRATION_TEST_COMMAND": "make integration",
-		"SOUS_SMOKE_TEST":               "YES",
-		"SOUS_SMOKE_TEST_COMMAND":       "make smoke",
-		"SOUS_STATIC_TEST":              "YES",
-		"SOUS_STATIC_TEST_COMMAND":      "make static",
-		"SOUS_UNIT_TEST":                "YES",
-		"SOUS_UNIT_TEST_COMMAND":        "make unit",
-		"SOUS_USE_RC":                   "YES",
-		"SOUS_VERSIONING_SCHEME":        "semver_timestamp",
-		"SOUS_JENKINSPIPELINE_VERSION":  "0.0.1",
-	}
-}
-
 // GetJenkins constructs a Jenkins Actions.
 func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
 	di.guardedAdd("Dryrun", DryrunOption(opts.DryRun))
@@ -228,7 +209,6 @@ func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
 		User:                 scoop.User,
 		Config:               scoop.Config.Config,
 		Cluster:              opts.DFF.Cluster,
-		DefaultJenkinsConfig: di.buildJenkinsDefaultMap(),
 	}, nil
 }
 

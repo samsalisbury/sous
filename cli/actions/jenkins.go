@@ -14,12 +14,11 @@ import (
 
 // Jenkins is used to issue the command to make a new Deployment current for it's SourceID.
 type Jenkins struct {
-	HTTPClient           restful.HTTPClient
-	TargetManifestID     sous.ManifestID
-	LogSink              logging.LogSink
-	User                 sous.User
-	DefaultJenkinsConfig map[string]string
-	Cluster              string
+	HTTPClient       restful.HTTPClient
+	TargetManifestID sous.ManifestID
+	LogSink          logging.LogSink
+	User             sous.User
+	Cluster          string
 	*config.Config
 }
 
@@ -27,7 +26,7 @@ type Jenkins struct {
 func (sj *Jenkins) mergeDefaults(metadata map[string]string) map[string]interface{} {
 	merge := make(map[string]interface{})
 
-	for k, v := range sj.DefaultJenkinsConfig {
+	for k, v := range sj.returnJenkinsDefaultMap() {
 		if metaValue, OK := metadata[k]; OK {
 			merge[k] = metaValue
 		} else {
@@ -68,6 +67,15 @@ func (sj *Jenkins) saveFile(pipeline string) error {
 	return nil
 }
 
+// updateMetaData merge back all config to actual metadata
+func (sj *Jenkins) updateMetaData(metadata map[string]string, config map[string]interface{}) map[string]string {
+
+	for k, v := range config {
+		metadata[k] = v.(string)
+	}
+	return metadata
+}
+
 // Do implements Action on Jenkins.
 func (sj *Jenkins) Do() error {
 
@@ -76,7 +84,6 @@ func (sj *Jenkins) Do() error {
 	//Write out Jenkins
 	//Push back metadata
 
-	currentConfigMap := make(map[string]string)
 	mani := sous.Manifest{}
 	up, err := sj.HTTPClient.Retrieve("/manifest", sj.TargetManifestID.QueryMap(), &mani, nil)
 	if err != nil {
@@ -90,6 +97,7 @@ func (sj *Jenkins) Do() error {
 		return fmt.Errorf("no config cluster specified")
 	}
 
+	currentConfigMap := make(map[string]string)
 	if err != nil || mani.Deployments[clusterWithJenkinsConfig].Metadata == nil {
 		messages.ReportLogFieldsMessageWithIDs(fmt.Sprintf("Couldn't determine metadata for %s", clusterWithJenkinsConfig), logging.WarningLevel, sj.LogSink, err)
 	} else {
@@ -119,12 +127,23 @@ func (sj *Jenkins) Do() error {
 	return sj.saveFile(jenkinsPipelineString)
 }
 
-func (sj *Jenkins) updateMetaData(metadata map[string]string, config map[string]interface{}) map[string]string {
-
-	for k, v := range config {
-		metadata[k] = v.(string)
+func (sj *Jenkins) returnJenkinsDefaultMap() map[string]string {
+	return map[string]string{
+		"SOUS_DEPLOY_CI":                "YES",
+		"SOUS_DEPLOY_PP":                "YES",
+		"SOUS_DEPLOY_PROD":              "YES",
+		"SOUS_INTEGRATION_TEST":         "YES",
+		"SOUS_INTEGRATION_TEST_COMMAND": "make integration",
+		"SOUS_SMOKE_TEST":               "YES",
+		"SOUS_SMOKE_TEST_COMMAND":       "make smoke",
+		"SOUS_STATIC_TEST":              "YES",
+		"SOUS_STATIC_TEST_COMMAND":      "make static",
+		"SOUS_UNIT_TEST":                "YES",
+		"SOUS_UNIT_TEST_COMMAND":        "make unit",
+		"SOUS_USE_RC":                   "YES",
+		"SOUS_VERSIONING_SCHEME":        "semver_timestamp",
+		"SOUS_JENKINSPIPELINE_VERSION":  "0.0.1",
 	}
-	return metadata
 }
 
 func (sj *Jenkins) returnTemplate() string {
