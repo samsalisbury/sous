@@ -108,6 +108,7 @@ func (sj *Jenkins) Do() error {
 
 	messages.ReportLogFieldsMessageWithIDs("Merged Config Data", logging.ExtraDebug1Level, sj.LogSink, jenkinsConfig)
 
+	jenkinsConfig["SOUS_MANIFEST_ID"] = sj.TargetManifestID.String()
 	jenkinsPipelineString := sj.generateJenkinsPipelineString(jenkinsConfig)
 
 	messages.ReportLogFieldsMessageWithIDs("PipeLine", logging.ExtraDebug1Level, sj.LogSink, jenkinsPipelineString)
@@ -153,6 +154,7 @@ func (sj *Jenkins) returnTemplate() string {
 pipeline {
   agent { label 'mesos-qa-uswest2' }
   // Version {{SOUS_JENKINSPIPELINE_VERSION}}
+  // ManifestID: {{SOUS_MANIFEST_ID}}
   options {
     // Set to 1 day to allow people to input whether they want to go to Prod on the Master branch build/deploys
     timeout(time: 1, unit: 'DAYS')
