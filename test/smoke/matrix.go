@@ -1,69 +1,43 @@
 package smoke
 
 import (
-	"fmt"
-	"os"
-	"strings"
-	"testing"
-
-	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
-	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/testmatrix"
 )
 
-type fixtureConfig struct {
-	matrix      matrixCombo
-	startState  *sous.State
-	envDesc     desc.EnvDesc
-	singularity *testSingularity
-	// TODO SS: Remove this in favour of funcs that isolate for particular
-	// pieces of data.
-	clusterSuffix string
+// matrix returns the defined sous smoke test matrix.
+func matrix() testmatrix.Matrix {
+	return testmatrix.New(
+		testmatrix.Dimension{
+			Name: "store",
+			Desc: "GDM storage to use",
+			Values: map[string]interface{}{
+				"db":  true,
+				"git": false,
+			},
+		},
+		testmatrix.Dimension{
+			Name: "project",
+			Desc: "type of project to build",
+			Values: map[string]interface{}{
+				"simple": projects.SingleDockerfile,
+				"split":  projects.SplitBuild,
+			},
+		},
+	)
 }
 
-type matrixCombo struct {
+// scenario is an unwrapped testmatrix.Scenario formed from the matrix
+// definition returned by matrix().
+type scenario struct {
 	dbPrimary bool
 	projects  projectList
 }
 
-// matrix returns the defined sous smoke test matrix.
-func matrix() testmatrix.Matrix {
-	m := testmatrix.New()
-	m.AddDimension("store", "GDM storage to use", map[string]interface{}{
-		"db":  true,
-		"git": false,
-	})
-	m.AddDimension("project", "type of project to build", map[string]interface{}{
-		"simple": projects.SingleDockerfile,
-		"split":  projects.SplitBuild,
-	})
-	return m
-}
-
-func makeFixtureConfig(t *testing.T, c testmatrix.Scenario) fixtureConfig {
-	envDesc := getEnvDesc()
-	clusterSuffix := strings.Replace(t.Name(), "/", "_", -1)
-	fmt.Fprintf(os.Stdout, "Cluster suffix: %s", clusterSuffix)
-	s9y := newSingularity(envDesc.SingularityURL())
-	s9y.ClusterSuffix = clusterSuffix
-	state := sous.StateFixture(sous.StateFixtureOpts{
-		ClusterCount:  3,
-		ManifestCount: 3,
-		ClusterSuffix: clusterSuffix,
-	})
-	addURLsToState(state, envDesc)
-	return fixtureConfig{
-		matrix:        makeMatrixCombo(c),
-		envDesc:       envDesc,
-		clusterSuffix: clusterSuffix,
-		singularity:   s9y,
-		startState:    state,
-	}
-}
-
-func makeMatrixCombo(c testmatrix.Scenario) matrixCombo {
+// unwrapScenario transforms a generic testmatrix.Scenario into a strongly typed
+// scenario for use in this test package.
+func unwrapScenario(c testmatrix.Scenario) scenario {
 	m := c.Map()
-	return matrixCombo{
+	return scenario{
 		dbPrimary: m["store"].(bool),
 		projects:  m["project"].(projectList),
 	}

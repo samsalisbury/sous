@@ -82,66 +82,65 @@ func mustGetSousBin() string {
 
 // makeEmptyDir safely creates an empty dir "dir" inside baseDir and returns the
 // full path.
-func makeEmptyDir(t *testing.T, baseDir, dir string) string {
-	t.Helper()
+func makeEmptyDir(baseDir, dir string) string {
 	dir = path.Join(baseDir, dir)
-	if dirExistsAndIsNotEmpty(t, dir) {
-		t.Fatalf("dir %q already exists and is not empty", dir)
+	makeEmptyDirAbs(dir)
+	return dir
+}
+
+func makeEmptyDirAbs(dir string) {
+	if dirExistsAndIsNotEmpty(dir) {
+		panic(fmt.Errorf("dir %q already exists and is not empty", dir))
 	}
 	if err := os.RemoveAll(dir); err != nil {
-		t.Fatal(err)
+		panic(fmt.Errorf("removing dir %q: %s", dir, err))
 	}
 	if err := os.MkdirAll(dir, 0777); err != nil {
-		t.Fatal(err)
+		panic(fmt.Errorf("creating dir %q: %s", dir, err))
 	}
-	return dir
 }
 
 // makeFile attempts to write bytes to baseDir/fileName and returns the full
 // path to the file. It assumes the directory baseDir already exists and
 // contains no file named fileName, and will fail otherwise.
-func makeFile(t *testing.T, baseDir, fileName string, bytes []byte) string {
-	t.Helper()
+func makeFile(baseDir, fileName string, bytes []byte) string {
 	filePath := path.Join(baseDir, fileName)
 	if _, err := os.Open(filePath); err != nil {
 		if !isNotExist(err) {
-			t.Fatalf("unable to check if file %q exists: %s", filePath, err)
+			panic(fmt.Errorf("unable to check if file %q exists: %s", filePath, err))
 		}
 	} else {
-		t.Fatalf("file %q already exists", filePath)
+		panic(fmt.Errorf("file %q already exists", filePath))
 	}
 
 	if err := ioutil.WriteFile(filePath, bytes, 0777); err != nil {
-		t.Fatalf("unable to write file %q: %s", filePath, err)
+		panic(fmt.Errorf("unable to write file %q: %s", filePath, err))
 	}
 	return filePath
 }
 
-func openFileAppendOnly(t *testing.T, baseDir, fileName string) *os.File {
-	t.Helper()
+func mustOpenFileAppendOnly(baseDir, fileName string) *os.File {
 	time.Sleep(time.Second)
 	filePath := path.Join(baseDir, fileName)
-	assertDirNotExists(t, filePath)
-	if !fileExists(t, filePath) {
-		makeFile(t, baseDir, fileName, nil)
+	assertDirNotExists(filePath)
+	if !fileExists(filePath) {
+		makeFile(baseDir, fileName, nil)
 	}
 	file, err := os.OpenFile(filePath,
 		os.O_APPEND|os.O_WRONLY|os.O_SYNC, 0x777)
 	if err != nil {
-		t.Fatalf("opening file for append: %s", err)
+		panic(fmt.Errorf("opening file for append: %s", err))
 	}
 	return file
 }
 
 // makeFileString is a convenience wrapper around makeFile, using string s
 // as the bytes to be written.
-func makeFileString(t *testing.T, baseDir, fileName string, s string) string {
-	t.Helper()
-	return makeFile(t, baseDir, fileName, []byte(s))
+func makeFileString(baseDir, fileName string, s string) string {
+	return makeFile(baseDir, fileName, []byte(s))
 }
 
-func fileExists(t *testing.T, filePath string) bool {
-	t.Helper()
+func fileExists(filePath string) bool {
 	s, err := os.Stat(filePath)
 	if err == nil {
 		return s.Mode().IsRegular()
@@ -149,19 +148,16 @@ func fileExists(t *testing.T, filePath string) bool {
 	if isNotExist(err) {
 		return false
 	}
-	t.Fatalf("checking if file exists: %s", err)
-	return false
+	panic(fmt.Errorf("checking if file exists: %s", err))
 }
 
-func assertDirNotExists(t *testing.T, filePath string) {
-	t.Helper()
-	if dirExists(t, filePath) {
-		t.Fatalf("%s exists and is a directory", filePath)
+func assertDirNotExists(filePath string) {
+	if dirExists(filePath) {
+		panic(fmt.Errorf("%s exists and is a directory", filePath))
 	}
 }
 
-func dirExists(t *testing.T, filePath string) bool {
-	t.Helper()
+func dirExists(filePath string) bool {
 	s, err := os.Stat(filePath)
 	if err == nil {
 		return s.IsDir()
@@ -169,29 +165,27 @@ func dirExists(t *testing.T, filePath string) bool {
 	if isNotExist(err) {
 		return false
 	}
-	t.Fatalf("checking if dir exists: %s", err)
-	return false
+	panic(fmt.Errorf("checking if dir exists: %s", err))
 }
 
-func dirExistsAndIsNotEmpty(t *testing.T, baseDir string) bool {
-	t.Helper()
-	f, err := os.Open(baseDir)
+func dirExistsAndIsNotEmpty(dir string) bool {
+	f, err := os.Open(dir)
 	if err != nil {
 		if isNotExist(err) {
 			return false
 		}
-		t.Fatalf("Could not check dir not exists or empty: %s", err)
+		panic(fmt.Errorf("Could not check dir not exists or empty: %s", err))
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
-			t.Fatalf("failed to close file handle: %s", err)
+			panic(fmt.Errorf("failed to close file handle: %s", err))
 		}
 	}()
 	_, err = f.Readdirnames(1)
 	return err == nil || (err != io.EOF)
 }
 
-func getDataDir(t *testing.T) string {
+func getDataDir(testName string) string {
 	baseDir := os.Getenv("SMOKE_TEST_DATA_DIR")
 	from := "$SMOKE_TEST_DATA_DIR"
 	if baseDir == "" {
@@ -199,16 +193,17 @@ func getDataDir(t *testing.T) string {
 		from = "$TMPDIR"
 	}
 
-	baseDir = path.Join(baseDir, t.Name())
+	baseDir = path.Join(baseDir, testName)
 
 	// Check dir does not exist or is at least empty.
-	if dirExistsAndIsNotEmpty(t, baseDir) {
-		t.Fatalf("Test data dir already exists and is not empty: %q", baseDir)
+	if dirExistsAndIsNotEmpty(baseDir) {
+
+		panic(fmt.Errorf("Test data dir already exists and is not empty: %q", baseDir))
 	}
 
 	log.Printf("Test data in %q (from %s)", baseDir, from)
 	if err := os.MkdirAll(baseDir, 0777); err != nil {
-		t.Fatalf("Failed to create smoke test data dir %q: %s", baseDir, err)
+		panic(fmt.Errorf("Failed to create smoke test data dir %q: %s", baseDir, err))
 	}
 	return baseDir
 }
@@ -258,26 +253,17 @@ func isNotExist(err error) bool {
 		strings.Contains(err.Error(), "no such file or directory")
 }
 
-func closeFile(t *testing.T, f *os.File) (ok bool) {
-	t.Helper()
-	if err := f.Close(); err != nil {
-		t.Errorf("failed to close %s: %s", f.Name(), err)
-		return false
-	}
-	return true
-}
-
-func closeFiles(t *testing.T, fs ...*os.File) {
-	t.Helper()
-	var closeFailed bool
+func closeFiles(fs ...*os.File) error {
+	var failures []string
 	for _, f := range fs {
-		if !closeFile(t, f) {
-			closeFailed = true
+		if err := f.Close(); err != nil {
+			failures = append(failures, fmt.Sprintf("%s: %s", f.Name(), err))
 		}
 	}
-	if closeFailed {
-		t.Fatalf("failed to close some files, see above")
+	if len(failures) == 0 {
+		return nil
 	}
+	return fmt.Errorf("failed to close files: %s", strings.Join(failures, "; "))
 }
 
 var lastPort int

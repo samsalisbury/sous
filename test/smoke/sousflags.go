@@ -9,17 +9,26 @@ type sousFlags struct {
 	tag     string
 }
 
-// ManifestIDFlags returns a derived set of flags only keeping those that play a
-// part in identifying a manifest.
-func (f *sousFlags) ManifestIDFlags() *sousFlags {
+// SourceLocationFlags are flags that determine a source location.
+func (f *sousFlags) SourceLocationFlags() *sousFlags {
 	if f == nil {
 		return nil
 	}
 	return &sousFlags{
 		repo:   f.repo,
 		offset: f.offset,
-		flavor: f.flavor,
 	}
+}
+
+// ManifestIDFlags returns a derived set of flags only keeping those that play a
+// part in identifying a manifest.
+func (f *sousFlags) ManifestIDFlags() *sousFlags {
+	if f == nil {
+		return nil
+	}
+	midFlags := f.SourceLocationFlags()
+	midFlags.flavor = f.flavor
+	return midFlags
 }
 
 // ManifestIDFlags returns a derived set of flags only keeping those that play a
@@ -62,7 +71,7 @@ func (f *sousFlags) SourceIDFlags() *sousFlags {
 	if f == nil {
 		return nil
 	}
-	sidFlags := f.ManifestIDFlags()
+	sidFlags := f.SourceLocationFlags()
 	sidFlags.tag = f.tag
 	return sidFlags
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/opentable/swaggering"
 )
 
-func assertActiveStatus(t *testing.T, f *testFixture, reqID string) {
+func assertActiveStatus(t *testing.T, f *fixture, reqID string) {
 	t.Helper()
 	req := f.Singularity.MustGetRequestForDeployment(t, reqID)
 	gotStatus := req.State
@@ -19,7 +19,7 @@ func assertActiveStatus(t *testing.T, f *testFixture, reqID string) {
 	}
 }
 
-func assertSingularityRequestID(t *testing.T, f *testFixture, reqID string, want string) {
+func assertSingularityRequestID(t *testing.T, f *fixture, reqID string, want string) {
 	t.Helper()
 	req := f.Singularity.MustGetRequestForDeployment(t, reqID)
 	got := req.Request.Id
@@ -28,7 +28,7 @@ func assertSingularityRequestID(t *testing.T, f *testFixture, reqID string, want
 	}
 }
 
-func assertSingularityRequestTypeScheduled(t *testing.T, f *testFixture, reqID string) {
+func assertSingularityRequestTypeScheduled(t *testing.T, f *fixture, reqID string) {
 	t.Helper()
 	req := f.Singularity.MustGetRequestForDeployment(t, reqID)
 	gotType := req.Request.RequestType
@@ -38,7 +38,7 @@ func assertSingularityRequestTypeScheduled(t *testing.T, f *testFixture, reqID s
 	}
 }
 
-func assertSingularityRequestTypeService(t *testing.T, f *testFixture, reqID string) {
+func assertSingularityRequestTypeService(t *testing.T, f *fixture, reqID string) {
 	t.Helper()
 	req := f.Singularity.MustGetRequestForDeployment(t, reqID)
 	gotType := req.Request.RequestType
@@ -48,7 +48,7 @@ func assertSingularityRequestTypeService(t *testing.T, f *testFixture, reqID str
 	}
 }
 
-func assertNilHealthCheckOnLatestDeploy(t *testing.T, f *testFixture, reqID string) {
+func assertNilHealthCheckOnLatestDeploy(t *testing.T, f *fixture, reqID string) {
 	t.Helper()
 	dep := f.Singularity.MustGetLatestDeployForDeployment(t, reqID)
 	gotHealthcheck := dep.Deploy.Healthcheck
@@ -57,7 +57,7 @@ func assertNilHealthCheckOnLatestDeploy(t *testing.T, f *testFixture, reqID stri
 	}
 }
 
-func assertUserOnLatestDeploy(t *testing.T, f *testFixture, reqID string) {
+func assertUserOnLatestDeploy(t *testing.T, f *fixture, reqID string) {
 	t.Helper()
 	dep := f.Singularity.MustGetLatestDeployForDeployment(t, reqID)
 	if dep.DeployMarker.User != fmt.Sprintf("sous_%s", f.UserEmail) {
@@ -65,7 +65,7 @@ func assertUserOnLatestDeploy(t *testing.T, f *testFixture, reqID string) {
 	}
 }
 
-func assertNonNilHealthCheckOnLatestDeploy(t *testing.T, f *testFixture, reqID string) {
+func assertNonNilHealthCheckOnLatestDeploy(t *testing.T, f *fixture, reqID string) {
 	t.Helper()
 	dep := f.Singularity.MustGetLatestDeployForDeployment(t, reqID)
 	gotHealthcheck := dep.Deploy.Healthcheck
@@ -74,7 +74,7 @@ func assertNonNilHealthCheckOnLatestDeploy(t *testing.T, f *testFixture, reqID s
 	}
 }
 
-func assertRequestDoesNotExist(t *testing.T, f *testFixture, reqID string) {
+func assertRequestDoesNotExist(t *testing.T, f *fixture, reqID string) {
 	t.Helper()
 	var err error
 	waitFor(t, "request to be deleted", time.Minute, time.Second, func() error {

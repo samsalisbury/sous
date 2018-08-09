@@ -59,6 +59,13 @@ func (pfs *Supervisor) NewRunner(t *testing.T, m Matrix) *Runner {
 	return pf
 }
 
+// TestCount returns the number of tests that have been registered so far.
+func (pfs *Supervisor) TestCount() int {
+	pfs.mu.Lock()
+	defer pfs.mu.Unlock()
+	return len(pfs.fixtures)
+}
+
 // PrintSummary prints a summary of tests run by top-level test and as a sum
 // total. It reports tests failed, skipped, passed, and missing (when a test has
 // failed to report back any status, which should not happen under normal

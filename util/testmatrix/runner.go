@@ -59,9 +59,10 @@ func (pf *Runner) Run(name string, test Test) {
 	for _, c := range pf.matrix.scenarios() {
 		c := c
 		pf.t.Run(c.String()+"/"+name, func(t *testing.T) {
+			pf.recordTestStarted(t)
 			pf.parent.wg.Add(1)
 			t.Parallel()
-			f := pf.parent.fixtureFactory(t, c)
+			f := new(Fixture)
 			defer func() {
 				timeout := 10 * time.Second
 				defer pf.parent.wg.Done()
@@ -72,15 +73,17 @@ func (pf *Runner) Run(name string, test Test) {
 				case <-func() <-chan struct{} {
 					c := make(chan struct{})
 					go func() {
-						f.Teardown(t)
+						if *f != nil {
+							(*f).Teardown(t)
+						}
 						close(c)
 					}()
 					return c
 				}():
 				}
 			}()
-			pf.recordTestStarted(t)
-			test(t, Context{Scenario: c, F: f})
+			*f = pf.parent.fixtureFactory(t, c)
+			test(t, Context{Scenario: c, F: *f})
 		})
 	}
 }
