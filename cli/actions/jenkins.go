@@ -3,6 +3,7 @@ package actions
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
@@ -109,6 +110,8 @@ func (sj *Jenkins) Do() error {
 	messages.ReportLogFieldsMessageWithIDs("Merged Config Data", logging.ExtraDebug1Level, sj.LogSink, jenkinsConfig)
 
 	jenkinsConfig["SOUS_MANIFEST_ID"] = sj.TargetManifestID.String()
+	jenkinsConfig["SOUS_JENKINS_GENERATED_DATE"] = time.Now().Format(time.RFC822)
+
 	jenkinsPipelineString := sj.generateJenkinsPipelineString(jenkinsConfig)
 
 	messages.ReportLogFieldsMessageWithIDs("PipeLine", logging.ExtraDebug1Level, sj.LogSink, jenkinsPipelineString)
@@ -130,6 +133,7 @@ func (sj *Jenkins) Do() error {
 
 func (sj *Jenkins) returnJenkinsDefaultMap() map[string]string {
 	return map[string]string{
+		"SOUS_JENKINS_GENERATED_DATE":   "",
 		"SOUS_MANIFEST_ID":              "",
 		"SOUS_DEPLOY_CI":                "YES",
 		"SOUS_DEPLOY_PP":                "YES",
@@ -155,6 +159,7 @@ func (sj *Jenkins) returnTemplate() string {
 pipeline {
   agent { label 'mesos-qa-uswest2' }
   // Version {{SOUS_JENKINSPIPELINE_VERSION}}
+  // Generated: {{SOUS_JENKINS_GENERATED_DATE}}
   // ManifestID: {{SOUS_MANIFEST_ID}}
   options {
     // Set to 1 day to allow people to input whether they want to go to Prod on the Master branch build/deploys
