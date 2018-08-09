@@ -51,13 +51,66 @@ func TestJenkins(t *testing.T) {
 		args := upctl.Calls()[0].PassedArgs()
 		orig := sous.ManifestFixture("with-metadata")
 		mani := args.Get(0).(*sous.Manifest)
+		defaults := jenkins.returnJenkinsDefaultMap()
 		assert.Equal(t,
 			orig.Deployments["cluster-1"].Metadata["BuildBranch"],
 			mani.Deployments["cluster-1"].Metadata["BuildBranch"],
 		)
 		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_DEPLOY_CI"],
+			defaults["SOUS_DEPLOY_CI"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_DEPLOY_PP"],
+			defaults["SOUS_DEPLOY_PP"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_DEPLOY_PROD"],
+			defaults["SOUS_DEPLOY_PROD"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_INTEGRATION_TEST"],
+			defaults["SOUS_INTEGRATION_TEST"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_INTEGRATION_TEST_COMMAND"],
+			defaults["SOUS_INTEGRATION_TEST_COMMAND"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_SMOKE_TEST"],
+			defaults["SOUS_SMOKE_TEST"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_SMOKE_TEST_COMMAND"],
+			defaults["SOUS_SMOKE_TEST_COMMAND"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_STATIC_TEST"],
+			defaults["SOUS_STATIC_TEST"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_STATIC_TEST_COMMAND"],
+			defaults["SOUS_STATIC_TEST_COMMAND"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_UNIT_TEST"],
+			defaults["SOUS_UNIT_TEST"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_UNIT_TEST_COMMAND"],
+			defaults["SOUS_UNIT_TEST_COMMAND"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_USE_RC"],
+			defaults["SOUS_USE_RC"],
+		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_VERSIONING_SCHEME"],
+			defaults["SOUS_VERSIONING_SCHEME"],
+		)
+		assert.Equal(t,
 			mani.Deployments["cluster-1"].Metadata["SOUS_JENKINSPIPELINE_VERSION"],
-			jenkins.returnJenkinsDefaultMap()["SOUS_JENKINSPIPELINE_VERSION"],
+			defaults["SOUS_JENKINSPIPELINE_VERSION"],
 		)
 	}
 }
