@@ -191,6 +191,7 @@ func (di *SousGraph) buildJenkinsDefaultMap() map[string]string {
 		"SOUS_UNIT_TEST_COMMAND":        "make unit",
 		"SOUS_USE_RC":                   "YES",
 		"SOUS_VERSIONING_SCHEME":        "semver_timestamp",
+		"SOUS_JENKINSPIPELINE_VERSION":  "0.0.1",
 	}
 }
 

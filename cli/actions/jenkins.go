@@ -78,7 +78,10 @@ func (sj *Jenkins) Do() error {
 
 	currentConfigMap := make(map[string]string)
 	mani := sous.Manifest{}
-	_, err := sj.HTTPClient.Retrieve("/manifest", sj.TargetManifestID.QueryMap(), &mani, nil)
+	up, err := sj.HTTPClient.Retrieve("/manifest", sj.TargetManifestID.QueryMap(), &mani, nil)
+	if err != nil {
+		return err
+	}
 
 	clusterWithJenkinsConfig := sj.Cluster
 
@@ -101,10 +104,27 @@ func (sj *Jenkins) Do() error {
 
 	messages.ReportLogFieldsMessageWithIDs("PipeLine", logging.ExtraDebug1Level, sj.LogSink, jenkinsPipelineString)
 
-	//TODO: save back jenkinsConfig to metadata
+	depspec := mani.Deployments[clusterWithJenkinsConfig]
+	if depspec.Metadata == nil {
+		depspec.Metadata = map[string]string{}
+	}
+
+	depspec.Metadata = sj.updateMetaData(depspec.Metadata, jenkinsConfig)
+	mani.Deployments[clusterWithJenkinsConfig] = depspec
+
+	if _, err := up.Update(&mani, sj.User.HTTPHeaders()); err != nil {
+		return err
+	}
 
 	return sj.saveFile(jenkinsPipelineString)
+}
 
+func (sj *Jenkins) updateMetaData(metadata map[string]string, config map[string]interface{}) map[string]string {
+
+	for k, v := range config {
+		metadata[k] = v.(string)
+	}
+	return metadata
 }
 
 func (sj *Jenkins) returnTemplate() string {
@@ -113,7 +133,7 @@ func (sj *Jenkins) returnTemplate() string {
 #!/usr/bin/env groovy
 pipeline {
   agent { label 'mesos-qa-uswest2' }
-  // Version 0.0.1
+  // Version {{SOUS_JENKINSPIPELINE_VERSION}}
   options {
     // Set to 1 day to allow people to input whether they want to go to Prod on the Master branch build/deploys
     timeout(time: 1, unit: 'DAYS')
