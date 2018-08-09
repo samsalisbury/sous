@@ -38,6 +38,24 @@ func (f FileMap) Merge(o FileMap) FileMap {
 	return n
 }
 
+// Merge merges all fms together.
+func Merge(fms ...FileMap) FileMap {
+	fm := FileMap{}
+	for _, f := range fms {
+		fm = fm.Merge(f)
+	}
+	return fm
+}
+
+// PrefixAll prefixes all paths in this FileMap with the provided prefix.
+func (f FileMap) PrefixAll(prefix string) FileMap {
+	fm := FileMap{}
+	for name, contents := range f {
+		fm[filepath.Join(prefix, name)] = contents
+	}
+	return fm
+}
+
 // Clean deletes each file defined in f, it leaves any created directories
 // in place. If you want to nuke everything, just use os.RemoveAll(dir).
 func (f FileMap) Clean(dir string) error {

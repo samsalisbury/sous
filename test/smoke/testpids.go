@@ -45,7 +45,7 @@ func writePID(t *testing.T, pid int) {
 			t.Fatalf("cannot write to file %q: it's a directory", pidFile)
 		}
 		f, err = os.Create(pidFile)
-		defer closeFile(t, f)
+		defer closeFiles(f)
 		if err != nil {
 			t.Fatalf("could not create %q: %s", pidFile, err)
 		}
@@ -57,7 +57,7 @@ func writePID(t *testing.T, pid int) {
 			t.Fatalf("could not open %q: %s", pidFile, err)
 			return
 		}
-		defer closeFile(t, f)
+		defer closeFiles(f)
 	}
 	if psProc == nil {
 		t.Logf("Warning! Unable to write PID %d to pidfile: psProc became nil all of a sudden", pid)

@@ -2,6 +2,7 @@ package sous
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
@@ -34,6 +35,17 @@ type (
 		clusterName string
 	}
 )
+
+// ClusterNames returns the cluster names of each deployment, sorted
+// alphabetically.
+func (specs DeploySpecs) ClusterNames() []string {
+	var names []string
+	for n := range specs {
+		names = append(names, n)
+	}
+	sort.Strings(names)
+	return names
+}
 
 func (spec DeploySpec) String() string {
 	return fmt.Sprintf("%v %s", spec.Version, spec.DeployConfig.String())
