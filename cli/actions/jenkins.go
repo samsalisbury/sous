@@ -154,8 +154,7 @@ func (sj *Jenkins) returnJenkinsDefaultMap() map[string]string {
 
 func (sj *Jenkins) returnTemplate() string {
 
-	var template = `
-#!/usr/bin/env groovy
+	var template = `#!/usr/bin/env groovy
 pipeline {
   agent { label 'mesos-qa-uswest2' }
   // Version {{SOUS_JENKINSPIPELINE_VERSION}}
