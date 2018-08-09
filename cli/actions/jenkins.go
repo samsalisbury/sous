@@ -130,6 +130,7 @@ func (sj *Jenkins) Do() error {
 
 func (sj *Jenkins) returnJenkinsDefaultMap() map[string]string {
 	return map[string]string{
+		"SOUS_MANIFEST_ID":              "",
 		"SOUS_DEPLOY_CI":                "YES",
 		"SOUS_DEPLOY_PP":                "YES",
 		"SOUS_DEPLOY_PROD":              "YES",
