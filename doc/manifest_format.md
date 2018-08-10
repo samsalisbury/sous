@@ -71,7 +71,10 @@ Deployments:
       SOUS_POST_PP_TEST_COMMAND: make post-pp-test      #Default value is "make post-pp-test", evaluated if SOUS_POST_PP_TEST == "YES"
       SOUS_POST_PROD_TEST: "YES"                        #If yes, will eval SOUS_POST_PROD_TEST_COMMAND as a step, default "YES"
       SOUS_POST_PROD_TEST_COMMAND: make post-prod-test  #Default value is "make post-prod-test", evaluated if SOUS_POST_PROD_TEST == "YES"
-      SOUS_VERSIONING_SCHEME: semver_timestamp          #Possible values: semver, buildnumber, semver_timestamp.  Determines how sous build is tagged and docker image label, Default "semver_timestamp"
+      SOUS_VERSIONING_SCHEME: semver_timestamp          #Possible values: semver, jenkinsbuildnumber, semver_timestamp.  Determines how sous build is tagged and docker image label, Default "semver_timestamp"
+                                                        #semver_timestamp: Version using annotated semver git tags + timestamp
+                                                        #semver: Version using annotated semver git tags
+                                                        #jenkinsbuildnumber: Version using jenkins $BUILD_NUMBER environment variable (auto increasing number)
       SOUS_JENKINS_GENERATED_DATE:                      #Set by sous jenkins command
       SOUS_JENKINSPIPELINE_VERSION: 0.0.1               #Allows users to version the generated Jenkinsfile, manually need to change based off of need, default "0.0.1"
 
