@@ -73,7 +73,7 @@ Deployments:
       SOUS_POST_PROD_TEST_COMMAND: make post-prod-test #Default value is "make post-prod-test", evaluated if SOUS_POST_PROD_TEST == "YES"
       SOUS_VERSIONING_SCHEME: semver_timestamp      #Possible values: semver, buildnumber, semver_timestamp.  Determines how sous build is tagged and docker image label, Default "semver_timestamp"
       SOUS_JENKINS_GENERATED_DATE:                  #Set by sous jenkins command
-      SOUS_JENKINSPIPELINE_VERSION: 0.0.1           #Allows users to version this file, manually need to change based off of need, default "0.0.1"
+      SOUS_JENKINSPIPELINE_VERSION: 0.0.1           #Allows users to version the generated Jenkinsfile, manually need to change based off of need, default "0.0.1"
 
     # Env is a list of environment variables to set for each instance of
     # of this deployment.
