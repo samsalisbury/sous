@@ -150,6 +150,7 @@ func (sj *Jenkins) returnJenkinsDefaultMap() map[string]string {
 		"SOUS_VERSIONING_SCHEME":        "semver_timestamp",
 		"SOUS_JENKINSPIPELINE_VERSION":  "0.0.1",
 		"SOUS_RELEASE_BRANCH":           "master",
+		"SOUS_DEPLOY_PROD_QUERY_USER":   "YES",
 	}
 }
 
@@ -181,6 +182,8 @@ pipeline {
       string(defaultValue: '{{SOUS_DEPLOY_PROD}}', description: 'Deploy to PROD', name: 'SOUS_DEPLOY_PROD')
       //Could introduce the negative, if SOUS_USE_RC == 'YES', then don't deploy to other environments
       string(defaultValue: '{{SOUS_USE_RC}}', description: 'Deploy to RC', name: 'SOUS_USE_RC')
+	  //If yes, the deploy step will wait a day asking if should continue deploying to PROD
+      string(defaultValue: '{{SOUS_DEPLOY_PROD_QUERY_USER}}', description: 'Ask user before deploying to PROD', name: 'SOUS_DEPLOY_PROD_QUERY_USER')
   }
   stages {
     //Immediately send github PR all checks that this pipeline will be checking
@@ -435,7 +438,7 @@ pipeline {
         }
       }
     }
-    stage('Master branch deploy'){
+    stage('{{SOUS_RELEASE_BRANCH}} branch deploy QA'){
       when{
         branch '{{SOUS_RELEASE_BRANCH}}'
       }
@@ -610,7 +613,29 @@ pipeline {
             }
           }
         }
-        stage('Deploy rcprod-sc') {
+
+	}
+	}
+
+	  stage('Input Prod Deployment') {
+      when{
+        branch '{{SOUS_RELEASE_BRANCH}}'
+        expression { params.SOUS_DEPLOY_PROD_QUERY_USER == 'YES' }
+      }
+      steps {
+        script {
+        	env.DEPLOY_TO_PROD = input message: 'User input required',
+          parameters: [choice(name: 'Deploy to Prod?', choices: 'no\nyes', description: 'Choose "yes" if you want to deploy this build to production.')]
+        }
+      }
+		}
+    stage('{{SOUS_RELEASE_BRANCH}} branch deploy PROD'){
+      when{
+        branch '{{SOUS_RELEASE_BRANCH}}'
+        expression { params.SOUS_DEPLOY_PROD == 'YES' }
+      }
+      parallel {
+		stage('Deploy rcprod-sc') {
           when{
             expression { params.SOUS_DEPLOY_PROD == 'YES' }
             expression { params.SOUS_USE_RC == 'YES' }
@@ -751,8 +776,8 @@ pipeline {
             }
           }
         }
-      }
-    }
+	  }
+	}
   }
   post {
     always {

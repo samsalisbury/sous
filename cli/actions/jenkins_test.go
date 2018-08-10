@@ -116,5 +116,9 @@ func TestJenkins(t *testing.T) {
 			mani.Deployments["cluster-1"].Metadata["SOUS_RELEASE_BRANCH"],
 			defaults["SOUS_RELEASE_BRANCH"],
 		)
+		assert.Equal(t,
+			mani.Deployments["cluster-1"].Metadata["SOUS_DEPLOY_PROD_QUERY_USER"],
+			defaults["SOUS_DEPLOY_PROD_QUERY_USER"],
+		)
 	}
 }
