@@ -138,6 +138,12 @@ func (sj *Jenkins) returnJenkinsDefaultMap() map[string]string {
 		"SOUS_DEPLOY_CI":                "YES",
 		"SOUS_DEPLOY_PP":                "YES",
 		"SOUS_DEPLOY_PROD":              "YES",
+		"SOUS_POST_CI_TEST":             "YES",
+		"SOUS_POST_CI_TEST_COMMAND":     "make post-ci-test",
+		"SOUS_POST_PP_TEST":             "YES",
+		"SOUS_POST_PP_TEST_COMMAND":     "make post-pp-test",
+		"SOUS_POST_PROD_TEST":           "YES",
+		"SOUS_POST_PROD_TEST_COMMAND":   "make post-prod-test",
 		"SOUS_INTEGRATION_TEST":         "YES",
 		"SOUS_INTEGRATION_TEST_COMMAND": "make integration",
 		"SOUS_SMOKE_TEST":               "YES",
@@ -177,9 +183,15 @@ pipeline {
       string(defaultValue: '{{SOUS_INTEGRATION_TEST}}', description: 'Execute Integration Tests', name: 'SOUS_INTEGRATION_TEST')
       string(defaultValue: '{{SOUS_INTEGRATION_TEST_COMMAND}}', description: 'Integration Tests Command', name: 'SOUS_INTEGRATION_TEST_COMMAND')
       string(defaultValue: '{{SOUS_DEPLOY_CI}}', description: 'Deploy to CI', name: 'SOUS_DEPLOY_CI')
+      string(defaultValue: '{{SOUS_POST_CI_TEST}}', description: 'Test to run after CI', name: 'SOUS_POST_CI_TEST')
+      string(defaultValue: '{{SOUS_POST_CI_TEST_COMMAND}}', description: 'Test Command to run after CI', name: 'SOUS_POST_CI_TEST_COMMAND')
       string(defaultValue: '{{SOUS_DEPLOY_PP}}', description: 'Deploy to PP', name: 'SOUS_DEPLOY_PP')
+      string(defaultValue: '{{SOUS_POST_PP_TEST}}', description: 'Test to run after PP', name: 'SOUS_POST_PP_TEST')
+      string(defaultValue: '{{SOUS_POST_PP_TEST_COMMAND}}', description: 'Test Command to run after PP', name: 'SOUS_POST_PP_TEST_COMMAND')
       //Note we can make this a pop-up if people want to be be gated and asked if deploy to prod (manual check before prod push)
       string(defaultValue: '{{SOUS_DEPLOY_PROD}}', description: 'Deploy to PROD', name: 'SOUS_DEPLOY_PROD')
+      string(defaultValue: '{{SOUS_POST_PROD_TEST}}', description: 'Test to run after Prod', name: 'SOUS_POST_PROD_TEST')
+      string(defaultValue: '{{SOUS_POST_PROD_TEST_COMMAND}}', description: 'Test Command to run after Prod', name: 'SOUS_POST_PROD_TEST_COMMAND')
       //Could introduce the negative, if SOUS_USE_RC == 'YES', then don't deploy to other environments
       string(defaultValue: '{{SOUS_USE_RC}}', description: 'Deploy to RC', name: 'SOUS_USE_RC')
 	  //If yes, the deploy step will wait a day asking if should continue deploying to PROD
@@ -240,6 +252,15 @@ pipeline {
 
       }
     }
+    stage('Git statuses Post CI Test') {
+      when{
+        branch '{{SOUS_RELEASE_BRANCH}}'
+          expression { params.SOUS_POST_CI_TEST == 'YES' }
+      }
+      steps {
+        githubNotify context: 'Jenkins/Test/Post/CI', description: 'Post Test of CI', status: 'PENDING'
+      }
+    }
     stage('Git statuses deploy PP') {
       when{
         branch '{{SOUS_RELEASE_BRANCH}}'
@@ -249,6 +270,15 @@ pipeline {
           githubNotify context: 'Jenkins/Deploy/PP-SF', description: 'Deploy to PP-SF', status: 'PENDING'
           githubNotify context: 'Jenkins/Deploy/PP-USWEST2', description: 'Deploy to PP-USWEST2', status: 'PENDING'
 
+      }
+    }
+    stage('Git statuses Post PP Test') {
+      when{
+        branch '{{SOUS_RELEASE_BRANCH}}'
+          expression { params.SOUS_POST_PP_TEST == 'YES' }
+      }
+      steps {
+        githubNotify context: 'Jenkins/Test/Post/PP', description: 'Post Test of PP', status: 'PENDING'
       }
     }
     stage('Git statuses PROD') {
@@ -261,6 +291,15 @@ pipeline {
           githubNotify context: 'Jenkins/Deploy/PROD-EUWEST1', description: 'Deploy to PROD-EUWEST1', status: 'PENDING'
           githubNotify context: 'Jenkins/Deploy/PROD-LN', description: 'Deploy to PROD-LN', status: 'PENDING'
           githubNotify context: 'Jenkins/Deploy/PROD-SC', description: 'Deploy to PROD-SC', status: 'PENDING'
+      }
+    }
+    stage('Git statuses Post Prod Test') {
+      when{
+        branch '{{SOUS_RELEASE_BRANCH}}'
+          expression { params.SOUS_POST_PROD_TEST == 'YES' }
+      }
+      steps {
+        githubNotify context: 'Jenkins/Test/Post/PROD', description: 'Post Test of Prod', status: 'PENDING'
       }
     }
     stage('Git statuses RC') {
@@ -438,9 +477,10 @@ pipeline {
         }
       }
     }
-    stage('{{SOUS_RELEASE_BRANCH}} branch deploy QA'){
+    stage('{{SOUS_RELEASE_BRANCH}} branch deploy CI'){
       when{
         branch '{{SOUS_RELEASE_BRANCH}}'
+        expression { params.SOUS_DEPLOY_CI == 'YES' }
       }
       parallel {
         stage('Deploy ci-sf') {
@@ -471,34 +511,6 @@ pipeline {
             }
           }
         }
-        stage('Deploy pp-sf') {
-          when{
-            expression { params.SOUS_DEPLOY_PP == 'YES' }
-          }
-          agent { label 'mesos-qa-uswest2' }
-          options {
-            timeout(time: 5, unit: 'MINUTES')
-          }
-          steps {
-            retry(4) {
-              script {
-                def deploy = new com.opentable.sous.Deploy()
-                  deploy.execute()
-              }
-            }
-          }
-          environment {
-            SOUS_CLUSTER = "pp-sf"
-          }
-          post {
-            success {
-              githubNotify context: 'Jenkins/Deploy/PP-SF', description: 'Deploy to PP-SF', status: 'SUCCESS'
-            }
-            failure {
-              githubNotify context: 'Jenkins/Deploy/PP-SF', description: 'Deploy to PP-SF', status: 'FAILURE'
-            }
-          }
-        }
         stage('Deploy ci-uswest2') {
           when{
             expression { params.SOUS_DEPLOY_CI == 'YES' }
@@ -524,34 +536,6 @@ pipeline {
             }
             failure {
               githubNotify context: 'Jenkins/Deploy/CI-USWEST2', description: 'Deploy to CI-USWEST2', status: 'FAILURE'
-            }
-          }
-        }
-        stage('Deploy pp-uswest2') {
-          when{
-            expression { params.SOUS_DEPLOY_PP == 'YES' }
-          }
-          agent { label 'mesos-qa-uswest2' }
-          options {
-            timeout(time: 5, unit: 'MINUTES')
-          }
-          steps {
-            retry(4) {
-              script {
-                def deploy = new com.opentable.sous.Deploy()
-                  deploy.execute()
-              }
-            }
-          }
-          environment {
-            SOUS_CLUSTER = "pp-uswest2"
-          }
-          post {
-            success {
-              githubNotify context: 'Jenkins/Deploy/PP-USWEST2', description: 'Deploy to PP-USWEST2', status: 'SUCCESS'
-            }
-            failure {
-              githubNotify context: 'Jenkins/Deploy/PP-USWEST2', description: 'Deploy to PP-USWEST2', status: 'FAILURE'
             }
           }
         }
@@ -584,6 +568,93 @@ pipeline {
             }
           }
         }
+	  }
+	}
+        stage('Test Post CI') {
+          when{
+            expression { params.SOUS_POST_CI_TEST == 'YES' }
+			branch '{{SOUS_RELEASE_BRANCH}}'
+          }
+          agent { label 'mesos-qa-uswest2' }
+          steps {
+            withEnv(["CMD_TO_EXECUTE=${params.SOUS_POST_CI_TEST_COMMAND}"]) {
+              script {
+                def executecmd = new com.opentable.sous.ExecuteCmd()
+                executecmd.execute()
+              }
+            }
+          }
+          post {
+            success {
+              githubNotify context: 'Jenkins/Test/Post/CI', description: 'Post CI Tests Passed', status: 'SUCCESS'
+            }
+            failure {
+              githubNotify context: 'Jenkins/Test/Post/CI', description: 'Post CI Tests Failed', status: 'FAILURE'
+            }
+          }
+        }
+    stage('{{SOUS_RELEASE_BRANCH}} branch deploy PP'){
+      when{
+        branch '{{SOUS_RELEASE_BRANCH}}'
+        expression { params.SOUS_DEPLOY_PP == 'YES' }
+      }
+      parallel {
+        stage('Deploy pp-sf') {
+          when{
+            expression { params.SOUS_DEPLOY_PP == 'YES' }
+          }
+          agent { label 'mesos-qa-uswest2' }
+          options {
+            timeout(time: 5, unit: 'MINUTES')
+          }
+          steps {
+            retry(4) {
+              script {
+                def deploy = new com.opentable.sous.Deploy()
+                  deploy.execute()
+              }
+            }
+          }
+          environment {
+            SOUS_CLUSTER = "pp-sf"
+          }
+          post {
+            success {
+              githubNotify context: 'Jenkins/Deploy/PP-SF', description: 'Deploy to PP-SF', status: 'SUCCESS'
+            }
+            failure {
+              githubNotify context: 'Jenkins/Deploy/PP-SF', description: 'Deploy to PP-SF', status: 'FAILURE'
+            }
+          }
+        }
+        stage('Deploy pp-uswest2') {
+          when{
+            expression { params.SOUS_DEPLOY_PP == 'YES' }
+          }
+          agent { label 'mesos-qa-uswest2' }
+          options {
+            timeout(time: 5, unit: 'MINUTES')
+          }
+          steps {
+            retry(4) {
+              script {
+                def deploy = new com.opentable.sous.Deploy()
+                  deploy.execute()
+              }
+            }
+          }
+          environment {
+            SOUS_CLUSTER = "pp-uswest2"
+          }
+          post {
+            success {
+              githubNotify context: 'Jenkins/Deploy/PP-USWEST2', description: 'Deploy to PP-USWEST2', status: 'SUCCESS'
+            }
+            failure {
+              githubNotify context: 'Jenkins/Deploy/PP-USWEST2', description: 'Deploy to PP-USWEST2', status: 'FAILURE'
+            }
+          }
+        }
         stage('Deploy rcpp-sf') {
           when{
             expression { params.SOUS_DEPLOY_PP == 'YES' }
@@ -613,10 +684,31 @@ pipeline {
             }
           }
         }
-
+	  }
 	}
-	}
-
+        stage('Test Post PP') {
+          when{
+            expression { params.SOUS_POST_PP_TEST == 'YES' }
+			branch '{{SOUS_RELEASE_BRANCH}}'
+          }
+          agent { label 'mesos-qa-uswest2' }
+          steps {
+            withEnv(["CMD_TO_EXECUTE=${params.SOUS_POST_PP_TEST_COMMAND}"]) {
+              script {
+                def executecmd = new com.opentable.sous.ExecuteCmd()
+                executecmd.execute()
+              }
+            }
+          }
+          post {
+            success {
+              githubNotify context: 'Jenkins/Test/Post/PP', description: 'Post PP Tests Passed', status: 'SUCCESS'
+            }
+            failure {
+              githubNotify context: 'Jenkins/Test/Post/PP', description: 'Post PP Tests Failed', status: 'FAILURE'
+            }
+          }
+        }
 	  stage('Input Prod Deployment') {
       when{
         branch '{{SOUS_RELEASE_BRANCH}}'
@@ -778,6 +870,29 @@ pipeline {
         }
 	  }
 	}
+        stage('Test Post Prod') {
+          when{
+            expression { params.SOUS_POST_PROD_TEST == 'YES' }
+			branch '{{SOUS_RELEASE_BRANCH}}'
+          }
+          agent { label 'mesos-qa-uswest2' }
+          steps {
+            withEnv(["CMD_TO_EXECUTE=${params.SOUS_POST_PROD_TEST_COMMAND}"]) {
+              script {
+                def executecmd = new com.opentable.sous.ExecuteCmd()
+                executecmd.execute()
+              }
+            }
+          }
+          post {
+            success {
+              githubNotify context: 'Jenkins/Test/Post/PROD', description: 'Post Prod Tests Passed', status: 'SUCCESS'
+            }
+            failure {
+              githubNotify context: 'Jenkins/Test/Post/PROD', description: 'Post Prod Tests Failed', status: 'FAILURE'
+            }
+          }
+        }
   }
   post {
     always {
