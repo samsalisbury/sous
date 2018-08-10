@@ -473,7 +473,7 @@ pipeline {
         }
         stage('Deploy pp-sf') {
           when{
-            expression { params.SOUS_DEPLOY_QA == 'YES' }
+            expression { params.SOUS_DEPLOY_PP == 'YES' }
           }
           agent { label 'mesos-qa-uswest2' }
           options {
