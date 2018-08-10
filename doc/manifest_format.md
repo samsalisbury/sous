@@ -58,7 +58,7 @@ Deployments:
       SOUS_UNIT_TEST_COMMAND: make unit                 #Default value is "make unit", evaluated if SOUS_UNIT_TEST == "YES"
       SOUS_INTEGRATION_TEST: "YES"                      #If yes, will eval SOUS_INTEGRATION_TEST_COMMAND as a step, default "YES"
       SOUS_INTEGRATION_TEST_COMMAND: make integration   #Default value is "make integration", evaluated if SOUS_INTEGRATION_TEST == "YES"
-      SOUS_RELEASE_BRANCH: master                       #Branch deployments are built from, default value is "master", if current branch is not == then will skip deploy
+      SOUS_RELEASE_BRANCH: master                       #Branch deployments are built from,  if current branch is != then will skip deploy, this allows PRs to run tests without deploying to environments, default value is "master"
       SOUS_USE_RC: "NO"                                 #If yes, will allow deploys to RC, default value is "YES"
       SOUS_DEPLOY_CI: "YES"                             #If yes, will allow deploys to CI, default value is "YES"
       SOUS_DEPLOY_PP: "YES"                             #If yes, will allow deploys to CI, default value is "YES"
