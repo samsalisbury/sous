@@ -47,6 +47,9 @@ func fixtureGraph(t *testing.T) *SousGraph {
 	tg.Replace(func(ls LogSink) gitStateManager {
 		return gitStateManager{StateManager: sous.NewDummyStateManager()}
 	})
+	tg.Replace(func(ls LogSink) DistStateManager {
+		return DistStateManager{StateManager: sous.NewDummyStateManager()}
+	})
 	tg.Replace(func() LogSink {
 		return LogSink{logging.SilentLogSet()}
 	})
