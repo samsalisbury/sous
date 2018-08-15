@@ -366,7 +366,7 @@ test-integration: setup-containers postgres-start
 	@echo
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
-	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration ./ext/storage ./ext/docker --tags='integration netcgo' $(TEST_TEAMCITY)
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration ./ext/storage ./ext/docker ./test --tags='integration netcgo' $(TEST_TEAMCITY)
 	@date
 
 $(SMOKE_TEST_BINARY):
