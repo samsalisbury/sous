@@ -41,9 +41,6 @@ func TestGraphWithConfig(t *testing.T, v semv.Version, in io.Reader, out, err io
 
 	graph := BuildGraph(v, in, out, err)
 
-	// db := sous.SetupDB(t)
-	// defer sous.ReleaseDB(t)
-
 	// Add missing stuff to the graph (these are things that come from early
 	// initialization in main.go.
 	graph.Add(
@@ -60,7 +57,6 @@ func TestGraphWithConfig(t *testing.T, v semv.Version, in io.Reader, out, err io
 	testGraph.Replace(newDummyDockerClient)
 	testGraph.Replace(newServerHandler)
 	testGraph.Replace(newServerStateManager)
-	//testGraph.Replace(MaybeDatabase{Db: db, Err: nil})
 	testGraph.Replace(newDummyHTTPClient)
 
 	// Add config.
