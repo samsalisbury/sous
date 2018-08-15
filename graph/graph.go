@@ -90,7 +90,7 @@ type (
 	ServerStateManager struct{ sous.StateManager }
 	// ServerClusterManager wraps the sous.ClusterManager interface and is used by `sous server`
 	ServerClusterManager struct{ sous.ClusterManager }
-
+	// DistStateManager wraps sous.StateManager interfaces and is used by `sous server`
 	DistStateManager struct {
 		sous.StateManager
 		Error error
