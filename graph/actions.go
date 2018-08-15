@@ -176,6 +176,42 @@ func (di *SousGraph) GetAddArtifact(opts ArtifactOpts) (actions.Action, error) {
 	}, nil
 }
 
+// GetJenkins constructs a Jenkins Actions.
+func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
+	di.guardedAdd("Dryrun", DryrunOption(opts.DryRun))
+	di.guardedAdd("DeployFilterFlags", &opts.DFF)
+	scoop := struct {
+		HTTP             *ClusterSpecificHTTPClient
+		TargetManifestID TargetManifestID
+		LogSink          LogSink
+		User             sous.User
+		Config           LocalSousConfig
+		TraceID          sous.TraceID
+	}{}
+	if err := di.Inject(&scoop); err != nil {
+		return nil, err
+	}
+
+	client := scoop.HTTP.HTTPClient
+	if os.Getenv("SOUS_USE_SOUS_SERVER") == "YES" {
+		messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("TraceID: %s", scoop.TraceID), logging.DebugLevel, scoop.LogSink.LogSink, scoop.TraceID)
+		c, err := restful.NewClient(scoop.Config.Config.Server, scoop.LogSink.LogSink.Child("jenkins.http-client"), map[string]string{"OT-RequestId": string(scoop.TraceID)})
+		if err != nil {
+			return nil, err
+		}
+		client = c
+	}
+
+	return &actions.Jenkins{
+		HTTPClient:           client,
+		TargetManifestID:     sous.ManifestID(scoop.TargetManifestID),
+		LogSink:              scoop.LogSink.LogSink.Child("jenkins"),
+		User:                 scoop.User,
+		Config:               scoop.Config.Config,
+		Cluster:              opts.DFF.Cluster,
+	}, nil
+}
+
 // DeployActionOpts are options for GetDeploy.
 type DeployActionOpts struct {
 	DFF                              config.DeployFilterFlags
