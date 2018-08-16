@@ -32,11 +32,27 @@ func (a *AddArtifact) Do() error {
 	versionName := fmt.Sprintf("%s:%s", a.DockerImage, a.Tag)
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Attempting to get Digest for: %s", versionName), logging.ExtraDebug1Level, a.LogSink)
 
-	output, err := a.LocalShell.Stdout("docker", "inspect", "--format='{{index .RepoDigests 0}}'", versionName)
+	output, err := a.LocalShell.Stdout("docker", "inspect", "--format='{{.RepoDigests}}'", versionName)
 	if err != nil {
 		return err
 	}
-	digestName := strings.Replace(strings.TrimSpace(output), "'", "", -1)
+
+	digests := strings.Fields(output)
+	var candidates []string
+	wantReg := a.Config.Docker.RegistryHost
+	for _, digest := range digests {
+		if !strings.HasPrefix(digest, wantReg) {
+			continue
+		}
+		candidates = append(candidates, digest)
+	}
+
+	if len(candidates) == 0 {
+		return fmt.Errorf("no digest for this image had registry %q", wantReg)
+	}
+
+	// TODO SS: Maybe log if len(candidates) > 1
+	digestName := candidates[len(candidates)-1]
 
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Digest for: %s is %s", versionName, digestName), logging.ExtraDebug1Level, a.LogSink)
 
