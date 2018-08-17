@@ -90,8 +90,8 @@ type (
 	ServerStateManager struct{ sous.StateManager }
 	// ServerClusterManager wraps the sous.ClusterManager interface and is used by `sous server`
 	ServerClusterManager struct{ sous.ClusterManager }
-
-	distStateManager struct {
+	// DistStateManager wraps sous.StateManager interfaces and is used by `sous server`
+	DistStateManager struct {
 		sous.StateManager
 		Error error
 	}
@@ -634,7 +634,7 @@ func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm distStateManager) (*ServerStateManager, error) {
+func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm DistStateManager) (*ServerStateManager, error) {
 	var primary, secondary sous.StateManager
 	var perr error
 	primary = gm.StateManager
@@ -651,7 +651,7 @@ func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, d
 	return &ServerStateManager{StateManager: duplex}, nil
 }
 
-func newServerClusterManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm distStateManager) (*ServerClusterManager, error) {
+func newServerClusterManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm DistStateManager) (*ServerClusterManager, error) {
 	var cmgr sous.StateManager
 	var err error
 
@@ -670,14 +670,14 @@ func newServerClusterManager(c LocalSousConfig, log LogSink, gm gitStateManager,
 	return &ServerClusterManager{ClusterManager: sous.MakeClusterManager(cmgr, log)}, nil
 }
 
-func newDistributedStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) distStateManager {
+func newDistributedStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) DistStateManager {
 	var dist sous.StateManager
 	err := mdb.Err
 	if err == nil {
 		dist, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
 	}
 
-	return distStateManager{
+	return DistStateManager{
 		StateManager: dist,
 		Error:        err,
 	}

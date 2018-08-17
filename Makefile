@@ -342,15 +342,13 @@ test-gofmt:
 	bin/check-gofmt
 
 .PHONY: test-unit-base
-test-unit-base: $(COVER_DIR) $(GO_FILES) postgres-start | postgres-clean # | is "order only"
-	PGHOST=$(PGHOST) \
-	PGPORT=$(PGPORT) \
+test-unit-base: $(COVER_DIR) $(GO_FILES)
 	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
 	  -tags=netcgo -covermode=atomic -coverprofile=$(COVER_DIR)/count_merged.txt \
 		-timeout 12m -race $(GO_TEST_PATHS) $(TEST_TEAMCITY)
 
 .PHONY: test-unit
-test-unit: postgres-clean test-unit-base
+test-unit: test-unit-base
 
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 	go test \
@@ -368,7 +366,7 @@ test-integration: setup-containers postgres-start
 	@echo
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
-	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration --tags='integration netcgo' $(TEST_TEAMCITY)
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) ./integration ./ext/storage ./ext/docker ./test --tags='integration netcgo' $(TEST_TEAMCITY)
 	@date
 
 $(SMOKE_TEST_BINARY):

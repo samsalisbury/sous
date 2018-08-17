@@ -116,8 +116,8 @@ func TestComponentLocatorInjection(t *testing.T) {
 	}
 
 	name := "componentlocatorinjection"
-	sous.SetupDB(t)
-	defer sous.ReleaseDB(t)
+	// sous.SetupDB(t)
+	// defer sous.ReleaseDB(t)
 
 	host := "localhost"
 	if h, got := os.LookupEnv("PGHOST"); got {
