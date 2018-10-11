@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/docker/distribution/reference"
@@ -129,7 +128,6 @@ func (nc *NameCache) dbInsert(sid sous.SourceID, in, etag string, extraNames []s
 		return err
 	}
 
-	nc.dumpTx(os.Stderr, tx)
 	return tx.Commit()
 }
 
