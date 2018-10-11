@@ -1,3 +1,5 @@
+// +build integration
+
 package docker
 
 import (
@@ -31,16 +33,24 @@ func TestDbInsertNoDump(t *testing.T) {
 
 	sid := sous.MustNewSourceID("https://github.com/opentable/wacky", "", tag)
 
+	stderr := grabStdErr(func() {
+		err = nc.dbInsert(sid, cn, "etag", nil, nil)
+		assert.NoError(err, "insert should succeed")
+	})
+
+	assert.NotContains(string(stderr), "select *", "shouldn't contain any select statements")
+
+}
+
+func grabStdErr(f func()) []byte {
 	rescueStderr := os.Stderr
 	r, w, _ := os.Pipe()
 	os.Stderr = w
 
-	err = nc.dbInsert(sid, cn, "etag", nil, nil)
-	assert.NoError(err, "insert should succeed")
+	f()
 
 	w.Close()
 	stderr, _ := ioutil.ReadAll(r)
-
-	assert.NotContains(string(stderr), "select *", "shouldn't contain any select statements")
 	os.Stderr = rescueStderr
+	return stderr
 }
