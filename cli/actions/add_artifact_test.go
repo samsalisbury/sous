@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddArtificact_Do(t *testing.T) {
+func TestAddArtifact_Do(t *testing.T) {
 
 	ls, _ := logging.NewLogSinkSpy()
 
