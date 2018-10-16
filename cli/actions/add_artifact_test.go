@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
@@ -75,6 +76,7 @@ func TestAddArtifact_Do(t *testing.T) {
 		LocalShell: sh,
 		Inserter:   sous.ClientInserter{Inserter: hni},
 		Tag:        "0.0.3",
+		Config:     &config.Config{},
 	}
 
 	err = a.Do()
