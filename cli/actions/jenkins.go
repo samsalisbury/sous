@@ -732,7 +732,7 @@ pipeline {
             expression { params.SOUS_DEPLOY_PROD == 'YES' }
             expression { params.SOUS_USE_RC == 'YES' }
           }
-          agent { label 'mesos-qa-uswest2' }
+          agent { label 'mesos-prod-sc' }
           options {
             timeout(time: 5, unit: 'MINUTES')
           }
@@ -760,7 +760,7 @@ pipeline {
           when{
             expression { params.SOUS_DEPLOY_PROD == 'YES' }
           }
-          agent { label 'mesos-qa-uswest2' }
+          agent { label 'mesos-prod-sc' }
           options {
             timeout(time: 5, unit: 'MINUTES')
           }
@@ -788,7 +788,7 @@ pipeline {
           when{
             expression { params.SOUS_DEPLOY_PROD == 'YES' }
           }
-          agent { label 'mesos-qa-uswest2' }
+          agent { label 'mesos-prod-sc' }
           options {
             timeout(time: 5, unit: 'MINUTES')
           }
@@ -816,7 +816,7 @@ pipeline {
           when{
             expression { params.SOUS_DEPLOY_PROD == 'YES' }
           }
-          agent { label 'mesos-qa-uswest2' }
+          agent { label 'mesos-prod-sc' }
           options {
             timeout(time: 5, unit: 'MINUTES')
           }
@@ -844,7 +844,7 @@ pipeline {
           when{
             expression { params.SOUS_DEPLOY_PROD == 'YES' }
           }
-          agent { label 'mesos-qa-uswest2' }
+          agent { label 'mesos-prod-sc' }
           options {
             timeout(time: 5, unit: 'MINUTES')
           }
@@ -875,7 +875,7 @@ pipeline {
             expression { params.SOUS_POST_PROD_TEST == 'YES' }
 			branch '{{SOUS_RELEASE_BRANCH}}'
           }
-          agent { label 'mesos-qa-uswest2' }
+          agent { label 'mesos-prod-sc' }
           steps {
             withEnv(["CMD_TO_EXECUTE=${params.SOUS_POST_PROD_TEST_COMMAND}"]) {
               script {
