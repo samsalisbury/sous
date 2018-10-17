@@ -8,6 +8,8 @@ with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com.opentable/sous/compare/0.5.117...master)
 ### Fixed
+* Deployments to PROD clusters will use Jenkins agents with 'mesos-prod-sc'
+  label (jenkins agents in PROD) to avoid QA -> PROD type of deployments.
 * A race condition during whole-cluster resolutions meant the final status
   was sometimes inaccurately recorded. Real world implications of this are not
   completely clear, users are not expected to notice much difference.
