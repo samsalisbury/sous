@@ -41,6 +41,7 @@ func (a *AddArtifact) Do() error {
 	var candidates []string
 	wantReg := a.Config.Docker.RegistryHost
 	for _, digest := range digests {
+		digest = strings.Trim(digest, "'[]")
 		if !strings.HasPrefix(digest, wantReg) {
 			continue
 		}
@@ -48,7 +49,8 @@ func (a *AddArtifact) Do() error {
 	}
 
 	if len(candidates) == 0 {
-		return fmt.Errorf("no digest for this image had registry %q", wantReg)
+		return fmt.Errorf("no digest for this image had registry %q (saw %s)",
+			wantReg, strings.Join(digests, ", "))
 	}
 
 	// TODO SS: Maybe log if len(candidates) > 1
