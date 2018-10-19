@@ -83,3 +83,126 @@ func TestAddArtifact_Do(t *testing.T) {
 
 	require.NoError(t, err)
 }
+
+func TestSelectDigest_ok(t *testing.T) {
+	cases := []struct {
+		configuredDockerReg string
+		dockerInspectOutput string
+		selectedRef         string
+	}{
+		{
+			"docker.example.org",
+			`
+			['docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			`,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+		{
+			"docker.example.org",
+			`
+			=['docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			`,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+		{
+			"docker.example.org",
+			`
+			=['docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			=['other.docker.reg/blahblagh:0.0.1@shaXYZ']
+			 `,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+		{
+			"docker.example.org",
+			`
+			=[docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX]
+			=[other.docker.reg/blahblagh:0.0.1@shaXYZ]
+			 `,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+		{
+			"docker.example.org",
+			`
+			=[other.docker.reg/blahblagh:0.0.1@shaXYZ]
+			=[docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX]
+			`,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run("", func(t *testing.T) {
+			got, err := selectDigest(tc.dockerInspectOutput, tc.configuredDockerReg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := tc.selectedRef
+			if got != want {
+				t.Errorf("got %q; want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestSelectDigest_err(t *testing.T) {
+	cases := []struct {
+		configuredDockerReg string
+		dockerInspectOutput string
+		wantErr             string
+	}{
+		{
+			"docker.example.org",
+			`
+			['other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			`,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+		{
+			"docker.example.org",
+			`
+			=['other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			`,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+		{
+			"docker.example.org",
+			`
+			=['other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			=['other.docker.reg/blahblagh:0.0.1@shaXYZ']
+			 `,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+		{
+			"docker.example.org",
+			`
+			=[other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX]
+			=[other.docker.reg/blahblagh:0.0.1@shaXYZ]
+			 `,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+		{
+			"docker.example.org",
+			`
+			=[other.docker.reg/blahblagh:0.0.1@shaXYZ]
+			=[other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX]
+			`,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run("", func(t *testing.T) {
+			_, gotErr := selectDigest(tc.dockerInspectOutput, tc.configuredDockerReg)
+			if gotErr == nil {
+				t.Fatalf("got nil error; want %q", tc.wantErr)
+			}
+			got := gotErr.Error()
+			want := tc.wantErr
+			if !strings.Contains(got, want) {
+				t.Errorf("got error %q; want error containing %q", got, want)
+			}
+		})
+	}
+}
