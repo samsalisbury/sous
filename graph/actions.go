@@ -203,12 +203,12 @@ func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
 	}
 
 	return &actions.Jenkins{
-		HTTPClient:           client,
-		TargetManifestID:     sous.ManifestID(scoop.TargetManifestID),
-		LogSink:              scoop.LogSink.LogSink.Child("jenkins"),
-		User:                 scoop.User,
-		Config:               scoop.Config.Config,
-		Cluster:              opts.DFF.Cluster,
+		HTTPClient:       client,
+		TargetManifestID: sous.ManifestID(scoop.TargetManifestID),
+		LogSink:          scoop.LogSink.LogSink.Child("jenkins"),
+		User:             scoop.User,
+		Config:           scoop.Config.Config,
+		Cluster:          opts.DFF.Cluster,
 	}, nil
 }
 

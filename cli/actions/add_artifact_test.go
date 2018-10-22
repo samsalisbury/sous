@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/restful"
@@ -15,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAddArtificact_Do(t *testing.T) {
+func TestAddArtifact_Do(t *testing.T) {
 
 	ls, _ := logging.NewLogSinkSpy()
 
@@ -75,9 +76,133 @@ func TestAddArtificact_Do(t *testing.T) {
 		LocalShell: sh,
 		Inserter:   sous.ClientInserter{Inserter: hni},
 		Tag:        "0.0.3",
+		Config:     &config.Config{},
 	}
 
 	err = a.Do()
 
 	require.NoError(t, err)
+}
+
+func TestSelectDigest_ok(t *testing.T) {
+	cases := []struct {
+		configuredDockerReg string
+		dockerInspectOutput string
+		selectedRef         string
+	}{
+		{
+			"docker.example.org",
+			`
+			['docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			`,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+		{
+			"docker.example.org",
+			`
+			=['docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			`,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+		{
+			"docker.example.org",
+			`
+			=['docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			=['other.docker.reg/blahblagh:0.0.1@shaXYZ']
+			 `,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+		{
+			"docker.example.org",
+			`
+			=[docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX]
+			=[other.docker.reg/blahblagh:0.0.1@shaXYZ]
+			 `,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+		{
+			"docker.example.org",
+			`
+			=[other.docker.reg/blahblagh:0.0.1@shaXYZ]
+			=[docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX]
+			`,
+			`docker.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX`,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run("", func(t *testing.T) {
+			got, err := selectDigest(tc.dockerInspectOutput, tc.configuredDockerReg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := tc.selectedRef
+			if got != want {
+				t.Errorf("got %q; want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestSelectDigest_err(t *testing.T) {
+	cases := []struct {
+		configuredDockerReg string
+		dockerInspectOutput string
+		wantErr             string
+	}{
+		{
+			"docker.example.org",
+			`
+			['other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			`,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+		{
+			"docker.example.org",
+			`
+			=['other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			`,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+		{
+			"docker.example.org",
+			`
+			=['other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX']
+			=['other.docker.reg/blahblagh:0.0.1@shaXYZ']
+			 `,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+		{
+			"docker.example.org",
+			`
+			=[other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX]
+			=[other.docker.reg/blahblagh:0.0.1@shaXYZ]
+			 `,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+		{
+			"docker.example.org",
+			`
+			=[other.docker.reg/blahblagh:0.0.1@shaXYZ]
+			=[other.example.org/hello:0.0.1@shaXXXXXXXXXXXXXXXXXXXXXXXX]
+			`,
+			`no digest for this image had registry "docker.example.org"`,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run("", func(t *testing.T) {
+			_, gotErr := selectDigest(tc.dockerInspectOutput, tc.configuredDockerReg)
+			if gotErr == nil {
+				t.Fatalf("got nil error; want %q", tc.wantErr)
+			}
+			got := gotErr.Error()
+			want := tc.wantErr
+			if !strings.Contains(got, want) {
+				t.Errorf("got error %q; want error containing %q", got, want)
+			}
+		})
+	}
 }

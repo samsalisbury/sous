@@ -24,7 +24,7 @@ type AddArtifact struct {
 	*config.Config
 }
 
-//Do executes the action for add artifact.
+// Do executes the action for add artifact.
 func (a *AddArtifact) Do() error {
 
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Executing add artifact Repo: %s, Offset: %s, Tag: %s, DockerImage: %s", a.Repo, a.Offset, a.Tag, a.DockerImage), logging.ExtraDebug1Level, a.LogSink)
@@ -32,15 +32,39 @@ func (a *AddArtifact) Do() error {
 	versionName := fmt.Sprintf("%s:%s", a.DockerImage, a.Tag)
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Attempting to get Digest for: %s", versionName), logging.ExtraDebug1Level, a.LogSink)
 
-	output, err := a.LocalShell.Stdout("docker", "inspect", "--format='{{index .RepoDigests 0}}'", versionName)
+	output, err := a.LocalShell.Stdout("docker", "inspect", "--format='{{.RepoDigests}}'", versionName)
 	if err != nil {
 		return err
 	}
-	digestName := strings.Replace(strings.TrimSpace(output), "'", "", -1)
+
+	digestName, err := selectDigest(output, a.Config.Docker.RegistryHost)
+	if err != nil {
+		return err
+	}
 
 	messages.ReportLogFieldsMessageToConsole(fmt.Sprintf("Digest for: %s is %s", versionName, digestName), logging.ExtraDebug1Level, a.LogSink)
 
 	return a.UploadArtifact(versionName, digestName)
+}
+
+func selectDigest(output, wantReg string) (string, error) {
+	digests := strings.Fields(output)
+	var candidates []string
+	for _, digest := range digests {
+		digest = strings.Trim(digest, `="'[]`)
+		if !strings.HasPrefix(digest, wantReg) {
+			continue
+		}
+		candidates = append(candidates, digest)
+	}
+
+	if len(candidates) == 0 {
+		return "", fmt.Errorf("no digest for this image had registry %q (saw %s)",
+			wantReg, strings.Join(digests, ", "))
+	}
+
+	// TODO SS: Maybe log if len(candidates) > 1
+	return candidates[len(candidates)-1], nil
 }
 
 //UploadArtifact add artifact to sous servers
