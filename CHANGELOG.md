@@ -15,6 +15,8 @@ with respect to its command line interface and HTTP interface
   completely clear, users are not expected to notice much difference.
 * Client: sous metadata set would panic if no existing metadata was present in manifest prior to set
 * Client: sous jenkins cli to use manifest metadata to generate JenkinsPipeline file
+* Client: more accurate error message on 'sous manifest set' when ManifestID in YAML
+  does not match that specified by flags and context.
 
 ### Changed
 * Client: `SOUS_USE_SOUS_SEVER` env var must now be exactly uppercase `YES`

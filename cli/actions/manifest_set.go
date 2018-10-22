@@ -37,7 +37,7 @@ func (ms *ManifestSet) Do() error {
 	messages.ReportLogFieldsMessage("Manifest in Execute", logging.ExtraDebug1Level, ms.LogSink, yml)
 
 	if ms.ManifestID != yml.ID() {
-		return fmt.Errorf("sous does not support changing source location, please use sous init")
+		return fmt.Errorf("Repo, offset, or flavor flags do not match those in your manifest. Flags say %q; manifest is %q", ms.ManifestID, yml.ID())
 	}
 
 	_, err = (*ms.Updater).Update(&yml, nil)
