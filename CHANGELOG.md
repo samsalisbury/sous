@@ -13,8 +13,11 @@ with respect to its command line interface and HTTP interface
 * A race condition during whole-cluster resolutions meant the final status
   was sometimes inaccurately recorded. Real world implications of this are not
   completely clear, users are not expected to notice much difference.
-* Client: sous metadata set would panic if no existing metadata was present in manifest prior to set
-* Client: sous jenkins cli to use manifest metadata to generate JenkinsPipeline file
+* Client: sous metadata set would panic if no existing metadata was present in manifest prior to set.
+* Client: sous jenkins cli uses manifest metadata to generate JenkinsPipeline file.
+* Client: 'artifact add' now records docker image refs using the configured default
+  docker registry name. Previously it sometimes recorded local image refs which
+  were not deployable.
 
 ### Changed
 * Client: `SOUS_USE_SOUS_SEVER` env var must now be exactly uppercase `YES`

@@ -72,7 +72,7 @@ func TestActionPlumbingNormilizeGDM(t *testing.T) {
 
 }
 
-func TestActionUpdate(t *testing.T) {
+func TestGetUpdate(t *testing.T) {
 	fg := fixtureGraph(t)
 	flags := fixtureDeployFilterFlags()
 
@@ -95,7 +95,7 @@ func TestActionUpdate(t *testing.T) {
 	require.NotNil(t, update.HTTPStateManager)
 }
 
-func TestActionPollStatus(t *testing.T) {
+func TestGetPollStatus(t *testing.T) {
 	fg := fixtureGraph(t)
 	fg.Add(fixtureDeployFilterFlags())
 
@@ -109,7 +109,7 @@ func TestActionPollStatus(t *testing.T) {
 	assert.Equal(t, pollStatus.StatusPoller.ResolveFilter.Repo.ValueOr("{globbed!!!}"), fixtureDeployFilterFlags().Repo)
 }
 
-func TestActionRectify(t *testing.T) {
+func TestGetRectify(t *testing.T) {
 	fg := fixtureGraph(t)
 	fg.Add(fixtureDeployFilterFlags())
 	action, err := fg.GetRectify("none", fixtureDeployFilterFlags())
@@ -124,7 +124,7 @@ func TestActionRectify(t *testing.T) {
 	assert.Equal(t, rect.Resolver.ResolveFilter.All(), false)
 }
 
-func TestActionRectifyDryruns(t *testing.T) {
+func TestGetRectify_dryruns(t *testing.T) {
 	testDryRun := func(which, sousServerURL string, expectedRegistryType sous.Registry) {
 		t.Run("dryrun is "+which, func(t *testing.T) {
 			fg := fixtureGraph(t)
@@ -151,4 +151,12 @@ func TestActionRectifyDryruns(t *testing.T) {
 	//testDryRun("registry", "not empty", &sous.DummyRegistry{})
 	//testDryRun("none", "not empty", &sous.DummyRegistry{})
 	//testDryRun("scheduler", "not empty", &sous.DummyRegistry{})
+}
+
+func TestGetAddArtifact(t *testing.T) {
+	fg := fixtureGraph(t)
+	opts := ArtifactOpts{}
+	ga, err := fg.GetAddArtifact(opts)
+	require.Nil(t, err)
+	require.NotNil(t, ga)
 }
