@@ -13,8 +13,10 @@ with respect to its command line interface and HTTP interface
 * A race condition during whole-cluster resolutions meant the final status
   was sometimes inaccurately recorded. Real world implications of this are not
   completely clear, users are not expected to notice much difference.
-* Client: sous metadata set would panic if no existing metadata was present in manifest prior to set.
-* Client: sous jenkins cli uses manifest metadata to generate JenkinsPipeline file.
+* Client: sous metadata set would panic if no existing metadata was present in manifest prior to set
+* Client: sous jenkins cli to use manifest metadata to generate JenkinsPipeline file
+* Client: more accurate error message on 'sous manifest set' when ManifestID in YAML
+  does not match that specified by flags and context.
 * Client: 'artifact add' now records docker image refs using the configured default
   docker registry name. Previously it sometimes recorded local image refs which
   were not deployable.

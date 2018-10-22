@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestManifestSet_ErrorOnSourceLocation(t *testing.T) {
+func TestManifestSet_Do_errorChangingManifestID(t *testing.T) {
 	project1 := sous.SourceLocation{Repo: "github.com/user/randomprojectnotmatching"}
 
 	mid := sous.ManifestID{
@@ -52,7 +52,7 @@ func TestManifestSet_ErrorOnSourceLocation(t *testing.T) {
 	assert.Error(t, sms.Do(), "this should error since source is different")
 }
 
-func TestManifestSet(t *testing.T) {
+func TestManifestSet_Do(t *testing.T) {
 	mani := sous.ManifestFixture("simple")
 	mani.Flavor = "vanilla"
 
