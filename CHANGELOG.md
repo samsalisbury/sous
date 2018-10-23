@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
-## [Unreleased](//github.com.opentable/sous/compare/0.5.117...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.5.120...master)
+
+## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
 * Deployments to PROD clusters will use Jenkins agents with 'mesos-prod-sc'
   label (jenkins agents in PROD) to avoid QA -> PROD type of deployments.
@@ -31,7 +33,9 @@ with respect to its command line interface and HTTP interface
   that there be a singularity-request.json file (where before it was optional).
   There is also a bunch more validation, too much to list here.
 
-## [0.5.117](//github.com.opentable/sous/compare/0.5.116...0.5.117)
+NOTE: Some features listed above as 0.5.120 were also released as 0.5.118 and 0.5.119.
+
+## [0.5.117](//github.com/opentable/sous/compare/0.5.116...0.5.117)
 ### Changed
 * Tests: Travis build times reduced by running sets of tests in parallel.
   This allows us to produce relese binaries, see note below in 0.5.116.

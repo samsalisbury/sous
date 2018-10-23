@@ -304,10 +304,15 @@ linux-build: artifacts/$(LINUX_RELEASE_DIR)/sous
 
 semvertagchk:
 	@echo "$(SOUS_VERSION)" | egrep ^[0-9]+\.[0-9]+\.[0-9]+
+ 
+tag-in-changelog-check:
+	@grep -F "$(SOUS_VERSION)" CHANGELOG.md || { echo "Please update CHANGELOG.md to include $(SOUS_VERSION)"; exit 1; }; echo "Changelog OK"
+
+show-sous-version:
+	@echo $(SOUS_VERSION)
 
 sous-qa-setup: ./dev_support/sous_qa_setup/*.go ./util/test_with_docker/*.go
 	go build $(EXTRA_GO_FLAGS) ./dev_support/sous_qa_setup
-
 
 reject-wip:
 	test ! -f workinprogress
@@ -521,4 +526,4 @@ provision-docker-machine:
 	semvertagchk test test-gofmt test-integration setup-containers test-unit \
 	reject-wip wip staticcheck postgres-start postgres-stop postgres-connect \
 	postgres-clean postgres-create-testdb build-debug homebrew install-gotags \
-	install-debug-linux install-debug-darwin
+	install-debug-linux install-debug-darwin show-sous-version tag-in-changelog-check

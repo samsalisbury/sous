@@ -43,7 +43,7 @@ env:
     - TEST_COMMAND="GO_TEST_RUN=TestSmoke/git/simple make test-smoke"
     - TEST_COMMAND="GO_TEST_RUN=TestSmoke/git/split make test-smoke"
 before_deploy: git clean -fd && git reset --hard HEAD && go get github.com/karalabe/xgo
-  && make semvertagchk && bundle exec make -j2 release
+  && make semvertagchk && make tag-in-changelog-check && bundle exec make -j2 release
 deploy:
   file_glob: true
   provider: releases
