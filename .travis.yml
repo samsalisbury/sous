@@ -53,6 +53,7 @@ deploy:
   - artifacts/sous*.deb
   on:
     tags: true
+    condition: "$TEST_COMMAND" = "make test-unit"
   skip_cleanup: true
   api_key:
     secure: CDvIs31EtrSZ82I8pSNKKVwRWGEzyb+SBfpE718CpUYH2/GuZHSEFJrjmTT37tvwOk7zcA/fDhlEGnGu0gQW16gTWQTf4JjGy7i0nby5zQu4/NT2dKe35reAKhvzCPoee1rcT4YrhGLATU+S49fVO2/CdRn/S5tIlUZpywVrgLaTd8qsEoNvaBWKHjrbTZrp7K3qBRZHRqcaM1qgs//q35tbRVgDQdqIWwm/0cc3Q4oeRLAOlSc0uUrci9lZ7au3VsyfRImtLP5X7pYPw5Er1pKCdQxjxMGr0bf5pSzooq4kw2/mOFWA8RCSQKY8t8bvAmnNAF8iKqE6JO8RUiJn5a3viXPlt2vbI/jVmDNvIN3TzRk9tKKfBJbxH4gZrrEazZIuBPNWGGS4gXxJEISKgPXFoh/g3nP4nsyIMQv/w+Ye9M85NnBpJHhlnWRSAfpXdQ8y3KTxHKAJ2ofGpW1P085kidhhQJrTUst7RW1BeSGOk3V4AE53kLUnz5JbSf8BP+GqrsJb+JeDUaw0UwniOt5e8sSj5TXptDjUjQU0MC7uNUQkE3414EHJzJ8PNMboCv65rWawMYqN8irsXTadEUuE/dMxRUsECnNLcYPCRvbnJJV9HqhG2pdIxuYeRstuttgfB5QIw+LX4V/Dj0PHtXjDtH09yH+bdVvpRQdXIMY=
