@@ -47,6 +47,11 @@ before_deploy: git clean -fd && git reset --hard HEAD && go get github.com/karal
 jobs:
   include:
     - stage: Release Binaries
+      before_install: false
+      install: false
+      script: false
+      after_script: false
+      after_success: false
       env:
         matrix: false
       deploy:
