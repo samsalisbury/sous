@@ -2,7 +2,10 @@
 
 package smoke
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // TestBugs is a place to reproduce bug reports from users for fixing.
 // They may later be migrated elsewhere.
@@ -30,6 +33,10 @@ func TestBugs(t *testing.T) {
 		// > No manifest matched by <cluster:* repo:github.com/user1/repo1 offset:* flavor:src/stage1 tag:src/stage1/whosonfirst-gb-postcodes revision:*>
 		// Note that 'tag' and 'offset' are reversed in the above string.
 
-		client.MustRun(t, "manifest get", flags.ManifestIDFlags())
+		got := client.MustFail(t, "manifest get", flags.ManifestIDFlags())
+		want := `No manifest matched by <cluster:* repo:github.com/user1/repo1 offset:src/stage1/whosonfirst-gb-postcodes flavor:src/stage1 tag:* revision:*>`
+		if !strings.Contains(want, got) {
+			t.Errorf("got stderr %q; want it to contain %q", got, want)
+		}
 	})
 }
