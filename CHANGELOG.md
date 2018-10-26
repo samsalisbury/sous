@@ -8,6 +8,11 @@ with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.120...master)
 
+### Fixed
+* Error message when no manifest matches query on 'manifest get' and similar
+  commands now lists the correct key/value pairs rather than jumbling them as
+  before.
+
 ## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
 * Deployments to PROD clusters will use Jenkins agents with 'mesos-prod-sc'
