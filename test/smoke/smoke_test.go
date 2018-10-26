@@ -3,6 +3,7 @@
 package smoke
 
 import (
+	"strings"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
@@ -64,7 +65,11 @@ func TestSmoke(t *testing.T) {
 
 		initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-		client.MustFail(t, "deploy", flags.SousDeployFlags())
+		got := client.MustFail(t, "deploy", flags.SousDeployFlags())
+		want := `Deploy failure: "Container exited with status 1"`
+		if !strings.Contains(got, want) {
+			t.Fatalf("want stderr to contain %q; got %q", want, got)
+		}
 
 		reqID := f.DefaultSingReqID(t, flags)
 		assertActiveStatus(t, f, reqID)
