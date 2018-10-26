@@ -35,7 +35,7 @@ func TestBugs(t *testing.T) {
 
 		got := client.MustFail(t, "manifest get", flags.ManifestIDFlags())
 		want := `No manifest matched by <cluster:* repo:github.com/user1/repo1 offset:src/stage1/whosonfirst-gb-postcodes flavor:src/stage1 tag:* revision:*>`
-		if !strings.Contains(want, got) {
+		if !strings.Contains(got, want) {
 			t.Errorf("got stderr %q; want it to contain %q", got, want)
 		}
 	})
