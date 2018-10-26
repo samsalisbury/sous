@@ -66,7 +66,7 @@ func TestSmoke(t *testing.T) {
 		initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
 
 		got := client.MustFail(t, "deploy", flags.SousDeployFlags())
-		want := `Deploy failure: "Container exited with status 1"`
+		want := `Deploy failure:`
 		if !strings.Contains(got, want) {
 			t.Fatalf("want stderr to contain %q; got %q", want, got)
 		}
