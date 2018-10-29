@@ -7,7 +7,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.120...master)
-
+### Changed
+* Client: sous jenkins cli revise format of generated Jenkinsfile
+	
 ## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
 * Deployments to PROD clusters will use Jenkins agents with 'mesos-prod-sc'
