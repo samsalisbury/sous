@@ -74,7 +74,7 @@ func imageRepoName(sl sous.SourceLocation, kind string, stringRE *regexp.Regexp)
 		return name
 	}
 
-	return strings.Join([]string{name, kind}, "-")
+	return strings.ToLower(strings.Join([]string{name, kind}, "-"))
 }
 
 func tagName(v semv.Version) string {
