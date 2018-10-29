@@ -71,7 +71,7 @@ func imageRepoName(sl sous.SourceLocation, kind string, stringRE *regexp.Regexp)
 	}
 
 	if kind == "" {
-		return name
+		return strings.ToLower(name)
 	}
 
 	return strings.ToLower(strings.Join([]string{name, kind}, "-"))
