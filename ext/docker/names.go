@@ -81,7 +81,7 @@ func tagName(v semv.Version) string {
 	return v.Format("M.m.p-?")
 }
 
-func versionName(sid sous.SourceID, kind string, stripRE *regexp.Regexp) string {
+func versionName(sid sous.SourceID, kind string) string {
 	return strings.Join([]string{imageRepoName(sid.Location, kind), tagName(sid.Version)}, ":")
 }
 
@@ -107,7 +107,7 @@ func fullRepoName(registryHost string, sl sous.SourceLocation, kind string, ls l
 }
 
 func versionTag(registryHost string, v sous.SourceID, kind string, stripRE *regexp.Regexp, ls logging.LogSink) string {
-	verTag := filepath.Join(registryHost, versionName(v, kind, stripRE))
+	verTag := filepath.Join(registryHost, versionName(v, kind))
 	messages.ReportLogFieldsMessage("Docker Version Tag", logging.DebugLevel, ls, kind, logging.KV("version-tag", v))
 	return verTag
 }
