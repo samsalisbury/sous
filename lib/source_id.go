@@ -178,7 +178,8 @@ func MustParseSourceID(s string) SourceID {
 }
 
 // NewSourceID attempts to create a new SourceID from strings representing the
-// separate components.
+// separate components. It expects a repo to be in canonicalised form, e.g.
+// host/some/path. It does not attempt to translate or validate the repo.
 func NewSourceID(repo, offset, version string) (SourceID, error) {
 	v, err := semv.Parse(version)
 	if err != nil {
