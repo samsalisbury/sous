@@ -7,7 +7,7 @@ import (
 	"github.com/opentable/sous/util/logging"
 )
 
-func TestFullRepoName(t *testing.T) {
+func TestFullRepoName_github(t *testing.T) {
 
 	cases := []struct {
 		kind string
@@ -93,7 +93,7 @@ func TestFullRepoName(t *testing.T) {
 
 }
 
-func TestImageRepoName(t *testing.T) {
+func TestImageRepoName_github(t *testing.T) {
 
 	cases := []struct {
 		kind string
