@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -78,7 +79,11 @@ func imageRepoName(sl sous.SourceLocation, kind string) string {
 }
 
 func imageRepoNameGeneric(repo, offset string) string {
-	return "blargle"
+	name := repo
+	if offset != "" {
+		name += "/" + offset
+	}
+	return fmt.Sprintf("%x", sha1.Sum([]byte(name)))
 }
 
 func imageRepoNameGitHub(repo, dir string) string {
