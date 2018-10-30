@@ -85,7 +85,7 @@ func versionName(sid sous.SourceID, kind string) string {
 	return strings.Join([]string{imageRepoName(sid.Location, kind), tagName(sid.Version)}, ":")
 }
 
-func revisionName(sid sous.SourceID, rev string, kind string, time time.Time, stripRE *regexp.Regexp) string {
+func revisionName(sid sous.SourceID, rev string, kind string, time time.Time) string {
 	//A tag name must be valid ASCII and may contain lowercase and uppercase
 	//letters, digits, underscores, periods and dashes. A tag name may not start
 	//with a period or a dash and may contain a maximum of 128 characters.
@@ -113,7 +113,7 @@ func versionTag(registryHost string, v sous.SourceID, kind string, stripRE *rege
 }
 
 func revisionTag(registryHost string, v sous.SourceID, rev string, kind string, time time.Time, stripRE *regexp.Regexp, ls logging.LogSink) string {
-	revTag := filepath.Join(registryHost, revisionName(v, rev, kind, time, stripRE))
+	revTag := filepath.Join(registryHost, revisionName(v, rev, kind, time))
 	messages.ReportLogFieldsMessage("Docker RevisionTag", logging.DebugLevel, ls, kind, time, logging.KV("revision-tag", revTag), v)
 	return revTag
 }
