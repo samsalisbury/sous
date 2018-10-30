@@ -106,13 +106,13 @@ func fullRepoName(registryHost string, sl sous.SourceLocation, kind string, ls l
 	return frn
 }
 
-func versionTag(registryHost string, v sous.SourceID, kind string, stripRE *regexp.Regexp, ls logging.LogSink) string {
+func versionTag(registryHost string, v sous.SourceID, kind string, ls logging.LogSink) string {
 	verTag := filepath.Join(registryHost, versionName(v, kind))
 	messages.ReportLogFieldsMessage("Docker Version Tag", logging.DebugLevel, ls, kind, logging.KV("version-tag", v))
 	return verTag
 }
 
-func revisionTag(registryHost string, v sous.SourceID, rev string, kind string, time time.Time, stripRE *regexp.Regexp, ls logging.LogSink) string {
+func revisionTag(registryHost string, v sous.SourceID, rev string, kind string, time time.Time, ls logging.LogSink) string {
 	revTag := filepath.Join(registryHost, revisionName(v, rev, kind, time))
 	messages.ReportLogFieldsMessage("Docker RevisionTag", logging.DebugLevel, ls, kind, time, logging.KV("revision-tag", revTag), v)
 	return revTag
