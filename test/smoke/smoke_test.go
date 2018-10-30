@@ -217,4 +217,12 @@ func TestSmoke(t *testing.T) {
 
 		assertActiveStatus(t, f, customID1) // This works because we do not yet do cleanup.
 	})
+
+	m.Run("repeated-tag-fails-build", func(t *testing.T, f *fixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer())
+
+		client.MustRun(t, "build", nil, "-tag", "1.2.3")
+
+		client.MustFail(t, "build", nil, "-tag", "1.2.3")
+	})
 }
