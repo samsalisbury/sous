@@ -63,18 +63,30 @@ func Labels(sid sous.SourceID, rev string) map[string]string {
 var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable(/)?)?)?")
 
 func imageRepoName(sl sous.SourceLocation, kind string) string {
-	name := sl.Repo
-
-	name = stripRE.ReplaceAllString(name, "")
-	if sl.Dir != "" {
-		name = strings.Join([]string{name, sl.Dir}, "/")
+	var name string
+	if strings.HasPrefix(sl.Repo, "github.com") {
+		name = imageRepoNameGitHub(sl.Repo, sl.Dir)
+	} else {
+		name = imageRepoNameGeneric(sl.Repo, sl.Dir)
 	}
 
 	if kind == "" {
-		return strings.ToLower(name)
+		return name
 	}
 
-	return strings.ToLower(strings.Join([]string{name, kind}, "-"))
+	return name + "-" + kind
+}
+
+func imageRepoNameGeneric(repo, offset string) string {
+	return "blargle"
+}
+
+func imageRepoNameGitHub(repo, dir string) string {
+	name := stripRE.ReplaceAllString(repo, "")
+	if dir != "" {
+		name = name + "/" + dir
+	}
+	return strings.ToLower(name)
 }
 
 func tagName(v semv.Version) string {
