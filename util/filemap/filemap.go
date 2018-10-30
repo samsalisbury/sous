@@ -97,6 +97,25 @@ func (f FileMap) Write(dir string) error {
 	return nil
 }
 
+// Overwrite is similar to Write, except any existing files that are also
+// defined in f are overwritten.
+func (f FileMap) Overwrite(dir string) error {
+	for relPath, contents := range f {
+		fullPath := filepath.Join(dir, relPath)
+		if err := os.MkdirAll(filepath.Dir(fullPath), 0777); err != nil {
+			return err
+		}
+		// Write the file.
+		if err := ioutil.WriteFile(fullPath, []byte(contents), 0777); err != nil {
+			if cleanErr := f.Clean(dir); err != nil {
+				return errors.Wrapf(err, "error cleaning up: %s", cleanErr)
+			}
+			return errors.Wrapf(err, "error writing files, cleanup successful")
+		}
+	}
+	return nil
+}
+
 // Session encapsulates tearing-up the file tree defined by f, then running some
 // code that assumes it exists, before cleaning up. If f.Write(dir) fails, do is
 // not run, and the error is returned. Otherwise, do is run, and the error from
