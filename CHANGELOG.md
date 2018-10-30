@@ -16,6 +16,9 @@ with respect to its command line interface and HTTP interface
   attempted to create a docker ref with upper-case chars in the repo component
   which is invalid and failed the build.
 
+### Changed
+* Client: sous jenkins cli revise format of generated Jenkinsfile
+	
 ## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
 * Deployments to PROD clusters will use Jenkins agents with 'mesos-prod-sc'
