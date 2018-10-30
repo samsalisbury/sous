@@ -223,6 +223,12 @@ func TestSmoke(t *testing.T) {
 
 		client.MustRun(t, "build", nil, "-tag", "1.2.3")
 
+		// This line means we end up with a different Dockerfile, thus a
+		// different image digest once it's built.
+		// TODO SS: Provide a more explicit mechanism for changing
+		// files in a project after initial setup.
+		f.Projects.Sleeper().Overwrite(client.Dir)
+
 		client.MustFail(t, "build", nil, "-tag", "1.2.3")
 	})
 }
