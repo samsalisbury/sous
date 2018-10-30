@@ -176,5 +176,83 @@ func TestImageRepoName_github(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestImageRepoName_generic(t *testing.T) {
+
+	type testCaseInput struct {
+		kind string
+		sl   sous.SourceLocation
+	}
+	cases := []testCaseInput{
+		// Kind: docker
+		{
+			"docker",
+			sous.SourceLocation{Repo: "example.org/user1/repo1"},
+		},
+		{
+			"docker",
+			sous.SourceLocation{Repo: "example.org/User1/Repo1"},
+		},
+		{
+			"docker",
+			sous.SourceLocation{Repo: "example.org/opentable/repo1"},
+		},
+		{
+			"docker",
+			sous.SourceLocation{
+				Repo: "example.org/opentable/repo1",
+				Dir:  "dir1",
+			},
+		},
+		{
+			"docker",
+			sous.SourceLocation{
+				Repo: "example.org/user1/repo1",
+				Dir:  "dir1",
+			},
+		},
+
+		// With blank kind.
+		{
+			"",
+			sous.SourceLocation{Repo: "example.org/user1/repo1"}},
+		{
+			"",
+			sous.SourceLocation{Repo: "example.org/User1/Repo1"}},
+		{
+			"",
+			sous.SourceLocation{Repo: "example.org/opentable/repo1"}},
+		{
+			"",
+			sous.SourceLocation{
+				Repo: "example.org/opentable/repo1",
+				Dir:  "dir1",
+			},
+		},
+		{
+			"",
+			sous.SourceLocation{
+				Repo: "example.org/user1/repo1",
+				Dir:  "dir1",
+			},
+		},
+	}
+
+	// Assert that given all inputs are unique, all outputs are also unique.
+	gotInputs := map[testCaseInput]int{}
+	gotOutputs := map[string]int{}
+	for i, tc := range cases {
+		t.Run("", func(t *testing.T) {
+			if firstIndex, ok := gotInputs[tc]; ok {
+				t.Fatalf("Test cases %d and %d have duplicate inputs.", firstIndex, i)
+			}
+			gotInputs[tc] = i
+			out := imageRepoName(tc.sl, tc.kind)
+			if firstIndex, ok := gotOutputs[out]; ok {
+				t.Errorf("Test cases %d and %d produced the same output: %q", firstIndex, i, out)
+			}
+			gotOutputs[out] = i
+		})
+	}
 }
