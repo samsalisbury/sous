@@ -197,6 +197,9 @@ pipeline {
 	  //If yes, the deploy step will wait a day asking if should continue deploying to PROD
       string(defaultValue: '{{SOUS_DEPLOY_PROD_QUERY_USER}}', description: 'Ask user before deploying to PROD', name: 'SOUS_DEPLOY_PROD_QUERY_USER')
   }
+  triggers {
+    pollSCM('H/5 * * * *')
+  }
   stages {
     //Immediately send github PR all checks that this pipeline will be checking
     stage('Git statuses tests') {
