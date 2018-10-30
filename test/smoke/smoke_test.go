@@ -3,6 +3,7 @@
 package smoke
 
 import (
+	"strings"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
@@ -53,43 +54,22 @@ func TestSmoke(t *testing.T) {
 
 	m.Run("fail-container-crash", func(t *testing.T, f *fixture) {
 
-		// TODO SS: Remove this once fail-container-crash-rafactor works.
-
 		client := setupProject(t, f, f.Projects.Failer())
 
-		flags := &sousFlags{kind: "http-service", tag: "1.2.3"}
-
-		initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
-
-		client.MustFail(t, "deploy", nil, "-cluster", "cluster1", "-tag", "1.2.3")
-
-		did := sous.DeploymentID{
-			ManifestID: sous.ManifestID{
-				Source: sous.SourceLocation{
-					Repo: "github.com/user1/repo1",
-				},
-			},
-			Cluster: "cluster1",
+		flags := &sousFlags{
+			kind:    "http-service",
+			tag:     "1.2.3",
+			cluster: "cluster1",
+			repo:    "github.com/user1/repo1",
 		}
 
-		reqID := f.Singularity.DefaultReqID(t, did)
-		assertActiveStatus(t, f, reqID)
-		assertSingularityRequestTypeService(t, f, reqID)
-		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
-	})
-
-	m.Run("fail-container-crash-rafactor", func(t *testing.T, f *fixture) {
-
-		// TODO SS: Fix this test.
-		t.Skipf("This test fails, figure out why it's not equivalent to test above.")
-
-		client := setupProject(t, f, f.Projects.Failer())
-
-		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: "github.com/user1/repo1"}
-
 		initBuild(t, client, flags, setMinimalMemAndCPUNumInst1)
 
-		client.MustFail(t, "deploy", flags)
+		got := client.MustFail(t, "deploy", flags.SousDeployFlags())
+		want := `Deploy failure:`
+		if !strings.Contains(got, want) {
+			t.Fatalf("want stderr to contain %q; got %q", want, got)
+		}
 
 		reqID := f.DefaultSingReqID(t, flags)
 		assertActiveStatus(t, f, reqID)

@@ -120,7 +120,6 @@ func makeFile(baseDir, fileName string, bytes []byte) string {
 }
 
 func mustOpenFileAppendOnly(baseDir, fileName string) *os.File {
-	time.Sleep(time.Second)
 	filePath := path.Join(baseDir, fileName)
 	assertDirNotExists(filePath)
 	if !fileExists(filePath) {
