@@ -1,8 +1,11 @@
 package docker
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/docker/distribution/reference"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 )
@@ -239,11 +242,30 @@ func TestImageRepoName_generic(t *testing.T) {
 		},
 	}
 
+	assertKindSuffix := func(t *testing.T, out, kind string) {
+		if kind == "" {
+			return
+		}
+		wantSuffix := "-" + kind
+		if !strings.HasSuffix(out, wantSuffix) {
+			t.Errorf("got %q; want suffix %q", out, wantSuffix)
+		}
+	}
+
+	assertValidDockerRef := func(t *testing.T, out string) {
+		_, err := reference.ParseNamed(out)
+		if err != nil {
+			t.Errorf("invalid docker ref: %s", err)
+		}
+	}
+
 	// Assert that given all inputs are unique, all outputs are also unique.
 	gotInputs := map[testCaseInput]int{}
 	gotOutputs := map[string]int{}
 	for i, tc := range cases {
-		t.Run("", func(t *testing.T) {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+
+			// Uniqueness.
 			if firstIndex, ok := gotInputs[tc]; ok {
 				t.Fatalf("Test cases %d and %d have duplicate inputs.", firstIndex, i)
 			}
@@ -253,6 +275,10 @@ func TestImageRepoName_generic(t *testing.T) {
 				t.Errorf("Test cases %d and %d produced the same output: %q", firstIndex, i, out)
 			}
 			gotOutputs[out] = i
+
+			// Extra assertions.
+			assertKindSuffix(t, out, tc.kind)
+			assertValidDockerRef(t, out)
 		})
 	}
 }
