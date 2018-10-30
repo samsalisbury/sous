@@ -84,7 +84,7 @@ func TestFullRepoName(t *testing.T) {
 	for _, tc := range cases {
 		tc := tc
 		t.Run(tc.kind+"/"+tc.want, func(t *testing.T) {
-			got := fullRepoName("example.org", tc.in, tc.kind, stripRE, logging.SilentLogSet())
+			got := fullRepoName("example.org", tc.in, tc.kind, logging.SilentLogSet())
 			if got != tc.want {
 				t.Errorf("got %s --> %q; want %q", tc.in, got, tc.want)
 			}

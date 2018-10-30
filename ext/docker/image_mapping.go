@@ -315,7 +315,7 @@ func (nc *NameCache) harvest(sl sous.SourceLocation) error {
 		messages.ReportLogFieldsMessage("Err looking up repos for location - proceeding with guessed repo", logging.WarningLevel, nc.log, sl, err)
 		repos = []string{}
 	}
-	guessed := fullRepoName(nc.DockerRegistryHost, sl, "", stripRE, nc.log)
+	guessed := fullRepoName(nc.DockerRegistryHost, sl, "", nc.log)
 	knowGuess := false
 
 	messages.ReportLogFieldsMessage("Attempting to harvest repos", logging.ExtraDebug1Level, nc.log, repos)

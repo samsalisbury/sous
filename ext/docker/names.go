@@ -100,7 +100,7 @@ func revisionName(sid sous.SourceID, rev string, kind string, time time.Time, st
 	return strings.Join([]string{imageRepoName(sid.Location, kind), labelStr}, ":")
 }
 
-func fullRepoName(registryHost string, sl sous.SourceLocation, kind string, stripRE *regexp.Regexp, ls logging.LogSink) string {
+func fullRepoName(registryHost string, sl sous.SourceLocation, kind string, ls logging.LogSink) string {
 	frn := filepath.Join(registryHost, imageRepoName(sl, kind))
 	messages.ReportLogFieldsMessage("Repo name", logging.DebugLevel, ls, sl, logging.KV("full-rep-name", frn))
 	return frn
