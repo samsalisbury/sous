@@ -70,3 +70,71 @@ func TestGetDeployID(t *testing.T) {
 		}
 	})
 }
+
+func TestResolveFilter_String(t *testing.T) {
+	cases := []struct {
+		in   *ResolveFilter
+		want string
+	}{
+		{
+			&ResolveFilter{},
+			"<cluster:* repo:* offset:* flavor:* tag:* revision:*>",
+		},
+		{
+			&ResolveFilter{
+				Cluster: NewResolveFieldMatcher("1"),
+			},
+			"<cluster:1 repo:* offset:* flavor:* tag:* revision:*>",
+		},
+		{
+			&ResolveFilter{
+				Repo: NewResolveFieldMatcher("1"),
+			},
+			"<cluster:* repo:1 offset:* flavor:* tag:* revision:*>",
+		},
+		{
+			&ResolveFilter{
+				Offset: NewResolveFieldMatcher("1"),
+			},
+			"<cluster:* repo:* offset:1 flavor:* tag:* revision:*>",
+		},
+		{
+			&ResolveFilter{
+				Flavor: NewResolveFieldMatcher("1"),
+			},
+			"<cluster:* repo:* offset:* flavor:1 tag:* revision:*>",
+		},
+		{
+			&ResolveFilter{
+				Tag: NewResolveFieldMatcher("1"),
+			},
+			"<cluster:* repo:* offset:* flavor:* tag:1 revision:*>",
+		},
+		{
+			&ResolveFilter{
+				Revision: NewResolveFieldMatcher("1"),
+			},
+			"<cluster:* repo:* offset:* flavor:* tag:* revision:1>",
+		},
+		{
+			&ResolveFilter{
+				Cluster:  NewResolveFieldMatcher("1"),
+				Repo:     NewResolveFieldMatcher("2"),
+				Offset:   NewResolveFieldMatcher("3"),
+				Flavor:   NewResolveFieldMatcher("4"),
+				Tag:      NewResolveFieldMatcher("5"),
+				Revision: NewResolveFieldMatcher("6"),
+			},
+			"<cluster:1 repo:2 offset:3 flavor:4 tag:5 revision:6>",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.want, func(t *testing.T) {
+			got := tc.in.String()
+			if got != tc.want {
+				t.Errorf("got %q; want %q", got, tc.want)
+			}
+		})
+	}
+}
