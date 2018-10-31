@@ -13,6 +13,9 @@ with respect to its command line interface and HTTP interface
   commands now lists the correct key/value pairs rather than jumbling them as
   before.
 
+### Changed
+* Client: sous jenkins cli revise format of generated Jenkinsfile
+	
 ## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
 * Deployments to PROD clusters will use Jenkins agents with 'mesos-prod-sc'
