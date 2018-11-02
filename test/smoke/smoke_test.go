@@ -3,8 +3,10 @@
 package smoke
 
 import (
+	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	sous "github.com/opentable/sous/lib"
 )
@@ -216,6 +218,19 @@ func TestSmoke(t *testing.T) {
 		//assertRequestDoesNotExist(t, f, customID1)
 
 		assertActiveStatus(t, f, customID1) // This works because we do not yet do cleanup.
+	})
+
+	m.Run("getartifact-success", func(t *testing.T, f *fixture) {
+
+		epochSeconds := time.Now().Unix()
+
+		client := setupProject(t, f, f.Projects.HTTPServer())
+		flags := &sousFlags{
+			repo: "github.com/user1/repo1",
+			tag:  fmt.Sprintf("%d", epochSeconds),
+		}
+		client.MustRun(t, "build", flags)
+		client.MustRun(t, "artifact get", flags)
 	})
 
 	m.Run("repeated-tag-fails-build", func(t *testing.T, f *fixture) {
