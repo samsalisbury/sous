@@ -12,10 +12,10 @@ type (
 	// SousBuild is the command description for `sous build`
 	// Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
 	SousBuild struct {
-		config.DeployFilterFlags `inject:"optional"`
-		config.PolicyFlags       `inject:"optional"`
+		DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
+		PolicyFlags       config.PolicyFlags       `inject:"optional"`
 
-		*sous.BuildManager
+		BuildManager *sous.BuildManager
 	}
 )
 
