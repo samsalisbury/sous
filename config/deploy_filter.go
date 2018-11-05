@@ -48,6 +48,17 @@ func (f SourceIDFlags) DeployFilterFlags() DeployFilterFlags {
 	return dff
 }
 
+// SourceIDFlags returns an equivalent SourceIDFlags.
+func (f DeployFilterFlags) SourceIDFlags() SourceIDFlags {
+	return SourceIDFlags{
+		SourceLocationFlags: f.DeploymentIDFlags.ManifestIDFlags.SourceLocationFlags,
+		SourceVersionFlags: SourceVersionFlags{
+			Tag:      f.Tag,
+			Revision: f.Revision,
+		},
+	}
+}
+
 // SourceID returns the sous.SourceID represented by these flags.
 func (f SourceIDFlags) SourceID() (sous.SourceID, error) {
 	version, err := semv.Parse(f.Tag)

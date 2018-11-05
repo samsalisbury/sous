@@ -2,8 +2,11 @@ package cli
 
 import (
 	"flag"
+	"fmt"
+	"strings"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
@@ -16,6 +19,9 @@ type (
 		PolicyFlags       config.PolicyFlags       `inject:"optional"`
 
 		BuildManager *sous.BuildManager
+
+		SousGraph *graph.SousGraph
+		opts      graph.ArtifactOpts
 	}
 )
 
@@ -56,10 +62,32 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 		}
 	}
 
+	opts := graph.ArtifactOpts{
+		SourceID: sb.DeployFilterFlags.SourceIDFlags(),
+	}
+	getArtifact, err := sb.SousGraph.GetGetArtifact(opts)
+	if err != nil {
+		return cmdr.InternalErrorf("%s", err)
+	}
+
+	if err := assertArtifactNotRegistered(getArtifact.Do()); err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
+
 	result, err := sb.BuildManager.Build()
 
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 	return cmdr.Success(result)
+}
+
+func assertArtifactNotRegistered(err error) error {
+	if err == nil {
+		return fmt.Errorf("artifact already registered")
+	}
+	if strings.Contains(err.Error(), "404 Not Found") {
+		return nil
+	}
+	return fmt.Errorf("unable to verify artifact existence: %s", err)
 }
