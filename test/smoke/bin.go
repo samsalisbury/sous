@@ -272,7 +272,7 @@ func (c *Bin) configureCommand(i invocation) (*PreparedCmd, error) {
 		}
 		cmdStr := fmt.Sprintf("%s$> %s", relPath, i)
 		rtLog("%s:%s", c.ID(), cmdStr)
-		fmt.Fprintf(allFiles, cmdStr)
+		fmt.Fprintf(allFiles, cmdStr+"\n")
 		return nil
 	}
 
