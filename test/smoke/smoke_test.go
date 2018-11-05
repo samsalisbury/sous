@@ -231,7 +231,12 @@ func TestSmoke(t *testing.T) {
 	m.Run("repeated-tag-fails-build", func(t *testing.T, f *fixture) {
 		p := setupProject(t, f, f.Projects.HTTPServer())
 
-		p.MustRun(t, "build", nil, "-tag", "1.2.3")
+		flags := &sousFlags{
+			repo: p.repo,
+			tag:  "1.2.3",
+		}
+
+		p.MustRun(t, "build", flags)
 
 		// This line means we end up with a different Dockerfile, thus a
 		// different image digest once it's built.
@@ -239,6 +244,10 @@ func TestSmoke(t *testing.T) {
 		// files in a project after initial setup.
 		f.Projects.Sleeper().Overwrite(p.Dir)
 
-		p.MustFail(t, "build", nil, "-tag", "1.2.3")
+		gotStderr := p.MustFail(t, "build", flags)
+		want := "artifact already registered"
+		if !strings.Contains(gotStderr, want) {
+			t.Errorf("got stderr %q, want it to contain %q", gotStderr, want)
+		}
 	})
 }
