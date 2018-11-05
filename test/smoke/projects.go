@@ -154,7 +154,20 @@ func splitBuild(p program) filemap.FileMap {
 	}
 }
 
-func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousClient {
+type sousProject struct {
+	// sousClient is a sous client at the root of the repo.
+	*sousClient
+	// git is a git client at the root of the repo.
+	git *gitClient
+	// files contains the project files.
+	files filemap.FileMap
+	// repo is the isolated repo name.
+	repo string
+}
+
+// setupProject returns a *sousProject with an isolated repo name (isolated
+// in terms of the name of the test t.
+func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousProject {
 	t.Helper()
 
 	// Setup project git repo.
@@ -163,10 +176,19 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousClient {
 	projectDir := f.newEmptyDir("project1")
 	g.CD(projectDir)
 
+	// TODO SS: This ToLower call will not be necessary once we properly handle
+	// repos and offsets that contain upper-case letters. Remove ToLower call
+	// once that is done.
+	isolatedRepoName := strings.ToLower(t.Name())
+
+	origin := "git@github.com:" + isolatedRepoName + ".git"
+
+	origin = strings.ToLower(origin)
+
 	g.init(t, f.fixtureConfig, gitRepoSpec{
 		UserName:  "Sous User 1",
 		UserEmail: "sous-user1@example.com",
-		OriginURL: "git@github.com:user1/repo1.git",
+		OriginURL: origin,
 	})
 
 	if err := fm.Write(projectDir); err != nil {
@@ -186,5 +208,10 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousClient {
 		client.MustRun(t, "version", nil)
 	}
 
-	return client
+	return &sousProject{
+		sousClient: client,
+		git:        g,
+		files:      fm,
+		repo:       "github.com/" + isolatedRepoName,
+	}
 }
