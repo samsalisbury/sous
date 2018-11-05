@@ -22,6 +22,8 @@ type (
 
 		SousGraph *graph.SousGraph
 		opts      graph.ArtifactOpts
+
+		RFF *graph.RefinedResolveFilter
 	}
 )
 
@@ -61,6 +63,8 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 			return cmdr.EnsureErrorResult(err)
 		}
 	}
+
+	sb.DeployFilterFlags.Repo = sb.RFF.Repo.ValueOr("")
 
 	opts := graph.ArtifactOpts{
 		SourceID: sb.DeployFilterFlags.SourceIDFlags(),
