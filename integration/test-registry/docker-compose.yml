@@ -21,7 +21,6 @@ services:
     restart: always
     ports:
       - "2222:22"
-    network_mode: "host"
   
   # FROM HERE DOWN: Singularity test setup
   zk:
