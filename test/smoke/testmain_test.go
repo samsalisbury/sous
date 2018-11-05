@@ -33,7 +33,7 @@ func resetSingularity() error {
 }
 
 func nukeDockerRegistry() error {
-	if err := doCMD("../../integration/test-registry", "docker-compose", "-sfv", "registry"); err != nil {
+	if err := doCMD("../../integration/test-registry", "docker-compose", "rm", "-sfv", "registry"); err != nil {
 		return err
 	}
 	if err := doCMD(".", "docker", "volume", "rm", "test-registry_registrydata"); err != nil {
