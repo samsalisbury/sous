@@ -347,7 +347,7 @@ func (c *Bin) MustFail(t *testing.T, subcmd string, f Flags, args ...string) str
 	t.Helper()
 	executed, err := c.Run(t, subcmd, f, args...)
 	if err == nil {
-		t.Fatalf("Command should have failed: sous %s %s", subcmd, args)
+		t.Fatalf("Command should have failed: %s", executed.invocation)
 	}
 	_, ok := err.(*exec.ExitError)
 	if !ok {
