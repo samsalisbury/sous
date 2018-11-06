@@ -15,6 +15,10 @@ with respect to its command line interface and HTTP interface
 
 ### Changed
 * Client: sous jenkins cli revise format of generated Jenkinsfile
+* Client: 'sous build' fails early when trying to re-build an existing version tag.
+  Previously the build succeeded, and pushed a new docker image, but subsequent
+  deploys did not use the new docker image, since sous uses the image digest, not
+  the docker tag itself to identify images with SourceIDs.
 	
 ## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
