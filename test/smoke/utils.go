@@ -222,14 +222,21 @@ func mustDoCMD(t *testing.T, dir, name string, args ...string) {
 	}
 }
 
-func doCMD(dir, name string, args ...string) error {
+func doCMDCombinedOut(dir, name string, args ...string) (string, error) {
 	c, cancel := mkCMD(dir, name, args...)
 	defer cancel()
-	if o, err := c.CombinedOutput(); err != nil {
-		return fmt.Errorf("command %q %v in dir %q failed: %v; output was:\n%s",
+	b, err := c.CombinedOutput()
+	o := string(b)
+	if err != nil {
+		return o, fmt.Errorf("command %q %v in dir %q failed: %v; output was:\n%s",
 			name, args, dir, err, string(o))
 	}
-	return nil
+	return o, nil
+}
+
+func doCMD(dir, name string, args ...string) error {
+	_, err := doCMDCombinedOut(dir, name, args...)
+	return err
 }
 
 var perCommandTimeout = 5 * time.Minute

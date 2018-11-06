@@ -5,6 +5,7 @@ package smoke
 import (
 	"flag"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/opentable/sous/util/firsterr"
@@ -33,11 +34,24 @@ func resetSingularity() error {
 }
 
 func nukeDockerRegistry() error {
-	if err := doCMD("../../integration/test-registry", "docker-compose", "rm", "-sfv", "registry"); err != nil {
+	wd := "../../integration/test-registry"
+	cid, err := doCMDCombinedOut(wd, "docker-compose", "ps", "-q", "registry")
+	if err != nil {
 		return err
 	}
-	if err := doCMD(".", "docker", "volume", "rm", "test-registry_registrydata"); err != nil {
+	if strings.TrimSpace(cid) != "" {
+		if err := doCMD("", "docker-compose", "rm", "-sfv", "registry"); err != nil {
+			return err
+		}
+	}
+	vols, err := doCMDCombinedOut(wd, "docker", "volumes", "ls")
+	if err != nil {
 		return err
+	}
+	if strings.Contains(vols, "test-registry_registrydata") {
+		if err := doCMD(".", "docker", "volume", "rm", "test-registry_registrydata"); err != nil {
+			return err
+		}
 	}
 	return doCMD("../../integration/test-registry", "docker-compose", "up", "-d", "registry")
 }
