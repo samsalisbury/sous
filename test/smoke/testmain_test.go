@@ -40,7 +40,7 @@ func nukeDockerRegistry() error {
 		return err
 	}
 	if strings.TrimSpace(cid) != "" {
-		if err := doCMD("", "docker-compose", "rm", "-sfv", "registry"); err != nil {
+		if err := doCMD(wd, "docker-compose", "rm", "-sfv", "registry"); err != nil {
 			return err
 		}
 	}
@@ -49,9 +49,9 @@ func nukeDockerRegistry() error {
 		return err
 	}
 	if strings.Contains(vols, "test-registry_registrydata") {
-		if err := doCMD(".", "docker", "volume", "rm", "test-registry_registrydata"); err != nil {
+		if err := doCMD(wd, "docker", "volume", "rm", "test-registry_registrydata"); err != nil {
 			return err
 		}
 	}
-	return doCMD("../../integration/test-registry", "docker-compose", "up", "-d", "registry")
+	return doCMD(wd, "docker-compose", "up", "-d", "registry")
 }
