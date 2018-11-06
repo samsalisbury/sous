@@ -4,6 +4,7 @@ package smoke
 
 import (
 	"flag"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -34,24 +35,33 @@ func resetSingularity() error {
 }
 
 func nukeDockerRegistry() error {
-	wd := "../../integration/test-registry"
+	log.Printf("Ensuring clean docker registry state.")
+	const wd = "../../integration/test-registry"
 	cid, err := doCMDCombinedOut(wd, "docker-compose", "ps", "-q", "registry")
 	if err != nil {
 		return err
 	}
 	if strings.TrimSpace(cid) != "" {
+		log.Printf("Removing registry container (id: %s)", cid)
 		if err := doCMD(wd, "docker-compose", "rm", "-sfv", "registry"); err != nil {
 			return err
 		}
+	} else {
+		log.Printf("Docker registry is not running.")
 	}
 	vols, err := doCMDCombinedOut(wd, "docker", "volume", "ls")
 	if err != nil {
 		return err
 	}
-	if strings.Contains(vols, "test-registry_registrydata") {
-		if err := doCMD(wd, "docker", "volume", "rm", "test-registry_registrydata"); err != nil {
+	const volumeName = "test-registry_registrydata"
+	if strings.Contains(vols, volumeName) {
+		log.Printf("Removing registry volume %s", volumeName)
+		if err := doCMD(wd, "docker", "volume", "rm", volumeName); err != nil {
 			return err
 		}
+	} else {
+		log.Printf("No registry volume named %q to remove.", volumeName)
 	}
+	log.Printf("Starting a fresh registry container.")
 	return doCMD(wd, "docker-compose", "up", "-d", "registry")
 }
