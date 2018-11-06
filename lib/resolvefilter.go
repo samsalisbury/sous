@@ -156,15 +156,14 @@ func (rf *ResolveFilter) DeploymentID(mid ManifestID) (DeploymentID, error) {
 }
 
 func (rf *ResolveFilter) String() string {
-
 	return fmt.Sprintf(
 		"<cluster:%s repo:%s offset:%s flavor:%s tag:%s revision:%s>",
 		rf.Cluster.ValueOr("*"),
 		rf.Repo.ValueOr("*"),
-		rf.Revision.ValueOr("*"),
-		rf.Flavor.ValueOr("*"),
 		rf.Offset.ValueOr("*"),
+		rf.Flavor.ValueOr("*"),
 		rf.Tag.ValueOr("*"),
+		rf.Revision.ValueOr("*"),
 	)
 }
 

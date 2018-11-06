@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
 ## [Unreleased](//github.com/opentable/sous/compare/0.5.120...master)
+
+### Fixed
+* Error message when no manifest matches query on 'manifest get' and similar
+  commands now lists the correct key/value pairs rather than jumbling them as
+  before.
+
 ### Changed
 * Client: sous jenkins cli revise format of generated Jenkinsfile
 	
