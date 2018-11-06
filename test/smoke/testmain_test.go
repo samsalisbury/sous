@@ -44,7 +44,7 @@ func nukeDockerRegistry() error {
 			return err
 		}
 	}
-	vols, err := doCMDCombinedOut(wd, "docker", "volumes", "ls")
+	vols, err := doCMDCombinedOut(wd, "docker", "volume", "ls")
 	if err != nil {
 		return err
 	}
