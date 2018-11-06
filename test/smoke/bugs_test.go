@@ -39,4 +39,23 @@ func TestBugs(t *testing.T) {
 			t.Errorf("got stderr %q; want it to contain %q", got, want)
 		}
 	})
+
+	m.Run("uppercase-docker-repo-bug", func(t *testing.T, f *fixture) {
+		client := setupProject(t, f, f.Projects.HTTPServer(), func(p *Project) {
+			p.GitRepo.OriginURL = "git@github.com:SomeUser/SomeProject.git"
+		})
+
+		flags := &sousFlags{
+			repo: "github.com/SomeUser/SomeProject",
+			tag:  "1.2.3",
+		}
+
+		// On writing this test, it fails because it tries to create a docker
+		// image ref with upper-case characters in its repo component, which
+		// is not allowed:
+		//   shell> docker build -t 192.168.99.100:5000/SomeUser/SomeProject:1.2.3-testbugs-git-simple-uppercase-docker-repo-bug -t 192.168.99.100:5000/SomeUser/SomeProject:z-2018-10-29T13.12.21 -
+		//   invalid argument "192.168.99.100:5000/SomeUser/SomeProject:1.2.3-testbugs-git-simple-uppercase-docker-repo-bug" for "-t, --tag" flag: invalid reference format: repository name must be lowercase
+
+		client.MustRun(t, "build", flags)
+	})
 }
