@@ -48,12 +48,12 @@ func TestTagStrings(t *testing.T) {
 
 	ls := logging.SilentLogSet()
 
-	assert.Equal("sous/docker:1.2.3", versionName(sid, "", stripRE))
-	assert.Equal("sous/docker-builder:1.2.3", versionName(sid, "builder", stripRE))
-	assert.Equal("sous/docker:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "deadbeef", "", theTime, stripRE))
-	assert.Equal("sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "deadbeef", "builder", theTime, stripRE))
-	assert.Equal("docker.example.com/sous/docker:1.2.3", versionTag("docker.example.com", sid, "", stripRE, ls))
-	assert.Equal("docker.example.com/sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionTag("docker.example.com", sid, "deadbeef", "builder", theTime, stripRE, ls))
+	assert.Equal("sous/docker:1.2.3", versionName(sid, ""))
+	assert.Equal("sous/docker-builder:1.2.3", versionName(sid, "builder"))
+	assert.Equal("sous/docker:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "deadbeef", "", theTime))
+	assert.Equal("sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionName(sid, "deadbeef", "builder", theTime))
+	assert.Equal("docker.example.com/sous/docker:1.2.3", versionTag("docker.example.com", sid, "", ls))
+	assert.Equal("docker.example.com/sous/docker-builder:zdeadbeef-1976-09-28T07.00.00", revisionTag("docker.example.com", sid, "deadbeef", "builder", theTime, ls))
 }
 
 func TestBuilderApplyMetadata(t *testing.T) {

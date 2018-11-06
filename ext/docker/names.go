@@ -1,6 +1,7 @@
 package docker
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -62,30 +63,46 @@ func Labels(sid sous.SourceID, rev string) map[string]string {
 // XXX The idea is to make this a configuration value at some point.
 var stripRE = regexp.MustCompile("^([[:alpha:]]+://)?(github.com(/opentable(/)?)?)?")
 
-func imageRepoName(sl sous.SourceLocation, kind string, stringRE *regexp.Regexp) string {
-	name := sl.Repo
-
-	name = stripRE.ReplaceAllString(name, "")
-	if sl.Dir != "" {
-		name = strings.Join([]string{name, sl.Dir}, "/")
+func imageRepoName(sl sous.SourceLocation, kind string) string {
+	var name string
+	if strings.HasPrefix(sl.Repo, "github.com") {
+		name = imageRepoNameGitHub(sl.Repo, sl.Dir)
+	} else {
+		name = imageRepoNameGeneric(sl.Repo, sl.Dir)
 	}
 
 	if kind == "" {
 		return name
 	}
 
-	return strings.Join([]string{name, kind}, "-")
+	return name + "-" + kind
+}
+
+func imageRepoNameGeneric(repo, offset string) string {
+	name := repo
+	if offset != "" {
+		name += "/" + offset
+	}
+	return fmt.Sprintf("%x", sha1.Sum([]byte(name)))
+}
+
+func imageRepoNameGitHub(repo, dir string) string {
+	name := stripRE.ReplaceAllString(repo, "")
+	if dir != "" {
+		name = name + "/" + dir
+	}
+	return strings.ToLower(name)
 }
 
 func tagName(v semv.Version) string {
 	return v.Format("M.m.p-?")
 }
 
-func versionName(sid sous.SourceID, kind string, stripRE *regexp.Regexp) string {
-	return strings.Join([]string{imageRepoName(sid.Location, kind, stripRE), tagName(sid.Version)}, ":")
+func versionName(sid sous.SourceID, kind string) string {
+	return strings.Join([]string{imageRepoName(sid.Location, kind), tagName(sid.Version)}, ":")
 }
 
-func revisionName(sid sous.SourceID, rev string, kind string, time time.Time, stripRE *regexp.Regexp) string {
+func revisionName(sid sous.SourceID, rev string, kind string, time time.Time) string {
 	//A tag name must be valid ASCII and may contain lowercase and uppercase
 	//letters, digits, underscores, periods and dashes. A tag name may not start
 	//with a period or a dash and may contain a maximum of 128 characters.
@@ -97,23 +114,23 @@ func revisionName(sid sous.SourceID, rev string, kind string, time time.Time, st
 	// z prefix sorts "pinning" labels to the bottom
 	// Format is the RFC3339 format, with . instead of : so that it's a legal docker tag
 	labelStr := fmt.Sprintf("z%v-%v", rev, time.UTC().Format("2006-01-02T15.04.05"))
-	return strings.Join([]string{imageRepoName(sid.Location, kind, stripRE), labelStr}, ":")
+	return strings.Join([]string{imageRepoName(sid.Location, kind), labelStr}, ":")
 }
 
-func fullRepoName(registryHost string, sl sous.SourceLocation, kind string, stripRE *regexp.Regexp, ls logging.LogSink) string {
-	frn := filepath.Join(registryHost, imageRepoName(sl, kind, stripRE))
+func fullRepoName(registryHost string, sl sous.SourceLocation, kind string, ls logging.LogSink) string {
+	frn := filepath.Join(registryHost, imageRepoName(sl, kind))
 	messages.ReportLogFieldsMessage("Repo name", logging.DebugLevel, ls, sl, logging.KV("full-rep-name", frn))
 	return frn
 }
 
-func versionTag(registryHost string, v sous.SourceID, kind string, stripRE *regexp.Regexp, ls logging.LogSink) string {
-	verTag := filepath.Join(registryHost, versionName(v, kind, stripRE))
+func versionTag(registryHost string, v sous.SourceID, kind string, ls logging.LogSink) string {
+	verTag := filepath.Join(registryHost, versionName(v, kind))
 	messages.ReportLogFieldsMessage("Docker Version Tag", logging.DebugLevel, ls, kind, logging.KV("version-tag", v))
 	return verTag
 }
 
-func revisionTag(registryHost string, v sous.SourceID, rev string, kind string, time time.Time, stripRE *regexp.Regexp, ls logging.LogSink) string {
-	revTag := filepath.Join(registryHost, revisionName(v, rev, kind, time, stripRE))
+func revisionTag(registryHost string, v sous.SourceID, rev string, kind string, time time.Time, ls logging.LogSink) string {
+	revTag := filepath.Join(registryHost, revisionName(v, rev, kind, time))
 	messages.ReportLogFieldsMessage("Docker RevisionTag", logging.DebugLevel, ls, kind, time, logging.KV("revision-tag", revTag), v)
 	return revTag
 }

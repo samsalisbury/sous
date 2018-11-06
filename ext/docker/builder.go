@@ -163,10 +163,10 @@ func (b *Builder) recordName(bp *sous.BuildProduct) error {
 
 // VersionTag computes an image tag from a SourceVersion's version
 func (b *Builder) VersionTag(v sous.SourceID, kind string) string {
-	return versionTag(b.DockerRegistryHost, v, kind, stripRE, b.log)
+	return versionTag(b.DockerRegistryHost, v, kind, b.log)
 }
 
 // RevisionTag computes an image tag from a SourceVersion's revision id
 func (b *Builder) RevisionTag(v sous.SourceID, rev string, kind string, time time.Time) string {
-	return revisionTag(b.DockerRegistryHost, v, rev, kind, time, stripRE, b.log)
+	return revisionTag(b.DockerRegistryHost, v, rev, kind, time, b.log)
 }

@@ -12,6 +12,9 @@ with respect to its command line interface and HTTP interface
 * Error message when no manifest matches query on 'manifest get' and similar
   commands now lists the correct key/value pairs rather than jumbling them as
   before.
+* Docker refs now always use a lower-case repo component. Previously it sometimes
+  attempted to create a docker ref with upper-case chars in the repo component
+  which is invalid and failed the build.
 
 ### Changed
 * Client: sous jenkins cli revise format of generated Jenkinsfile

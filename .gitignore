@@ -90,3 +90,5 @@ fabric.properties
 .tags
 .vagrant/
 .sous-gdm-temp/
+
+cli/actions/Jenkinsfile

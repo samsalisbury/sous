@@ -8,6 +8,13 @@ import (
 	"github.com/opentable/sous/util/filemap"
 )
 
+// Project encapsulates a filemap and local git repo config, providing the
+// context for tests to run in.
+type Project struct {
+	FileMap filemap.FileMap
+	GitRepo gitRepoSpec
+}
+
 type projectMaker func() filemap.FileMap
 
 type projectList struct {
@@ -154,8 +161,18 @@ func splitBuild(p program) filemap.FileMap {
 	}
 }
 
-func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousClient {
+func setupProject(t *testing.T, f *fixture, fm filemap.FileMap, config ...func(*Project)) *sousClient {
 	t.Helper()
+
+	p := Project{
+		FileMap: fm,
+		GitRepo: defaultGitRepoSpec(),
+	}
+	for _, f := range config {
+		f(&p)
+	}
+	fm = p.FileMap
+	grs := p.GitRepo
 
 	// Setup project git repo.
 	g := newGitClient(t, f.fixtureConfig, "gitclient1")
@@ -163,11 +180,7 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousClient {
 	projectDir := f.newEmptyDir("project1")
 	g.CD(projectDir)
 
-	g.init(t, f.fixtureConfig, gitRepoSpec{
-		UserName:  "Sous User 1",
-		UserEmail: "sous-user1@example.com",
-		OriginURL: "git@github.com:user1/repo1.git",
-	})
+	g.init(t, f.fixtureConfig, grs)
 
 	if err := fm.Write(projectDir); err != nil {
 		t.Fatalf("filemap.Write: %s", err)

@@ -21,6 +21,21 @@ type gitRepoSpec struct {
 	UserName, UserEmail, OriginURL string
 }
 
+// defaultGitRepoSpec returns the default git repo spec, optional config funcs
+// passed in modify the default spec before it is returned. They are run in the
+// order passed.
+func defaultGitRepoSpec(config ...func(*gitRepoSpec)) gitRepoSpec {
+	s := gitRepoSpec{
+		UserName:  "Sous User 1",
+		UserEmail: "sous-user1@example.com",
+		OriginURL: "git@github.com:user1/repo1.git",
+	}
+	for _, f := range config {
+		f(&s)
+	}
+	return s
+}
+
 func (g *gitClient) init(t *testing.T, f fixtureConfig, spec gitRepoSpec) {
 	t.Helper()
 	g.Bin.Configure()
