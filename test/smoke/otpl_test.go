@@ -31,7 +31,7 @@ func dockerBuildAddArtifact(t *testing.T, f *fixture, client *sousProject, flags
 	repo := flags.repo
 	dockerTag := f.IsolatedVersionTag(tag)
 	dockerRepo := fmt.Sprintf("%s/%s", reg, repo)
-	dockerRef = fmt.Sprintf("%s:%s", dockerRepo, dockerTag)
+	dockerRef = strings.ToLower(fmt.Sprintf("%s:%s", dockerRepo, dockerTag))
 
 	mustDoCMD(t, client.Dir, "docker", "build", "-t", dockerRef, ".")
 	mustDoCMD(t, client.Dir, "docker", "push", dockerRef)
