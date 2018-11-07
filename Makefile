@@ -54,7 +54,7 @@ DESCRIPTION := "Sous is a tool for building, testing, and deploying applications
 URL := https://github.com/opentable/sous
 
 ifneq ($(GO_TEST_RUN),)
-EXTRA_GO_TEST_FLAGS := $(EXTRA_GO_TEST_FLAGS) -run $(GO_TEST_RUN)
+EXTRA_GO_TEST_FLAGS := $(EXTRA_GO_TEST_FLAGS) -run '$(GO_TEST_RUN)'
 endif
 
 TAG_TEST := git describe --exact-match --abbrev=0 2>/dev/null
