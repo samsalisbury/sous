@@ -17,8 +17,11 @@ import (
 	"github.com/pkg/errors"
 )
 
-func testSBPDetect(t *testing.T, dockerfile string,
-	metadataMap map[string]docker_registry.Metadata) (*sous.DetectResult, error) {
+func testSBPDetect(
+	t *testing.T,
+	dockerfile string,
+	metadataMap map[string]docker_registry.Metadata,
+) (*sous.DetectResult, error) {
 	testDir, err := ioutil.TempDir("testdata", "splitcontainer")
 	if err != nil {
 		return nil, err
@@ -53,6 +56,7 @@ func testSBPDetect(t *testing.T, dockerfile string,
 }
 
 func assertAccepted(t *testing.T, drez *sous.DetectResult, err error) {
+	t.Helper()
 	if err != nil {
 		t.Errorf("SplitBuildpack reported unexpected error %#v", err)
 	}
@@ -64,6 +68,7 @@ func assertAccepted(t *testing.T, drez *sous.DetectResult, err error) {
 }
 
 func assertRejected(t *testing.T, drez *sous.DetectResult, err error) {
+	t.Helper()
 	if err != nil {
 		return // an error implies rejection
 	}
@@ -75,6 +80,7 @@ func assertRejected(t *testing.T, drez *sous.DetectResult, err error) {
 }
 
 func assertArgs(t *testing.T, drez *sous.DetectResult, version, revision bool) {
+	t.Helper()
 	defer func() {
 		if r := recover(); r != nil {
 			t.Error(r)

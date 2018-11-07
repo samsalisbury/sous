@@ -7,24 +7,22 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var fullEnv = "[\"ENV BUILD_ROOT /app\" \"ENV PRODUCT $BUILD_ROOT/product\" \"ENV SOUS_RUN_IMAGE_SPEC_OUTPUT=$PRODUCT/run_spec.json\" \"WORKDIR $BUILD_ROOT\" \"COPY ./ ./\" \"CMD mvn -B deploy\"] [\"PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin\" \"APP_BASE=/srv\" \"APP_REL=app\" \"CONFIG_REL=config\" \"BOOTSTRAP_REL=bootstrap\" \"JAR_REL=app/main.jar\" \"APP_DIR=/srv/app\" \"CONFIG_DIR=/srv/config\" \"BOOTSTRAP_DIR=/srv/bootstrap\" \"OT_JAR=/srv/app/main.jar\" \"GNUPGHOME=/srv/config/gnupg\" \"SOUS_RUN_IMAGE_SPEC=/run_spec.json\"]"
-var pathEnv = "[\"PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin\" \"APP_BASE=/srv\" \"APP_REL=app\" \"CONFIG_REL=config\" \"BOOTSTRAP_REL=bootstrap\" \"JAR_REL=app/main.jar\" \"APP_DIR=/srv/app\" \"CONFIG_DIR=/srv/config\" \"BOOTSTRAP_DIR=/srv/bootstrap\" \"OT_JAR=/srv/app/main.jar\" \"GNUPGHOME=/srv/config/gnupg\" \"SOUS_RUN_IMAGE_SPEC=/run_spec.json\"]"
+var fullEnv = "ENV BUILD_ROOT /app\nENV PRODUCT $BUILD_ROOT/product\nENV SOUS_RUN_IMAGE_SPEC_OUTPUT=$PRODUCT/run_spec.json\nWORKDIR $BUILD_ROOT\nCOPY ./ ./\nCMD mvn -B deploy\nENV PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin\nENV APP_BASE=/srv\nENV APP_REL=app\nENV CONFIG_REL=config\nENV BOOTSTRAP_REL=bootstrap\nENV JAR_REL=app/main.jar\nENV APP_DIR=/srv/app\nENV CONFIG_DIR=/srv/config\nENV BOOTSTRAP_DIR=/srv/bootstrap\nENV OT_JAR=/srv/app/main.jar\nENV GNUPGHOME=/srv/config/gnupg\nENV SOUS_RUN_IMAGE_SPEC=/run_spec.json"
+var pathEnv = "ENV PATH=/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/bin\nENV APP_BASE=/srv\nENV APP_REL=app\nENV CONFIG_REL=config\nENV BOOTSTRAP_REL=bootstrap\nENV JAR_REL=app/main.jar\nENV APP_DIR=/srv/app\nENV CONFIG_DIR=/srv/config\nENV BOOTSTRAP_DIR=/srv/bootstrap\nENV OT_JAR=/srv/app/main.jar\nENV GNUPGHOME=/srv/config/gnupg\nENV SOUS_RUN_IMAGE_SPEC=/run_spec.json"
 
 func Test_parseImageOutput(t *testing.T) {
-	inputEnv := fullEnv
-	envs := parseImageOutput(inputEnv)
-	//assert.Len(t, envs, 13)
-	assert.Equal(t, len(envs), 16)
-	assert.Equal(t, "/run_spec.json", envs[SOUS_RUN_IMAGE_SPEC])
-	assert.Equal(t, "$PRODUCT/run_spec.json", envs["SOUS_RUN_IMAGE_SPEC_OUTPUT"])
+	envs := parseImageOutput(fullEnv)
+	assert.Len(t, envs, 15)
+	assert.Contains(t, envs, SOUS_RUN_IMAGE_SPEC)
+	assert.Equal(t, envs[SOUS_RUN_IMAGE_SPEC], "/run_spec.json")
+	assert.Equal(t, envs["SOUS_RUN_IMAGE_SPEC_OUTPUT"], "$PRODUCT/run_spec.json")
 
-	inputEnv = pathEnv
-	envs = parseImageOutput(inputEnv)
+	envs = parseImageOutput(pathEnv)
 	assert.Len(t, envs, 12)
-	assert.Equal(t, "/run_spec.json", envs[SOUS_RUN_IMAGE_SPEC])
+	assert.Contains(t, envs, SOUS_RUN_IMAGE_SPEC)
+	assert.Equal(t, envs[SOUS_RUN_IMAGE_SPEC], "/run_spec.json")
 
-	inputEnv = ""
-	envs = parseImageOutput(inputEnv)
+	envs = parseImageOutput("")
 	assert.Len(t, envs, 0)
 }
 
@@ -44,7 +42,7 @@ func Test_inspectImage_not_found(t *testing.T) {
 	cctl.ResultFailure("", "Image Not Found")
 
 	imageEnv, err := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:bogus")
-	assert.NoError(t, err)
+	assert.Error(t, err)
 	assert.Equal(t, "", imageEnv)
 }
 
@@ -56,5 +54,5 @@ func Test_inspectImageForOnBuild(t *testing.T) {
 	imageOnBuild, err := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:local")
 	assert.NoError(t, err)
 	envs := parseImageOutput(imageOnBuild)
-	assert.Equal(t, len(envs), 16)
+	assert.Len(t, envs, 15)
 }

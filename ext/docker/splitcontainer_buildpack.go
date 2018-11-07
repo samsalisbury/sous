@@ -64,7 +64,7 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 	sbp.detected = &sous.DetectResult{
 		Compatible: false,
 	}
-	if err != nil {
+	if err == nil {
 		if specPath, has := detector.envValue(SOUS_RUN_IMAGE_SPEC); has {
 			sbp.detected = &sous.DetectResult{
 				Compatible: true,
@@ -80,7 +80,7 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 	return sbp.detected, err
 }
 
-func inspectDockerfile(ctx *sous.BuildContext, dfPath string, registry docker_registry.Client, log logging.LogSink) (*splitDetector, error) {
+func inspectDockerfile(ctx *sous.BuildContext, dfPath string, registry docker_registry.Client, log logging.LogSink) (*dockerfileInspector, error) {
 	path := ctx.Sh.Abs(dfPath)
 	devBuild := ctx.Source.DevBuild
 	sh := ctx.Sh
@@ -90,7 +90,7 @@ func inspectDockerfile(ctx *sous.BuildContext, dfPath string, registry docker_re
 		return nil, err
 	}
 
-	detector := &splitDetector{
+	detector := &dockerfileInspector{
 		rootAst:  ast,
 		registry: registry,
 		froms:    []*parser.Node{},

@@ -12,7 +12,7 @@ import (
 	"github.com/opentable/sous/util/shell"
 )
 
-type splitDetector struct {
+type dockerfileInspector struct {
 	versionArg, revisionArg bool
 	runspecPath             string
 	registry                docker_registry.Client
@@ -25,87 +25,90 @@ type splitDetector struct {
 	envmap                  map[string]string
 }
 
-func (sd *splitDetector) process() error {
-	if err := sd.absorbDocker(sd.rootAst); err != nil {
+func (dfi *dockerfileInspector) process() error {
+	if err := dfi.absorbDocker(dfi.rootAst); err != nil {
 		return err
 	}
-	return sd.fetchFromRunSpec()
+	return dfi.fetchFromRunSpec()
 }
 
-func (sd *splitDetector) fetchFromRunSpec() error {
-	for _, f := range sd.froms {
-		if sd.dev {
-			if imageEnv, err := inspectImage(sd.sh, f.Value); err == nil {
-				messages.ReportLogFieldsMessage("Inspecting local", logging.DebugLevel, sd.ls, f.Value)
-				sd.mergeEnv(parseImageOutput(imageEnv))
+func (dfi *dockerfileInspector) fetchFromRunSpec() error {
+	for _, f := range dfi.froms {
+		if dfi.dev {
+			if imageEnv, err := inspectImage(dfi.sh, f.Value); err == nil {
+				messages.ReportLogFieldsMessage("Inspecting local", logging.DebugLevel, dfi.ls, f.Value)
+				dfi.mergeEnv(parseImageOutput(imageEnv))
 				continue
 			}
 		}
-		messages.ReportLogFieldsMessage("Fetching", logging.DebugLevel, sd.ls, f.Value)
-		md, err := sd.registry.GetImageMetadata(f.Value, "")
+		messages.ReportLogFieldsMessage("Fetching", logging.DebugLevel, dfi.ls, f.Value)
+		md, err := dfi.registry.GetImageMetadata(f.Value, "")
 		if err != nil {
-			messages.ReportLogFieldsMessage("Error fetching", logging.DebugLevel, sd.ls, f.Value, err)
+			messages.ReportLogFieldsMessage("Error fetching", logging.DebugLevel, dfi.ls, f.Value, err)
 			if err != nil {
 				continue
 			}
 		}
 
-		sd.mergeEnv(md.Env)
+		dfi.mergeEnv(md.Env)
 
 		buf := bytes.NewBufferString(strings.Join(md.OnBuild, "\n"))
 		ast, err := parseDocker(buf)
-		messages.ReportLogFieldsMessage("Parsing ONBUILD", logging.DebugLevel, sd.ls, f.Value)
+		messages.ReportLogFieldsMessage("Parsing ONBUILD", logging.DebugLevel, dfi.ls, f.Value)
 		if err != nil {
-			messages.ReportLogFieldsMessage("Error while parsing ONBUILD", logging.DebugLevel, sd.ls, f.Value, err)
+			messages.ReportLogFieldsMessage("Error while parsing ONBUILD", logging.DebugLevel, dfi.ls, f.Value, err)
 			return err
 		}
-		return sd.absorbDocker(ast)
+		return dfi.absorbDocker(ast)
 	}
 	return nil
 }
 
-func (sd *splitDetector) mergeEnv(env map[string]string) {
+func (dfi *dockerfileInspector) mergeEnv(env map[string]string) {
+	if dfi.envmap == nil {
+		dfi.envmap = map[string]string{}
+	}
 	for k, v := range env {
-		if _, already := sd.envmap[k]; !already {
-			sd.envmap[k] = v
+		if _, already := dfi.envmap[k]; !already {
+			dfi.envmap[k] = v
 		}
 	}
 }
 
 /*
-func (sd *splitDetector) processEnv() error {
-	for _, e := range sd.envs {
+func (dfi *dockerfileInspector) processEnv() error {
+	for _, e := range dfi.envs {
 		if e.Value == SOUS_RUN_IMAGE_SPEC {
-			messages.ReportLogFieldsMessage("RunSpec path found Dockerfile ENV or ONBUILD ENV", logging.DebugLevel, sd.ls, e.Next.Value)
-			sd.runspecPath = e.Next.Value
+			messages.ReportLogFieldsMessage("RunSpec path found Dockerfile ENV or ONBUILD ENV", logging.DebugLevel, dfi.ls, e.Next.Value)
+			dfi.runspecPath = e.Next.Value
 		}
 	}
 	return nil
 }
 */
 
-func (sd *splitDetector) absorbDocker(ast *parser.Node) error {
+func (dfi *dockerfileInspector) absorbDocker(ast *parser.Node) error {
 	// Parse for ENV SOUS_RUN_IMAGE_SPEC
 	// Parse for FROM
 	envs := []*parser.Node{}
 	for _, node := range ast.Children {
 		switch node.Value {
 		case "env":
-			sd.envs = append(sd.envs, node.Next)
+			dfi.envs = append(dfi.envs, node.Next)
 			envs = append(envs, node.Next)
 		case "from":
-			sd.froms = append(sd.froms, node.Next)
+			dfi.froms = append(dfi.froms, node.Next)
 		case "arg":
 			pair := strings.SplitN(node.Next.Value, "=", 2)
 			switch pair[0] {
 			case AppVersionBuildArg:
-				sd.versionArg = true
+				dfi.versionArg = true
 			case AppRevisionBuildArg:
-				sd.revisionArg = true
+				dfi.revisionArg = true
 			}
 		}
 	}
-	sd.mergeEnv(envNodesToMap(envs))
+	dfi.mergeEnv(envNodesToMap(envs))
 	return nil
 }
 
@@ -119,8 +122,12 @@ func envNodesToMap(envs []*parser.Node) map[string]string {
 	return m
 }
 
+var inspectFormat = `--format={{range .Config.OnBuild}}{{.}}
+{{end}}{{range .Config.Env}}ENV {{.}}
+{{end}}`
+
 func inspectImage(sh shell.Shell, imageName string) (string, error) {
-	cmd := []interface{}{"image", "inspect", InspectFormat, imageName}
+	cmd := []interface{}{"image", "inspect", inspectFormat, imageName}
 	//docker image inspect docker.otenv.com/sous-otj-autobuild:local
 	result, err := sh.Cmd("docker", cmd...).SucceedResult()
 	if err != nil {
@@ -129,14 +136,10 @@ func inspectImage(sh shell.Shell, imageName string) (string, error) {
 	return result.Stdout.String(), nil
 }
 
-func (sd *splitDetector) envValue(name string) (string, bool) {
-	v, t := sd.envmap[name]
+func (dfi *dockerfileInspector) envValue(name string) (string, bool) {
+	v, t := dfi.envmap[name]
 	return v, t
 }
-
-var InspectFormat = `--format={{range .Config.OnBuild}}{{.}}
-{{end}}{{range .Config.Env}}ENV {{.}}
-{{end}}`
 
 var envRE = regexp.MustCompile(`(?i)^env`)
 
