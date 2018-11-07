@@ -129,16 +129,16 @@ COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
+INTEGRATION_TEST_PATHS ?= ./integration ./ext/storage ./ext/docker ./test
+
 ifneq ($(GO_TEST_PATH),)
-GO_TEST_PATHS := $(GO_TEST_PATH)
+GO_TEST_PATHS ?= $(GO_TEST_PATH)
 
 ifeq ($(GO_TEST_PATHS),)
 GO_TEST_PATHS := $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
-INTEGRATION_TEST_PATHS := ./integration ./ext/storage ./ext/docker ./test
 else
 INTEGRATION_TEST_PATHS := $(GO_TEST_PATHS)
 endif
-
 
 endif
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
@@ -378,7 +378,7 @@ test-integration: setup-containers postgres-start
 	@echo
 	PGHOST=$(PGHOST) \
 	PGPORT=$(PGPORT) \
-	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) $(INTEGRATION_TEST_PATHS)  --tags='integration netcgo' $(TEST_TEAMCITY)
+	SOUS_QA_DESC=$(QA_DESC) go test -count 1 -timeout $(INTEGRATION_TEST_TIMEOUT) $(EXTRA_GO_FLAGS)  $(TEST_VERBOSE) $(EXTRA_GO_TEST_FLAGS) $(INTEGRATION_TEST_PATHS) --tags='integration netcgo' $(TEST_TEAMCITY)
 	@date
 
 $(SMOKE_TEST_BINARY):
