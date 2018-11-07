@@ -181,14 +181,10 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap, config ...func(*
 	projectDir := f.newEmptyDir("project1")
 	g.CD(projectDir)
 
-	// TODO SS: This ToLower call will not be necessary once we properly handle
-	// repos and offsets that contain upper-case letters. Remove ToLower call
-	// once that is done.
-	isolatedRepoName := strings.ToLower(t.Name())
+	isolatedRepoName := t.Name()
 
 	origin := "git@github.com:" + isolatedRepoName + ".git"
 
-	origin = strings.ToLower(origin)
 	c := &sousProjectConfig{
 		gitRepoSpec: &gitRepoSpec{
 			UserName:  "Sous User 1",
