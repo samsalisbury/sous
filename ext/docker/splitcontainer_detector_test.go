@@ -33,7 +33,8 @@ func Test_inspectImage(t *testing.T) {
 	_, cctl := ctl.CmdFor("docker", "image")
 	cctl.ResultSuccess(fullEnv, "")
 
-	imageEnv := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:local")
+	imageEnv, err := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:local")
+	assert.NoError(t, err)
 	assert.True(t, len(imageEnv) > 0)
 }
 
@@ -42,7 +43,8 @@ func Test_inspectImage_not_found(t *testing.T) {
 	_, cctl := ctl.CmdFor("docker", "image")
 	cctl.ResultFailure("", "Image Not Found")
 
-	imageEnv := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:bogus")
+	imageEnv, err := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:bogus")
+	assert.NoError(t, err)
 	assert.Equal(t, "", imageEnv)
 }
 
@@ -51,7 +53,8 @@ func Test_inspectImageForOnBuild(t *testing.T) {
 	_, cctl := ctl.CmdFor("docker", "image")
 	cctl.ResultSuccess(fullEnv, "")
 
-	imageOnBuild := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:local")
+	imageOnBuild, err := inspectImage(sh, "docker.otenv.com/sous-otj-autobuild:local")
+	assert.NoError(t, err)
 	envs := parseImageOutput(imageOnBuild)
 	assert.Equal(t, len(envs), 16)
 }

@@ -2,6 +2,7 @@ package docker
 
 import (
 	"bytes"
+	"regexp"
 	"strings"
 
 	"github.com/docker/docker/builder/dockerfile/parser"
@@ -20,36 +21,27 @@ type splitDetector struct {
 	froms                   []*parser.Node
 	envs                    []*parser.Node
 	ls                      logging.LogSink
+	sh                      shell.Shell
+	dev                     bool
+	envmap                  map[string]string
 }
 
-func (sd *splitDetector) absorbDocker(ast *parser.Node) error {
-	// Parse for ENV SOUS_RUN_IMAGE_SPEC
-	// Parse for FROM
-	for _, node := range ast.Children {
-		switch node.Value {
-		case "env":
-			sd.envs = append(sd.envs, node.Next)
-		case "from":
-			sd.froms = append(sd.froms, node.Next)
-		case "arg":
-			pair := strings.SplitN(node.Next.Value, "=", 2)
-			switch pair[0] {
-			case AppVersionBuildArg:
-				sd.versionArg = true
-			case AppRevisionBuildArg:
-				sd.revisionArg = true
-			}
-		}
+func (sd *splitDetector) process() error {
+	if err := sd.absorbDocker(sd.rootAst); err != nil {
+		return err
 	}
-	return nil
-}
-
-func (sd *splitDetector) absorbDockerfile() error {
-	return sd.absorbDocker(sd.rootAst)
+	return sd.fetchFromRunSpec()
 }
 
 func (sd *splitDetector) fetchFromRunSpec() error {
 	for _, f := range sd.froms {
+		if sd.dev {
+			if imageEnv, err := inspectImage(sd.sh, f.Value); err == nil {
+				messages.ReportLogFieldsMessage("Inspecting local", logging.DebugLevel, sd.ls, f.Value)
+				sd.mergeEnv(parseImageOutput(imageEnv))
+				continue
+			}
+		}
 		messages.ReportLogFieldsMessage("Fetching", logging.DebugLevel, sd.ls, f.Value)
 		md, err := sd.registry.GetImageMetadata(f.Value, "")
 		if err != nil {
@@ -59,10 +51,7 @@ func (sd *splitDetector) fetchFromRunSpec() error {
 			}
 		}
 
-		if path, ok := md.Env[SOUS_RUN_IMAGE_SPEC]; ok {
-			messages.ReportLogFieldsMessage("RunSpec path found", logging.DebugLevel, sd.ls, path, f.Value)
-			sd.runspecPath = path
-		}
+		sd.mergeEnv(md.Env)
 
 		buf := bytes.NewBufferString(strings.Join(md.OnBuild, "\n"))
 		ast, err := parseDocker(buf)
@@ -76,6 +65,15 @@ func (sd *splitDetector) fetchFromRunSpec() error {
 	return nil
 }
 
+func (sd *splitDetector) mergeEnv(env map[string]string) {
+	for k, v := range env {
+		if _, already := sd.envmap[k]; !already {
+			sd.envmap[k] = v
+		}
+	}
+}
+
+/*
 func (sd *splitDetector) processEnv() error {
 	for _, e := range sd.envs {
 		if e.Value == SOUS_RUN_IMAGE_SPEC {
@@ -85,51 +83,72 @@ func (sd *splitDetector) processEnv() error {
 	}
 	return nil
 }
+*/
 
-func (sd *splitDetector) result() *sous.DetectResult {
-	if sd.runspecPath != "" {
-		return &sous.DetectResult{Compatible: true, Data: detectData{
-			RunImageSpecPath:  sd.runspecPath,
-			HasAppVersionArg:  sd.versionArg,
-			HasAppRevisionArg: sd.revisionArg,
-		}}
-	}
-	return &sous.DetectResult{Compatible: false}
-}
-
-func (sd *splitDetector) checkLocalImage(ctx *sous.BuildContext) error {
-	if sd.runspecPath == "" {
-		for _, f := range sd.froms {
-			imageName := f.Value
-			imageEnv := inspectImage(ctx.Sh, imageName)
-			envs := parseImageOutput(imageEnv)
-			sd.runspecPath = envs[SOUS_RUN_IMAGE_SPEC]
+func (sd *splitDetector) absorbDocker(ast *parser.Node) error {
+	// Parse for ENV SOUS_RUN_IMAGE_SPEC
+	// Parse for FROM
+	envs := []*parser.Node{}
+	for _, node := range ast.Children {
+		switch node.Value {
+		case "env":
+			sd.envs = append(sd.envs, node.Next)
+			envs = append(envs, node.Next)
+		case "from":
+			sd.froms = append(sd.froms, node.Next)
+		case "arg":
+			pair := strings.SplitN(node.Next.Value, "=", 2)
+			switch pair[0] {
+			case AppVersionBuildArg:
+				sd.versionArg = true
+			case AppRevisionBuildArg:
+				sd.revisionArg = true
+			}
 		}
 	}
+	sd.mergeEnv(envNodesToMap(envs))
 	return nil
 }
 
-func inspectImage(sh shell.Shell, imageName string) string {
-	cmd := []interface{}{"image", "inspect", "--format={{printf \"%q %q\" .Config.OnBuild .Config.Env}}", imageName}
+func envNodesToMap(envs []*parser.Node) map[string]string {
+	m := map[string]string{}
+	for _, e := range envs {
+		k := e.Value
+		v := e.Next.Value
+		m[k] = v
+	}
+	return m
+}
+
+func inspectImage(sh shell.Shell, imageName string) (string, error) {
+	cmd := []interface{}{"image", "inspect", InspectFormat, imageName}
 	//docker image inspect docker.otenv.com/sous-otj-autobuild:local
 	result, err := sh.Cmd("docker", cmd...).SucceedResult()
 	if err != nil {
-		return ""
+		return "", err
 	}
-	return result.Stdout.String()
+	return result.Stdout.String(), nil
 }
+
+func (sd *splitDetector) envValue(name string) (string, bool) {
+	v, t := sd.envmap[name]
+	return v, t
+}
+
+var InspectFormat = `--format={{range .Config.OnBuild}}{{.}}
+{{end}}{{range .Config.Env}}ENV {{.}}
+{{end}}`
+
+var envRE = regexp.MustCompile(`(?i)^env`)
 
 func parseImageOutput(input string) map[string]string {
 	envs := make(map[string]string)
-	input = strings.Replace(input, "[", "", -1)
-	input = strings.Replace(input, "]", "", -1)
-	elementSlice := strings.Split(input, "\" \"")
+	elementSlice := strings.Split(input, "\n")
 	for _, env := range elementSlice {
-		if strings.Index(env, "ENV") >= 0 {
-			//remove env
-			env = strings.Replace(env, "ENV", "", 1)
-
+		if !envRE.MatchString(env) {
+			continue
 		}
+		env = envRE.ReplaceAllString(env, "")
 		env = strings.Trim(env, "\" ")
 		envSplit := strings.Split(env, "=")
 		if len(envSplit) == 2 {
