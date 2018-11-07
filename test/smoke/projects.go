@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/opentable/sous/ext/git"
 	"github.com/opentable/sous/util/filemap"
 )
 
@@ -165,9 +166,13 @@ type sousProject struct {
 	repo string
 }
 
+type sousProjectConfig struct {
+	gitRepoSpec *gitRepoSpec
+}
+
 // setupProject returns a *sousProject with an isolated repo name (isolated
 // in terms of the name of the test t.
-func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousProject {
+func setupProject(t *testing.T, f *fixture, fm filemap.FileMap, config ...func(*sousProjectConfig)) *sousProject {
 	t.Helper()
 
 	// Setup project git repo.
@@ -184,12 +189,23 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousProject {
 	origin := "git@github.com:" + isolatedRepoName + ".git"
 
 	origin = strings.ToLower(origin)
+	c := &sousProjectConfig{
+		gitRepoSpec: &gitRepoSpec{
+			UserName:  "Sous User 1",
+			UserEmail: "sous-user1@example.com",
+			OriginURL: origin,
+		},
+	}
+	for _, f := range config {
+		f(c)
+	}
 
-	g.init(t, f.fixtureConfig, gitRepoSpec{
-		UserName:  "Sous User 1",
-		UserEmail: "sous-user1@example.com",
-		OriginURL: origin,
-	})
+	repoName, err := git.CanonicalRepoURL(origin)
+	if err != nil {
+		t.Fatalf("Setup failed to generate valid git origin URL: %s", err)
+	}
+
+	g.init(t, f.fixtureConfig, *c.gitRepoSpec)
 
 	if err := fm.Write(projectDir); err != nil {
 		t.Fatalf("filemap.Write: %s", err)
@@ -212,6 +228,6 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap) *sousProject {
 		sousClient: client,
 		git:        g,
 		files:      fm,
-		repo:       "github.com/" + isolatedRepoName,
+		repo:       repoName,
 	}
 }
