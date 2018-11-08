@@ -37,6 +37,9 @@ func (pf *Runner) recordTestStarted(t *testing.T) {
 // Test is a test.
 type Test func(*testing.T, Context)
 
+// ScenarioTest is a test accepting a raw scenario instead of a fixture.
+type ScenarioTest func(*testing.T, Scenario, *LateFixture)
+
 // FixtureFactory generates Fixtures from test and combination.
 type FixtureFactory func(*testing.T, Scenario) Fixture
 
@@ -50,6 +53,23 @@ type Context struct {
 	Scenario Scenario
 	// F is the fixture returned from FixtureFactory.
 	F interface{}
+}
+
+// LateFixture wraps a *Fixture and allows the test body to create a fixture
+// and pass it back up to testmatrix to perform teardown.
+type LateFixture struct {
+	f       Fixture
+	created chan struct{}
+}
+
+func newLateFixture() *LateFixture {
+	return &LateFixture{created: make(chan struct{})}
+}
+
+// Set sets the fixture.
+func (lf *LateFixture) Set(f Fixture) {
+	lf.f = f
+	close(lf.created)
 }
 
 // Run is analogous to *testing.T.Run, but takes a method that includes a
@@ -84,6 +104,40 @@ func (pf *Runner) Run(name string, test Test) {
 			}()
 			*f = pf.parent.fixtureFactory(t, c)
 			test(t, Context{Scenario: c, F: *f})
+		})
+	}
+}
+
+// RunScenario is similar to Run but is passed a ScenarioTest instead of a Test.
+func (pf *Runner) RunScenario(name string, test ScenarioTest) {
+	for _, c := range pf.matrix.scenarios() {
+		c := c
+		pf.t.Run(c.String()+"/"+name, func(t *testing.T) {
+			pf.recordTestStarted(t)
+			pf.parent.wg.Add(1)
+			lf := newLateFixture()
+			defer func() {
+				timeout := 10 * time.Second
+				defer pf.parent.wg.Done()
+				pf.recordTestStatus(t)
+				select {
+				case <-time.After(10 * time.Second):
+					rtLog("ERROR: Teardown took longer than %s", timeout)
+				case <-func() <-chan struct{} {
+					c := make(chan struct{})
+					go func() {
+						<-lf.created
+						if lf.f != nil {
+							lf.f.Teardown(t)
+						}
+						close(c)
+					}()
+					return c
+				}():
+				}
+			}()
+			t.Parallel()
+			test(t, c, lf)
 		})
 	}
 }
