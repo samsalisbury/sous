@@ -96,9 +96,12 @@ func (f *fixtureBase) newBin(t *testing.T, path, instanceName string) Bin {
 	return NewBin(t, path, instanceName, binBaseDir, f.BaseDir, f.Finished)
 }
 
-// newFixture transforms a testmatrix.Scenario into a sous-specific fixture.
-func newFixture(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
+func newConfiguredFixture(t *testing.T, s testmatrix.Scenario, mod ...func(*fixtureConfig)) *fixture {
 	config := newFixtureConfig(t.Name(), s)
+
+	for _, m := range mod {
+		m(&config)
+	}
 
 	boss, err := newBunchOfSousServers(t, config)
 	if err != nil {
@@ -123,6 +126,11 @@ func newFixture(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
 	}
 	tf.Client = client
 	return tf
+}
+
+// newFixture transforms a testmatrix.Scenario into a sous-specific fixture.
+func newFixture(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
+	return newConfiguredFixture(t, s)
 }
 
 // Teardown performs conditional cleanup of resources used in the test.

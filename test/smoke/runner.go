@@ -17,7 +17,17 @@ type runner struct{ *testmatrix.Runner }
 // Run is analogous to Runner.Run, but accepts a func in terms of strongly typed
 // fixture rather than having to manually unwrap scenarios.
 func (r *runner) Run(name string, test func(*testing.T, *fixture)) {
-	r.Runner.Run(name, func(t *testing.T, c testmatrix.Context) { test(t, c.F.(*fixture)) })
+	r.Runner.Run(name, func(t *testing.T, c testmatrix.Context) {
+		test(t, c.F.(*fixture))
+	})
+}
+
+type scenarioTest func(*testing.T, testmatrix.Scenario, *testmatrix.LateFixture)
+
+func (r *runner) RunScenario(name string, test scenarioTest) {
+	r.Runner.RunScenario(name, func(t *testing.T, s testmatrix.Scenario, f *testmatrix.LateFixture) {
+		test(t, s, f)
+	})
 }
 
 // newRunner should be called once at the start of every top-level package
