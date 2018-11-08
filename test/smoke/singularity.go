@@ -152,7 +152,7 @@ func waitFor(t *testing.T, what string, timeout, interval time.Duration, f func(
 				}()
 				if err != nil {
 					// Log direct to stderr for live updates.
-					elapsed := startTime.Sub(time.Now())
+					elapsed := time.Now().Sub(startTime).Round(time.Second)
 					fmt.Fprintf(os.Stderr, "waitFor: Waiting for %s: %s (%s elapsed)\n", what, err, elapsed)
 					<-ticker.C
 					continue
