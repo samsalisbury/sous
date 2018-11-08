@@ -59,7 +59,8 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 	}
 
 	messages.ReportLogFieldsMessage("Inspecting Dockerfile", logging.DebugLevel, sbp.log, dfPath)
-	detector, err := inspectDockerfile(ctx, dfPath, sbp.registry, sbp.log)
+
+	detector, err := inspectDockerfile(ctx.Sh.Abs(dfPath), ctx.Source.DevBuild, ctx.Sh, dfPath, sbp.registry, sbp.log)
 
 	sbp.detected = &sous.DetectResult{
 		Compatible: false,
@@ -78,29 +79,6 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 	}
 
 	return sbp.detected, err
-}
-
-func inspectDockerfile(ctx *sous.BuildContext, dfPath string, registry docker_registry.Client, log logging.LogSink) (*dockerfileInspector, error) {
-	path := ctx.Sh.Abs(dfPath)
-	devBuild := ctx.Source.DevBuild
-	sh := ctx.Sh
-
-	ast, err := parseDockerfile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	detector := &dockerfileInspector{
-		rootAst:  ast,
-		registry: registry,
-		froms:    []*parser.Node{},
-		envs:     []*parser.Node{},
-		ls:       log,
-		sh:       sh,
-		dev:      devBuild,
-	}
-
-	return detector, detector.process()
 }
 
 // Build implements Buildpack on SplitBuildpack

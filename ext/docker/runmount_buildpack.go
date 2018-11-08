@@ -36,6 +36,38 @@ func readDockerfile(dfPath string) (string, error) {
 	return string(b), nil
 }
 
+// Detect implements Buildpack on SplitBuildpack
+func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, error) {
+	dfPath := filepath.Join(ctx.Source.OffsetDir, "Dockerfile")
+	if !ctx.Sh.Exists(dfPath) {
+		return nil, errors.Errorf("%s does not exist", dfPath)
+	}
+
+	messages.ReportLogFieldsMessage("Inspecting Dockerfile", logging.DebugLevel, rmbp.log, dfPath)
+
+	detector, err := inspectDockerfile(ctx.Sh.Abs(dfPath), ctx.Source.DevBuild, ctx.Sh, dfPath, rmbp.registry, rmbp.log)
+
+	rmbp.detected = &sous.DetectResult{
+		Compatible: false,
+	}
+	if err == nil {
+		specPath, hasRunspec := detector.envValue(SOUS_RUN_IMAGE_SPEC)
+		buildOut, hasOut := detector.envValue()
+		if specPath, hasRunspec := detector.envValue(SOUS_RUN_IMAGE_SPEC); has {
+			rmbp.detected = &sous.DetectResult{
+				Compatible: true,
+				Data: detectData{
+					RunImageSpecPath:  specPath,
+					HasAppVersionArg:  detector.versionArg,
+					HasAppRevisionArg: detector.revisionArg,
+				},
+			}
+		}
+	}
+
+	return rmbp.detected, err
+}
+
 // Detect implements Buildpack on RunmountBuildpack
 func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, error) {
 	dfPath := filepath.Join(ctx.Source.OffsetDir, "Dockerfile")

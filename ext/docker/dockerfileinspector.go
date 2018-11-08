@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/docker/docker/builder/dockerfile/parser"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
@@ -23,6 +24,26 @@ type dockerfileInspector struct {
 	sh                      shell.Shell
 	dev                     bool
 	envmap                  map[string]string
+}
+
+func inspectDockerfile(path string, devBuild bool, sh shell.Shell, dfPath string, registry docker_registry.Client, log logging.LogSink) (*dockerfileInspector, error) {
+
+	ast, err := parseDockerfile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	detector := &dockerfileInspector{
+		rootAst:  ast,
+		registry: registry,
+		froms:    []*parser.Node{},
+		envs:     []*parser.Node{},
+		ls:       log,
+		sh:       sh,
+		dev:      devBuild,
+	}
+
+	return detector, detector.process()
 }
 
 func (dfi *dockerfileInspector) process() error {
