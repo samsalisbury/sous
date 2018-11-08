@@ -14,6 +14,7 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	log.SetFlags(log.Ltime)
 	flag.Parse()
 	testmatrix.Quiet = quiet()
 	sup = testmatrix.Init(matrix, newFixture, func() error {
