@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/docker/docker/builder/dockerfile/parser"
-	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"

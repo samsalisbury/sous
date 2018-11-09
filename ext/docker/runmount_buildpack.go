@@ -4,27 +4,36 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
-	"strings"
 	"time"
 
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/docker_registry"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
+	"github.com/pkg/errors"
 )
+
+// BuildOutEnv is the other environment variable a runmount image must set
+const BuildOutEnv = "BUILD_OUT"
+
+// BuildCacheEnv is an environment variable a runmount image may set
+const BuildCacheEnv = "BUILD_CACHE"
 
 type (
 	// RunmountBuildpack builds a container, runs it seperately to use docker mounts for cache and output,
 	// and builds final deploy container
 	RunmountBuildpack struct {
+		registry docker_registry.Client
 		detected *sous.DetectResult
 		log      logging.LogSink
 	}
 )
 
 // NewRunmountBuildpack returns a new RunmountBuildpack
-func NewRunmountBuildpack(ls logging.LogSink) *RunmountBuildpack {
+func NewRunmountBuildpack(r docker_registry.Client, ls logging.LogSink) *RunmountBuildpack {
 	return &RunmountBuildpack{
-		log: ls,
+		registry: r,
+		log:      ls,
 	}
 }
 
@@ -42,8 +51,7 @@ func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResul
 	if !ctx.Sh.Exists(dfPath) {
 		return nil, errors.Errorf("%s does not exist", dfPath)
 	}
-
-	messages.ReportLogFieldsMessage("Inspecting Dockerfile", logging.DebugLevel, rmbp.log, dfPath)
+	messages.ReportLogFieldsMessage("Runmount dockerfile detection", logging.DebugLevel, rmbp.log, dfPath)
 
 	detector, err := inspectDockerfile(ctx.Sh.Abs(dfPath), ctx.Source.DevBuild, ctx.Sh, dfPath, rmbp.registry, rmbp.log)
 
@@ -52,42 +60,25 @@ func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResul
 	}
 	if err == nil {
 		specPath, hasRunspec := detector.envValue(SOUS_RUN_IMAGE_SPEC)
-		buildOut, hasOut := detector.envValue()
-		if specPath, hasRunspec := detector.envValue(SOUS_RUN_IMAGE_SPEC); has {
-			rmbp.detected = &sous.DetectResult{
-				Compatible: true,
-				Data: detectData{
-					RunImageSpecPath:  specPath,
-					HasAppVersionArg:  detector.versionArg,
-					HasAppRevisionArg: detector.revisionArg,
-				},
+		buildOut, hasOut := detector.envValue(BuildOutEnv)
+		buildCache, hasCache := detector.envValue(BuildCacheEnv)
+		if hasRunspec && hasOut {
+			data := detectData{
+				RunImageSpecPath:  specPath,
+				BuildOutPath:      buildOut,
+				HasAppVersionArg:  detector.versionArg,
+				HasAppRevisionArg: detector.revisionArg,
 			}
+
+			if hasCache {
+				data.BuildCachePath = buildCache
+			}
+
+			rmbp.detected = &sous.DetectResult{Compatible: true, Data: data}
 		}
 	}
 
 	return rmbp.detected, err
-}
-
-// Detect implements Buildpack on RunmountBuildpack
-func (rmbp *RunmountBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, error) {
-	dfPath := filepath.Join(ctx.Source.OffsetDir, "Dockerfile")
-	if !ctx.Sh.Exists(dfPath) {
-		return nil, fmt.Errorf("%s does not exist", dfPath)
-	}
-
-	messages.ReportLogFieldsMessage("Runmount dockerfile detection", logging.DebugLevel, rmbp.log, dfPath)
-
-	dockerContent, err := readDockerfile(dfPath)
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO LH simplest check so far, scan docker content for runmount
-	result := sous.DetectResult{
-		Compatible: strings.Contains(dockerContent, "runmount"),
-	}
-	rmbp.detected = &result
-	return &result, nil
 }
 
 // Build implements Buildpack on RunmountBuildpack
@@ -101,7 +92,7 @@ func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult,
 		return nil, err
 	}
 
-	err = run(*ctx, buildID)
+	err = run(*ctx, rmbp.detected.Data.(detectData), buildID)
 	if err != nil {
 		return nil, err
 	}

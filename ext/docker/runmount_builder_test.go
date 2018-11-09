@@ -36,7 +36,12 @@ func TestRunmountBuild_run(t *testing.T) {
 		Sh: sh,
 	}
 
-	err := run(ctx, testBuildID)
+	detected := detectData{
+		BuildOutPath:   "/buildout",
+		BuildCachePath: "/cache",
+	}
+
+	err := run(ctx, detected, testBuildID)
 	assert.Empty(t, err)
 }
 

@@ -36,11 +36,15 @@ func build(ctx sous.BuildContext) (string, error) {
 	return itag, nil
 }
 
-func run(ctx sous.BuildContext, buildID string) error {
+func run(ctx sous.BuildContext, detection detectData, buildID string) error {
 	fmt.Println("starting runmount run")
 	// TODO LH may need to house keep /app/product ?? or do that after artifact is fetched, possible to collide on this on the same agent ?
-	cmd := []interface{}{"run", "--mount", "source=cache,target=/cache",
-		"--mount", "source=build_output,target=/build_output"}
+	outputMount := fmt.Sprintf("source=build_output,target=%s", detection.BuildOutPath)
+	cmd := []interface{}{"run", "--mount", outputMount}
+	if detection.BuildCachePath != "" {
+		cacheMount := fmt.Sprintf("source=cache,target=%s", detection.BuildCachePath)
+		cmd = append(cmd, "--mount", cacheMount)
+	}
 	cmd = append(cmd, buildID)
 
 	err := ctx.Sh.Cmd("docker", cmd...).Succeed()
@@ -49,7 +53,6 @@ func run(ctx sous.BuildContext, buildID string) error {
 	}
 
 	return nil
-
 }
 
 func setupTempDir() (string, error) {
