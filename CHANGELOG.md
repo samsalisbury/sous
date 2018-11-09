@@ -18,7 +18,8 @@ with respect to its command line interface and HTTP interface
 
 ### Changed
 * Client: sous jenkins cli revise format of generated Jenkinsfile
-	
+* Client: the runmount build strategy is detected based on Dockerfile environment variables.
+
 ## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
 * Deployments to PROD clusters will use Jenkins agents with 'mesos-prod-sc'
