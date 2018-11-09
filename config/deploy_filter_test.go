@@ -5,6 +5,7 @@ import (
 
 	"github.com/opentable/sous/ext/github"
 	sous "github.com/opentable/sous/lib"
+	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -79,4 +80,103 @@ func TestDeployFilter(t *testing.T) {
 	testFilter(DeployFilterFlags{DeploymentIDFlags: DeploymentIDFlags{ManifestIDFlags: ManifestIDFlags{
 		Flavor: "choc",
 	}}}, 3)
+}
+
+func TestMakeDeployFilterFlags(t *testing.T) {
+	got := MakeDeployFilterFlags(func(*DeployFilterFlags) {})
+	want := DeployFilterFlags{}
+	if got != want {
+		t.Errorf("got noop -> % #v; want % #v", got, want)
+	}
+
+	got = MakeDeployFilterFlags(func(dff *DeployFilterFlags) {
+		dff.Tag = "1.2.3"
+	})
+	want = DeployFilterFlags{SourceVersionFlags: SourceVersionFlags{Tag: "1.2.3"}}
+	if got != want {
+		t.Errorf("got set Tag -> % #v; want % #v", got, want)
+	}
+}
+
+func TestSourceIDFlags_DeployFilterFlags(t *testing.T) {
+
+	t.Run("empties", func(t *testing.T) {
+		in := SourceIDFlags{}
+		got := in.DeployFilterFlags()
+		want := DeployFilterFlags{}
+		if got != want {
+			t.Errorf("got %v.SourceIDFlags() == %v; want %v", in, got, want)
+		}
+	})
+
+	t.Run("repo", func(t *testing.T) {
+		in := SourceIDFlags{SourceLocationFlags: SourceLocationFlags{Repo: "repo1"}}
+		got := in.DeployFilterFlags()
+		want := DeployFilterFlags{
+			DeploymentIDFlags: DeploymentIDFlags{
+				ManifestIDFlags: ManifestIDFlags{
+					SourceLocationFlags: SourceLocationFlags{
+						Repo: "repo1",
+					},
+				},
+			},
+		}
+		if got != want {
+			t.Errorf("got %v.SourceIDFlags() == %v; want %v", in, got, want)
+		}
+	})
+
+	t.Run("tag", func(t *testing.T) {
+		in := SourceIDFlags{SourceVersionFlags: SourceVersionFlags{Tag: "1.2.3"}}
+		got := in.DeployFilterFlags()
+		want := DeployFilterFlags{
+			SourceVersionFlags: SourceVersionFlags{Tag: "1.2.3"},
+		}
+		if got != want {
+			t.Errorf("got %v.SourceIDFlags() == %v; want %v", in, got, want)
+		}
+	})
+}
+
+func TestSourceIDFlags_SourceID(t *testing.T) {
+	t.Run("empty_semver_error", func(t *testing.T) {
+		in := SourceIDFlags{}
+		_, gotErr := in.SourceID()
+		if gotErr == nil {
+			t.Fatalf("got nil error; want not nil")
+		}
+	})
+	t.Run("semver_error", func(t *testing.T) {
+		in := SourceIDFlags{SourceVersionFlags: SourceVersionFlags{Tag: "notsemver"}}
+		_, gotErr := in.SourceID()
+		if gotErr == nil {
+			t.Fatalf("got nil error; want not nil")
+		}
+	})
+	t.Run("full", func(t *testing.T) {
+		in := SourceIDFlags{
+			SourceLocationFlags: SourceLocationFlags{
+				Repo:   "repo1",
+				Offset: "offset1",
+			},
+			SourceVersionFlags: SourceVersionFlags{
+				Tag:      "1.2.3",
+				Revision: "revision1",
+			},
+		}
+		got, err := in.SourceID()
+		want := sous.SourceID{
+			Location: sous.SourceLocation{
+				Repo: "repo1",
+				Dir:  "offset1",
+			},
+			Version: semv.MustParse("1.2.3"),
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
+			t.Fatalf("got %v.SourceID() == %v; want %v", in, got, want)
+		}
+	})
 }
