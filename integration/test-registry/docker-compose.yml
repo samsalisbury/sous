@@ -1,63 +1,73 @@
-registry:
-  build: docker-registry
-  restart: always
-  ports:
-    - 5000:5000
-  environment:
-    REGISTRY_HTTP_TLS_CERTIFICATE: /certs/testing.crt
-    REGISTRY_HTTP_TLS_KEY: /certs/testing.key
-  volumes:
-    - /path/data:/var/lib/registry
-
-gitserver:
-  build: git-server
-  restart: always
-  ports:
-    - "2222:22"
-
-# FROM HERE DOWN: Singularity test setup
-zk:
-  image: zookeeper:3.4
-  net: host
-  environment:
-    ZK_CONFIG: tickTime=2000,initLimit=10,syncLimit=5,maxClientCnxns=128,forceSync=yes,clientPort=2181
-    ZK_ID: 1
-
-master:
-  image: mesosphere/mesos-master:1.3.1
-  net: host
-  environment:
-    MESOS_ZK: zk://localhost:2181/mesos
-    MESOS_HOSTNAME: localhost
-    MESOS_IP: 127.0.0.1
-    MESOS_QUORUM: 1
-    MESOS_CLUSTER: docker-compose
-    MESOS_WORK_DIR: /var/lib/mesos
-    MESOS_ROLES: "OPS"
-
-slave:
-  image: hubspot/singularityexecutorslave:0.20.1
-  command: mesos-slave
-  net: host
-  environment:
-    MESOS_MASTER: zk://localhost:2181/mesos
-    MESOS_HOSTNAME: localhost
-    MESOS_IP: 127.0.0.1
-    MESOS_CONTAINERIZERS: docker,mesos
-    MESOS_ROLES: "OPS"
-    MESOS_RESOURCES: "cpus(OPS):1;cpus(*):1;mem(OPS):512;mem(*):1024"
-    MESOS_ATTRIBUTES: "example:value;myNumber:1"
-    MESOS_ISOLATION: cgroups/cpu,cgroups/mem
-    MESOS_WORK_DIR: /var/lib/mesos/agent
-  volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-    - /sys:/sys
-
-scheduler:
-  #image: hubspot/singularityservice:0.13.0
-  build: singularityservice
-  net: host
-  environment:
-    - DOCKER_HOST
-    - SINGULARITY_MESOS_FRAMEWORK_ROLE=OPS
-    - SINGULARITY_MESOS_MASTER=localhost:5050
+version: "3.2"
+volumes:
+  registrydata:
+services:
+  registry:
+    build: docker-registry
+    restart: always
+    ports:
+      - 5000:5000
+    environment:
+      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/testing.crt
+      REGISTRY_HTTP_TLS_KEY: /certs/testing.key
+    volumes:
+      - type: volume
+        source: registrydata
+        target: /var/lib/registry
+    network_mode: "host"
+  
+  gitserver:
+    build: git-server
+    restart: always
+    ports:
+      - "2222:22"
+  
+  # FROM HERE DOWN: Singularity test setup
+  zk:
+    image: zookeeper:3.4
+    network_mode: host
+    environment:
+      ZK_CONFIG: tickTime=2000,initLimit=10,syncLimit=5,maxClientCnxns=128,forceSync=yes,clientPort=2181
+      ZK_ID: 1
+  
+  master:
+    image: mesosphere/mesos-master:1.3.1
+    network_mode: host
+    environment:
+      MESOS_ZK: zk://localhost:2181/mesos
+      MESOS_HOSTNAME: localhost
+      MESOS_IP: 127.0.0.1
+      MESOS_QUORUM: 1
+      MESOS_CLUSTER: docker-compose
+      MESOS_WORK_DIR: /var/lib/mesos
+      MESOS_ROLES: "OPS"
+    ports:
+      - 5050:5050
+  
+  slave:
+    image: hubspot/singularityexecutorslave:0.20.1
+    command: mesos-slave
+    network_mode: host
+    environment:
+      MESOS_MASTER: zk://localhost:2181/mesos
+      MESOS_HOSTNAME: localhost
+      MESOS_IP: 127.0.0.1
+      MESOS_CONTAINERIZERS: docker,mesos
+      MESOS_ROLES: "OPS"
+      MESOS_RESOURCES: "cpus(OPS):1;cpus(*):1;mem(OPS):512;mem(*):1024"
+      MESOS_ATTRIBUTES: "example:value;myNumber:1"
+      MESOS_ISOLATION: cgroups/cpu,cgroups/mem
+      MESOS_WORK_DIR: /var/lib/mesos/agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /sys:/sys
+  
+  scheduler:
+    #image: hubspot/singularityservice:0.13.0
+    build: singularityservice
+    network_mode: host
+    environment:
+      - DOCKER_HOST
+      - SINGULARITY_MESOS_FRAMEWORK_ROLE=OPS
+      - SINGULARITY_MESOS_MASTER=localhost:5050
+      - SINGULARITY_ZK=localhost:2181

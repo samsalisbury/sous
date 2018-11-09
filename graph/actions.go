@@ -8,6 +8,7 @@ import (
 	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/cmdr"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/logging/messages"
 	"github.com/opentable/sous/util/restful"
@@ -212,6 +213,33 @@ func (di *SousGraph) GetJenkins(opts DeployActionOpts) (actions.Action, error) {
 	}, nil
 }
 
+// BuildActionOpts are options for GetBuild.
+type BuildActionOpts struct {
+	DFF     config.DeployFilterFlags
+	CLIArgs []string
+}
+
+// GetBuild gets the Build action.
+func (di *SousGraph) GetBuild(opts BuildActionOpts) (*actions.Build, error) {
+	scoop := struct {
+		ResolveFilter *RefinedResolveFilter
+	}{}
+	di.MustInject(&scoop)
+	opts.DFF.Repo = scoop.ResolveFilter.Repo.ValueOr("")
+	getArtifactOpts := ArtifactOpts{
+		SourceID: opts.DFF.SourceIDFlags(),
+	}
+	getArtifact, err := di.GetGetArtifact(getArtifactOpts)
+	if err != nil {
+		return nil, cmdr.InternalErrorf("%s", err)
+	}
+	di.guardedAdd("GetArtifact", getArtifact)
+	di.guardedAdd("CLIArgs", opts.CLIArgs)
+	b := &actions.Build{}
+	return b, di.Inject(b)
+
+}
+
 // DeployActionOpts are options for GetDeploy.
 type DeployActionOpts struct {
 	DFF                              config.DeployFilterFlags
@@ -219,7 +247,7 @@ type DeployActionOpts struct {
 	Force, WaitStable                bool
 }
 
-// GetDeploy constructs a Deploy Actions.
+// GetDeploy constructs a Deploy Action.
 func (di *SousGraph) GetDeploy(opts DeployActionOpts) (actions.Action, error) {
 	di.guardedAdd("Dryrun", DryrunOption(opts.DryRun))
 	di.guardedAdd("DeployFilterFlags", &opts.DFF)

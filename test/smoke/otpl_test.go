@@ -10,7 +10,7 @@ import (
 	"github.com/opentable/sous/util/filemap"
 )
 
-func dockerBuildAddArtifactInit(t *testing.T, f *fixture, client *sousClient, flags *sousFlags, transforms ...ManifestTransform) (dockerRef string) {
+func dockerBuildAddArtifactInit(t *testing.T, f *fixture, client *sousProject, flags *sousFlags, transforms ...ManifestTransform) (dockerRef string) {
 	t.Helper()
 
 	dockerRef = dockerBuildAddArtifact(t, f, client, flags)
@@ -21,7 +21,7 @@ func dockerBuildAddArtifactInit(t *testing.T, f *fixture, client *sousClient, fl
 	return dockerRef
 }
 
-func dockerBuildAddArtifact(t *testing.T, f *fixture, client *sousClient, flags *sousFlags) (dockerRef string) {
+func dockerBuildAddArtifact(t *testing.T, f *fixture, client *sousProject, flags *sousFlags) (dockerRef string) {
 	t.Helper()
 	tag := flags.tag
 	if tag == "" {
@@ -31,7 +31,7 @@ func dockerBuildAddArtifact(t *testing.T, f *fixture, client *sousClient, flags 
 	repo := flags.repo
 	dockerTag := f.IsolatedVersionTag(tag)
 	dockerRepo := fmt.Sprintf("%s/%s", reg, repo)
-	dockerRef = fmt.Sprintf("%s:%s", dockerRepo, dockerTag)
+	dockerRef = strings.ToLower(fmt.Sprintf("%s:%s", dockerRepo, dockerTag))
 
 	mustDoCMD(t, client.Dir, "docker", "build", "-t", dockerRef, ".")
 	mustDoCMD(t, client.Dir, "docker", "push", dockerRef)
@@ -48,13 +48,13 @@ func TestOTPL(t *testing.T) {
 	pf := newRunner(t, matrix().FixedDimension("project", "simple"))
 
 	pf.Run("artifact-add", func(t *testing.T, f *fixture) {
-		client := setupProject(t, f, f.Projects.HTTPServer())
+		p := setupProject(t, f, f.Projects.HTTPServer())
 
-		flags := &sousFlags{tag: "1.2.3", repo: "github.com/user1/repo1"}
+		flags := &sousFlags{tag: "1.2.3", repo: p.repo}
 
-		dockerRef := dockerBuildAddArtifact(t, f, client, flags)
+		dockerRef := dockerBuildAddArtifact(t, f, p, flags)
 
-		output := client.MustRun(t, "artifact get", flags)
+		output := p.MustRun(t, "artifact get", flags)
 
 		if !strings.Contains(output, dockerRef) {
 			// TODO SS: Figure out how to do this assertion given that we do
@@ -69,26 +69,26 @@ func TestOTPL(t *testing.T) {
 	pf.Run("root-noflavor", func(t *testing.T, f *fixture) {
 		reqID := f.IsolatedRequestID("request1")
 		cluster := f.IsolatedClusterName("cluster1")
-		client := setupProject(t, f, f.Projects.HTTPServer().Merge(
+		p := setupProject(t, f, f.Projects.HTTPServer().Merge(
 			makeOTPLConfig(reqID, cluster)))
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/user1/repo1",
+			repo:    p.repo,
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
 
-		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
+		dockerBuildAddArtifactInit(t, f, p, flags, setMinimalMemAndCPUNumInst1)
 
-		m := client.getManifest(t, flags)
+		m := p.getManifest(t, flags)
 		d := assertManifestExactlyOneDeployment(t, m, cluster)
 
 		if got := d.SingularityRequestID; got != reqID {
 			t.Fatalf("got sing req id %q; want %q", got, reqID)
 		}
 
-		client.MustRun(t, "deploy", flags.SousDeployFlags())
+		p.MustRun(t, "deploy", flags.SousDeployFlags())
 
 		assertActiveStatus(t, f, reqID)
 		assertSingularityRequestTypeService(t, f, reqID)
@@ -98,27 +98,27 @@ func TestOTPL(t *testing.T) {
 	pf.Run("root-withflavor", func(t *testing.T, f *fixture) {
 		reqID := f.IsolatedRequestID("request1")
 		cluster := f.IsolatedClusterName("cluster1")
-		client := setupProject(t, f, f.Projects.HTTPServer().Merge(
+		p := setupProject(t, f, f.Projects.HTTPServer().Merge(
 			makeOTPLConfig(reqID, cluster+".flavor1")))
 
 		flags := &sousFlags{
 			flavor:  "flavor1",
 			kind:    "http-service",
-			repo:    "github.com/user1/repo1",
+			repo:    p.repo,
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
 
-		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
+		dockerBuildAddArtifactInit(t, f, p, flags, setMinimalMemAndCPUNumInst1)
 
-		m := client.getManifest(t, flags)
+		m := p.getManifest(t, flags)
 		d := assertManifestExactlyOneDeployment(t, m, cluster)
 
 		if got := d.SingularityRequestID; got != reqID {
 			t.Fatalf("got sing req id %q; want %q", got, reqID)
 		}
 
-		client.MustRun(t, "deploy", flags.SousDeployFlags())
+		p.MustRun(t, "deploy", flags.SousDeployFlags())
 
 		assertActiveStatus(t, f, reqID)
 		assertSingularityRequestTypeService(t, f, reqID)
@@ -128,26 +128,26 @@ func TestOTPL(t *testing.T) {
 	pf.Run("root-withoffset-flag", func(t *testing.T, f *fixture) {
 		reqID := f.IsolatedRequestID("request1")
 		cluster := f.IsolatedClusterName("cluster1")
-		client := setupProject(t, f,
+		p := setupProject(t, f,
 			filemap.Merge(
 				f.Projects.HTTPServer(),
 				makeOTPLConfig(reqID, cluster),
 			).PrefixAll("offset1"),
 		)
 
-		client.Dir += "/offset1"
+		p.Dir += "/offset1"
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/user1/repo1",
+			repo:    p.repo,
 			tag:     "1.2.3",
 			cluster: "cluster1",
 			offset:  "offset1",
 		}
 
-		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
+		dockerBuildAddArtifactInit(t, f, p, flags, setMinimalMemAndCPUNumInst1)
 
-		m := client.getManifest(t, flags)
+		m := p.getManifest(t, flags)
 		if got := m.Source.Dir; got != "offset1" {
 			t.Fatalf("got offset %q; want %q", got, "offset1")
 		}
@@ -158,7 +158,7 @@ func TestOTPL(t *testing.T) {
 			t.Fatalf("got sing req id %q; want %q", got, reqID)
 		}
 
-		client.MustRun(t, "deploy", flags.SousDeployFlags())
+		p.MustRun(t, "deploy", flags.SousDeployFlags())
 
 		assertActiveStatus(t, f, reqID)
 		assertSingularityRequestTypeService(t, f, reqID)
@@ -171,25 +171,25 @@ func TestOTPL(t *testing.T) {
 
 		reqID := f.IsolatedRequestID("request1")
 		cluster := f.IsolatedClusterName("cluster1")
-		client := setupProject(t, f,
+		p := setupProject(t, f,
 			filemap.Merge(
 				f.Projects.HTTPServer(),
 				makeOTPLConfig(reqID, cluster),
 			).PrefixAll("offset1"),
 		)
 
-		client.Dir += "/offset1"
+		p.Dir += "/offset1"
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/user1/repo1",
+			repo:    p.repo,
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
 
-		dockerBuildAddArtifactInit(t, f, client, flags, setMinimalMemAndCPUNumInst1)
+		dockerBuildAddArtifactInit(t, f, p, flags, setMinimalMemAndCPUNumInst1)
 
-		m := client.getManifest(t, flags)
+		m := p.getManifest(t, flags)
 		if got := m.Source.Dir; got != "offset1" {
 			t.Fatalf("got offset %q; want %q", got, "offset1")
 		}
@@ -200,7 +200,7 @@ func TestOTPL(t *testing.T) {
 			t.Fatalf("got sing req id %q; want %q", got, reqID)
 		}
 
-		client.MustRun(t, "deploy", flags.SousDeployFlags())
+		p.MustRun(t, "deploy", flags.SousDeployFlags())
 
 		assertActiveStatus(t, f, reqID)
 		assertSingularityRequestTypeService(t, f, reqID)
@@ -215,19 +215,19 @@ func TestOTPL(t *testing.T) {
 			reqMap["invalidfield1"] = 0
 			*req = reqMap
 		})
-		client := setupProject(t, f, filemap.Merge(
+		p := setupProject(t, f, filemap.Merge(
 			f.Projects.HTTPServer(),
 			otplConfig,
 		))
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/user1/repo1",
+			repo:    p.repo,
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
 
-		client.MustFail(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
+		p.MustFail(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
 	})
 
 	pf.Run("fail-init-unknown-fields-dep", func(t *testing.T, f *fixture) {
@@ -238,18 +238,18 @@ func TestOTPL(t *testing.T) {
 			depMap["invalidfield1"] = 0
 			*dep = depMap
 		})
-		client := setupProject(t, f, filemap.Merge(
+		p := setupProject(t, f, filemap.Merge(
 			f.Projects.HTTPServer(),
 			otplConfig,
 		))
 
 		flags := &sousFlags{
 			kind:    "http-service",
-			repo:    "github.com/user1/repo1",
+			repo:    p.repo,
 			tag:     "1.2.3",
 			cluster: "cluster1",
 		}
 
-		client.MustFail(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
+		p.MustFail(t, "init", flags.SousInitFlags(), "-use-otpl-deploy")
 	})
 }

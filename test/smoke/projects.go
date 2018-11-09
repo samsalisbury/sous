@@ -5,15 +5,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/opentable/sous/ext/git"
 	"github.com/opentable/sous/util/filemap"
 )
-
-// Project encapsulates a filemap and local git repo config, providing the
-// context for tests to run in.
-type Project struct {
-	FileMap filemap.FileMap
-	GitRepo gitRepoSpec
-}
 
 type projectMaker func() filemap.FileMap
 
@@ -161,18 +155,25 @@ func splitBuild(p program) filemap.FileMap {
 	}
 }
 
-func setupProject(t *testing.T, f *fixture, fm filemap.FileMap, config ...func(*Project)) *sousClient {
-	t.Helper()
+type sousProject struct {
+	// sousClient is a sous client at the root of the repo.
+	*sousClient
+	// git is a git client at the root of the repo.
+	git *gitClient
+	// files contains the project files.
+	files filemap.FileMap
+	// repo is the isolated repo name.
+	repo string
+}
 
-	p := Project{
-		FileMap: fm,
-		GitRepo: defaultGitRepoSpec(),
-	}
-	for _, f := range config {
-		f(&p)
-	}
-	fm = p.FileMap
-	grs := p.GitRepo
+type sousProjectConfig struct {
+	gitRepoSpec *gitRepoSpec
+}
+
+// setupProject returns a *sousProject with an isolated repo name (isolated
+// in terms of the name of the test t.
+func setupProject(t *testing.T, f *fixture, fm filemap.FileMap, config ...func(*sousProjectConfig)) *sousProject {
+	t.Helper()
 
 	// Setup project git repo.
 	g := newGitClient(t, f.fixtureConfig, "gitclient1")
@@ -180,7 +181,31 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap, config ...func(*
 	projectDir := f.newEmptyDir("project1")
 	g.CD(projectDir)
 
-	g.init(t, f.fixtureConfig, grs)
+	// TODO SS: This ToLower call will not be necessary once we properly handle
+	// repos and offsets that contain upper-case letters. Remove ToLower call
+	// once that is done.
+	isolatedRepoName := strings.ToLower(t.Name())
+
+	origin := "git@github.com:" + isolatedRepoName + ".git"
+
+	origin = strings.ToLower(origin)
+	c := &sousProjectConfig{
+		gitRepoSpec: &gitRepoSpec{
+			UserName:  "Sous User 1",
+			UserEmail: "sous-user1@example.com",
+			OriginURL: origin,
+		},
+	}
+	for _, f := range config {
+		f(c)
+	}
+
+	repoName, err := git.CanonicalRepoURL(origin)
+	if err != nil {
+		t.Fatalf("Setup failed to generate valid git origin URL: %s", err)
+	}
+
+	g.init(t, f.fixtureConfig, *c.gitRepoSpec)
 
 	if err := fm.Write(projectDir); err != nil {
 		t.Fatalf("filemap.Write: %s", err)
@@ -199,5 +224,10 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap, config ...func(*
 		client.MustRun(t, "version", nil)
 	}
 
-	return client
+	return &sousProject{
+		sousClient: client,
+		git:        g,
+		files:      fm,
+		repo:       repoName,
+	}
 }

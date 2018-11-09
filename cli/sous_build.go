@@ -4,7 +4,7 @@ import (
 	"flag"
 
 	"github.com/opentable/sous/config"
-	"github.com/opentable/sous/lib"
+	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/util/cmdr"
 )
 
@@ -12,10 +12,12 @@ type (
 	// SousBuild is the command description for `sous build`
 	// Implements cmdr.Command, cmdr.Executor and cmdr.AddFlags
 	SousBuild struct {
-		config.DeployFilterFlags `inject:"optional"`
-		config.PolicyFlags       `inject:"optional"`
+		DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
+		PolicyFlags       config.PolicyFlags       `inject:"optional"`
 
-		*sous.BuildManager
+		SousGraph *graph.SousGraph
+
+		opts graph.BuildActionOpts
 	}
 )
 
@@ -50,16 +52,14 @@ func (sb *SousBuild) RegisterOn(psy Addable) {
 
 // Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
-	if len(args) != 0 {
-		if err := sb.BuildManager.OffsetFromWorkdir(args[0]); err != nil {
-			return cmdr.EnsureErrorResult(err)
-		}
-	}
-
-	result, err := sb.BuildManager.Build()
-
+	sb.opts.CLIArgs = args
+	sb.opts.DFF = sb.DeployFilterFlags
+	build, err := sb.SousGraph.GetBuild(sb.opts)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-	return cmdr.Success(result)
+	if err := build.Do(); err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
+	return cmdr.Success(build.Result())
 }

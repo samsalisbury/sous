@@ -361,7 +361,6 @@ func TestInvokeBuildWithRepoSelector(t *testing.T) {
 
 	build := exe.Cmd.(*SousBuild)
 
-	assert.NotNil(build.Labeller)
-	assert.NotNil(build.Registrar)
+	assert.NotNil(build.SousGraph)
 	assert.Equal(build.DeployFilterFlags.Repo, `github.com/opentable/sous`)
 }

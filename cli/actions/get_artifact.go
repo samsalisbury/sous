@@ -39,7 +39,7 @@ func (a *GetArtifact) Do() error {
 
 	_, err := a.HTTPClient.Retrieve("./artifact", artifactQuery, &ba, a.User.HTTPHeaders())
 	if err != nil {
-		return errors.Errorf("\nFailed to retrieve artrifact:\n\n\tPlease check your repo, version, and offset.  Items are case sensitive.  Use the following command to verify values sous expects.\n\n\tsous query gdm\n\nError returned: %s", err)
+		return errors.Errorf("\nFailed to retrieve artifact:\n\n\tPlease check your repo, version, and offset.  Items are case sensitive.  Use the following command to verify values sous expects.\n\n\tsous query gdm\n\nError returned: %s", err)
 	}
 	messages.ReportLogFieldsMessage("GetArtifact.Execute Retrieved BuildArtifact",
 		logging.ExtraDebug1Level, a.LogSink, ba)

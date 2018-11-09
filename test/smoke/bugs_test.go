@@ -41,8 +41,8 @@ func TestBugs(t *testing.T) {
 	})
 
 	m.Run("uppercase-docker-repo-bug", func(t *testing.T, f *fixture) {
-		client := setupProject(t, f, f.Projects.HTTPServer(), func(p *Project) {
-			p.GitRepo.OriginURL = "git@github.com:SomeUser/SomeProject.git"
+		p := setupProject(t, f, f.Projects.HTTPServer(), func(p *sousProjectConfig) {
+			p.gitRepoSpec.OriginURL = "git@github.com:SomeUser/SomeProject.git"
 		})
 
 		flags := &sousFlags{
@@ -56,6 +56,6 @@ func TestBugs(t *testing.T) {
 		//   shell> docker build -t 192.168.99.100:5000/SomeUser/SomeProject:1.2.3-testbugs-git-simple-uppercase-docker-repo-bug -t 192.168.99.100:5000/SomeUser/SomeProject:z-2018-10-29T13.12.21 -
 		//   invalid argument "192.168.99.100:5000/SomeUser/SomeProject:1.2.3-testbugs-git-simple-uppercase-docker-repo-bug" for "-t, --tag" flag: invalid reference format: repository name must be lowercase
 
-		client.MustRun(t, "build", flags)
+		p.MustRun(t, "build", flags)
 	})
 }

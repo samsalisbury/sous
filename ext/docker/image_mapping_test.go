@@ -41,6 +41,46 @@ func TestHarvestGuessedRepo(t *testing.T) {
 	assert.Len(dc.CallsTo("AllTags"), 1)
 }
 
+func TestNameCache_Insert_duplicateVersionNewDigest(t *testing.T) {
+	assert := assert.New(t)
+	dc := docker_registry.NewDummyClient()
+
+	host := "docker.repo.io"
+	base := "ot/wackadoo"
+	digest := "sha256:012345678901234567890123456789AB012345678901234567890123456789AB"
+
+	buildArtifact := func(in, dn string) sous.BuildArtifact {
+		return sous.BuildArtifact{
+			DigestReference: dn,
+			VersionName:     in,
+			Qualities:       []sous.Quality{},
+		}
+	}
+	nc, err := NewNameCache(host, dc, logging.SilentLogSet(), sous.SetupDB(t))
+	defer sous.ReleaseDB(t)
+	assert.NoError(err)
+
+	versionIn := "1.2.3"
+	sv := sous.MustNewSourceID("https://github.com/opentable/wackadoo", "nested/there", versionIn)
+	dn := base + "@" + digest
+	in := base + ":" + versionIn
+
+	// First insert.
+	assert.NoError(nc.Insert(sv, buildArtifact(in, dn)))
+
+	// Second insert (same data == OK)
+	assert.NoError(nc.Insert(sv, buildArtifact(in, dn)))
+
+	dn = base + "@" + "sha256:AB2345678901234567890123456789AB012345678901234567890123456789AB"
+
+	// Third insert, new digest, same version == error, that's what we want.
+	err = nc.Insert(sv, buildArtifact(in, dn))
+	if assert.Error(err) {
+		assert.Contains(err.Error(), "violates unique constraint")
+	}
+
+}
+
 func TestRoundTrip(t *testing.T) {
 	assert := assert.New(t)
 	dc := docker_registry.NewDummyClient()

@@ -2,6 +2,7 @@ package smoke
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"path"
 	"testing"
@@ -12,6 +13,7 @@ import (
 	"github.com/opentable/sous/util/filemap"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
+	"github.com/pkg/errors"
 )
 
 type sousServer struct {
@@ -26,7 +28,11 @@ type sousServer struct {
 func makeInstance(t *testing.T, f fixtureConfig, binPath string, i int, clusterName, addr string) (*sousServer, error) {
 	num := i + 1
 
-	name := fmt.Sprintf("server%d", num)
+	_, port, err := net.SplitHostPort(addr)
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting port")
+	}
+	name := fmt.Sprintf("server%d-%s", num, port)
 
 	bin := f.newBin(t, binPath, name)
 
