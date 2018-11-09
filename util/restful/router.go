@@ -318,12 +318,13 @@ func copyRequest(req *http.Request) *http.Request {
 func (mh *MetaHandler) synthResponse(req *http.Request) *http.Response {
 	rw := httptest.NewRecorder()
 	mh.router.ServeHTTP(rw, req)
+	rz := rw.Result()
 	res := &http.Response{
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
 		ProtoMinor: 1,
-		StatusCode: rw.Code,
-		Header:     rw.HeaderMap,
+		StatusCode: rz.StatusCode,
+		Header:     rz.Header,
 	}
 	if res.StatusCode == 0 {
 		res.StatusCode = 200
@@ -345,7 +346,7 @@ func (mh *MetaHandler) synthResponse(req *http.Request) *http.Response {
 				continue
 			}
 			k = http.CanonicalHeaderKey(k)
-			vv, ok := rw.HeaderMap[k]
+			vv, ok := rz.Header[k]
 			if !ok {
 				continue
 			}

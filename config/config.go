@@ -94,7 +94,7 @@ func (c Config) Validate() error {
 // DefaultConfig returns the default configuration.
 func DefaultConfig() Config {
 	return Config{
-		Docker: docker.DefaultConfig(),
+		Docker:                        docker.DefaultConfig(),
 		MaxHTTPConcurrencySingularity: 10,
 		PollIntervalForClient:         600,
 	}

@@ -396,7 +396,7 @@ func (a R11nHandlerAsserts) wantStatus200(t *testing.T, gotStatus int) {
 func (a R11nHandlerAsserts) wantR11nResponse(t *testing.T, body interface{}) dto.R11nResponse {
 	r, ok := body.(dto.R11nResponse)
 	if !ok {
-		t.Fatal("got a %T; want a r11nResponse", body)
+		t.Fatalf("got a %T; want a r11nResponse", body)
 	}
 	return r
 }
