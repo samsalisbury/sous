@@ -18,7 +18,10 @@ with respect to its command line interface and HTTP interface
 
 ### Changed
 * Client: sous jenkins cli revise format of generated Jenkinsfile
-* Client: the runmount build strategy is detected based on Dockerfile environment variables.
+* Client: the runmount build strategy is detected based on Dockerfile
+  environment variables. Specifically, to be considered runmount, the Dockerfile
+  or its parents must declare the SOUS_RUN_IMAGE_SPEC and BUILD_OUT environment variables.
+  All known existing runmount containers already do this.
 
 ## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
