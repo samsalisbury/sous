@@ -25,10 +25,10 @@ type TestPsyringe struct {
 func (tp *TestPsyringe) Replace(constructorsAndValues ...interface{}) {
 	for _, thing := range constructorsAndValues {
 		t := testGetInjectionType(thing)
-		if _, exists := tp.Psyringe.injectionTypes[t]; !exists {
+		if _, exists := tp.Psyringe.injectionTypes.Get(t); !exists {
 			panic(fmt.Errorf("attempt to replace injection type %s; but no such type added", t))
 		}
-		delete(tp.Psyringe.injectionTypes, t)
+		tp.Psyringe.injectionTypes.Delete(t)
 		if err := tp.Psyringe.add(thing); err != nil {
 			panic(err)
 		}

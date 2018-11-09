@@ -64,7 +64,7 @@ import (
 type Psyringe struct {
 	parent         *Psyringe
 	scope          string
-	injectionTypes injectionTypes
+	injectionTypes *injectionTypes
 	Hooks          Hooks
 	allowAddCycle  bool
 }
@@ -84,7 +84,7 @@ func New(constructorsAndValues ...interface{}) *Psyringe {
 func newPsyringe() *Psyringe {
 	return &Psyringe{
 		scope:          "<root>",
-		injectionTypes: injectionTypes{},
+		injectionTypes: newInjectionTypes(),
 		Hooks:          newHooks(),
 	}
 }
@@ -195,13 +195,13 @@ func (p *Psyringe) Test() error {
 	ctors := p.injectionTypes.AddedAsCtors()
 	ctorTypes := ctors.Keys()
 	for _, outType := range ctorTypes {
-		c := ctors[outType].Ctor
+		c := ctors.GetOrNil(outType).Ctor
 		if err := c.testParametersAreRegisteredIn(p); err != nil {
 			return errors.Wrapf(err, "unable to satisfy constructor %s", c.funcType)
 		}
 	}
 	for _, outType := range ctorTypes {
-		c := ctors[outType].Ctor
+		c := ctors.GetOrNil(outType).Ctor
 		s := seen{}
 		if err := p.detectCycle(s, c); err != nil {
 			return errors.Wrapf(err, "dependency cycle: %s", outType)
@@ -252,7 +252,7 @@ func (p *Psyringe) detectCycle(s seen, c *ctor) error {
 		if _, ok := s[t]; ok {
 			return fmt.Errorf("depends on %s", t)
 		}
-		c, ok := p.injectionTypes.AddedAsCtors()[t]
+		c, ok := p.injectionTypes.AddedAsCtors().Get(t)
 		if !ok {
 			continue
 		}
@@ -312,11 +312,11 @@ func (p *Psyringe) inject(target interface{}) error {
 func (p *Psyringe) getValueForStructField(leafHooks Hooks, parentTypeName string, field reflect.StructField) (reflect.Value, bool, error) {
 	t := field.Type
 	name := field.Name
-	if v, ok := p.injectionTypes.AddedAsValues()[t]; ok {
+	if v, ok := p.injectionTypes.AddedAsValues().Get(t); ok {
 		// We have a value, return it.
 		return v.Value, true, nil
 	}
-	if c, ok := p.injectionTypes.AddedAsCtors()[t]; ok {
+	if c, ok := p.injectionTypes.AddedAsCtors().Get(t); ok {
 		// We have a constructor, call it.
 		v, err := c.Ctor.getValue(p)
 		return v, true, errors.Wrapf(err, "getting field %s (%s) failed", name, t)
@@ -332,10 +332,10 @@ func (p *Psyringe) getValueForStructField(leafHooks Hooks, parentTypeName string
 
 func (p *Psyringe) getValueForConstructor(forCtor *ctor, paramIndex int, t reflect.Type) (reflect.Value, error) {
 	debugf("getting a %s for arg %d for constructor of %s", t, paramIndex, forCtor.outType)
-	if v, ok := p.injectionTypes.WithRealisedValues()[t]; ok {
+	if v, ok := p.injectionTypes.WithRealisedValues().Get(t); ok {
 		return v.Value, nil
 	}
-	c, ok := p.injectionTypes.AddedAsCtors()[t]
+	c, ok := p.injectionTypes.AddedAsCtors().Get(t)
 	if !ok {
 		return reflect.Value{}, errors.Errorf("no constructor or value for %s", t)
 	}
@@ -352,7 +352,7 @@ func (p *Psyringe) addValue(t reflect.Type, v reflect.Value) error {
 }
 
 func (p *Psyringe) injectionTypeIsRegisteredAtThisScope(t reflect.Type) bool {
-	_, registered := p.injectionTypes[t]
+	_, registered := p.injectionTypes.Get(t)
 	return registered
 }
 
@@ -379,7 +379,7 @@ func (p *Psyringe) scopeNameInUse(name string) bool {
 func (p *Psyringe) registerInjectionType(t reflect.Type, it *injectionType) error {
 	if scopedPsyringe, registered := p.injectionTypeRegistrationScope(t); registered {
 		message := fmt.Sprintf("injection type %s already registered at %s",
-			t, scopedPsyringe.injectionTypes[t].DebugAddedLocation)
+			t, scopedPsyringe.injectionTypes.GetOrNil(t).DebugAddedLocation)
 		if scopedPsyringe.scope == p.scope {
 			return errors.New(message)
 		}
