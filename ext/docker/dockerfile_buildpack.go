@@ -44,6 +44,12 @@ type detectData struct {
 
 	// RunImageSpecPath is used by the split container buildpack
 	RunImageSpecPath string
+
+	// BuildOutPath is used by the runmount buildpack
+	BuildOutPath string
+
+	// BuildCachePath is used by the runmount buildpack
+	BuildCachePath string
 }
 
 // NewDockerfileBuildpack creates a Dockerfile buildpack

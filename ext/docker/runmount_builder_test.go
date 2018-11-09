@@ -36,7 +36,12 @@ func TestRunmountBuild_run(t *testing.T) {
 		Sh: sh,
 	}
 
-	err := run(ctx, testBuildID)
+	detected := detectData{
+		BuildOutPath:   "/buildout",
+		BuildCachePath: "/cache",
+	}
+
+	err := run(ctx, detected, testBuildID)
 	assert.Empty(t, err)
 }
 
@@ -80,7 +85,9 @@ func TestRunmountBuild_extractRunspec(t *testing.T) {
 		Sh: sh,
 	}
 
-	runSpec, err := extractRunSpec(ctx, tempDir, testContainerBuildID)
+	detection := detectData{RunImageSpecPath: "runspec.json"}
+
+	runSpec, err := extractRunSpec(ctx, detection, tempDir, testContainerBuildID)
 	assert.NoError(t, err)
 
 	assert.Equal(t, testRunSpec, runSpec)
