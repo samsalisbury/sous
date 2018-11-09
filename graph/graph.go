@@ -167,6 +167,10 @@ func BuildGraph(v semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
 	return graph
 }
 
+func addActions(di *SousGraph) {
+	di.Add(newGetArtifactAction)
+}
+
 func newUser(c LocalSousConfig) sous.User {
 	return c.User
 }
@@ -197,6 +201,7 @@ func BuildBaseGraph(version semv.Version, in io.Reader, out, err io.Writer) *Sou
 	AddSingularity(graph)
 	AddInternals(graph)
 	graph.Add(graph)
+	addActions(graph)
 	return graph
 }
 

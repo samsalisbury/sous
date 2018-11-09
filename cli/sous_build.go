@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/opentable/sous/cli/actions"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
@@ -20,8 +21,9 @@ type (
 
 		BuildManager *sous.BuildManager
 
-		SousGraph *graph.SousGraph
-		opts      graph.ArtifactOpts
+		//SousGraph   *graph.SousGraph
+		artifactOpts graph.ArtifactOpts `inject:"optional"`
+		GetArtifact  *actions.GetArtifact
 
 		RFF *graph.RefinedResolveFilter
 	}
@@ -54,6 +56,8 @@ func (*SousBuild) Help() string { return sousBuildHelp }
 func (sb *SousBuild) RegisterOn(psy Addable) {
 	psy.Add(&sb.DeployFilterFlags)
 	psy.Add(&sb.PolicyFlags)
+	sb.artifactOpts.SourceID = sb.DeployFilterFlags.SourceIDFlags()
+	psy.Add(&sb.artifactOpts)
 }
 
 // Execute fulfills the cmdr.Executor interface
@@ -66,15 +70,7 @@ func (sb *SousBuild) Execute(args []string) cmdr.Result {
 
 	sb.DeployFilterFlags.Repo = sb.RFF.Repo.ValueOr("")
 
-	opts := graph.ArtifactOpts{
-		SourceID: sb.DeployFilterFlags.SourceIDFlags(),
-	}
-	getArtifact, err := sb.SousGraph.GetGetArtifact(opts)
-	if err != nil {
-		return cmdr.InternalErrorf("%s", err)
-	}
-
-	if err := assertArtifactNotRegistered(getArtifact.Do()); err != nil {
+	if err := assertArtifactNotRegistered(sb.GetArtifact.Do()); err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
 

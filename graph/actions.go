@@ -124,6 +124,11 @@ type ArtifactOpts struct {
 	DockerImage string
 }
 
+func newGetArtifactAction(di *SousGraph, opts *ArtifactOpts) (*actions.GetArtifact, error) {
+	a, err := di.GetGetArtifact(*opts)
+	return a.(*actions.GetArtifact), err
+}
+
 //GetGetArtifact will return artifact for cli add artifact
 func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (actions.Action, error) {
 	di.guardedAdd("SourceIDFlags", &opts.SourceID)
