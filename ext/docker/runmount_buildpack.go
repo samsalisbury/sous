@@ -86,13 +86,14 @@ func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult,
 	fmt.Println("Runmount Build.. ")
 	start := time.Now()
 	buildResult := &sous.BuildResult{}
+	detection := rmbp.detected.Data.(detectData)
 
 	buildID, err := build(*ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	err = run(*ctx, rmbp.detected.Data.(detectData), buildID)
+	err = run(*ctx, detection, buildID)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func (rmbp *RunmountBuildpack) Build(ctx *sous.BuildContext) (*sous.BuildResult,
 		return nil, err
 	}
 
-	runspec, err := extractRunSpec(*ctx, tempDir, buildContainerID)
+	runspec, err := extractRunSpec(*ctx, detection, tempDir, buildContainerID)
 	if err != nil {
 		return nil, err
 	}

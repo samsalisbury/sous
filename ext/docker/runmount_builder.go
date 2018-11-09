@@ -79,10 +79,10 @@ func createMountContainer(ctx sous.BuildContext, buildID string) (string, error)
 	return buildContainerID, nil
 }
 
-func extractRunSpec(ctx sous.BuildContext, tempDir string, buildContainerID string) (MultiImageRunSpec, error) {
+func extractRunSpec(ctx sous.BuildContext, detection detectData, tempDir string, buildContainerID string) (MultiImageRunSpec, error) {
 	// TODO need to figure out how to pass detected data in
 	runSpec := MultiImageRunSpec{}
-	runspecPath := "/build_output/run_spec.json" //sb.detected.Data.(detectData).RunImageSpecPath
+	runspecPath := filepath.Join("/build_output", detection.RunImageSpecPath)
 	destPath := filepath.Join(tempDir, "run_spec.json")
 	_, err := ctx.Sh.Stdout("docker", "cp", fmt.Sprintf("%s:%s", buildContainerID, runspecPath), destPath)
 	if err != nil {
