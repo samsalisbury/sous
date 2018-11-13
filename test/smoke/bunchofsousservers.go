@@ -23,11 +23,6 @@ type bunchOfSousServers struct {
 }
 
 func newBunchOfSousServers(t *testing.T, f fixtureConfig) (*bunchOfSousServers, error) {
-	// TODO SS: This should have already happened..
-	if err := os.MkdirAll(f.BaseDir, 0777); err != nil {
-		return nil, err
-	}
-
 	gdmDir := f.newEmptyDir("remote-gdm")
 	createRemoteGDM(t, f, "serverbunch1", gdmDir, f.InitialState)
 
