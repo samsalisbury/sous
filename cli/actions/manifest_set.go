@@ -39,11 +39,11 @@ func (ms *ManifestSet) Do() error {
 	if ms.ManifestID != yml.ID() {
 		return fmt.Errorf("Repo, offset, or flavor flags do not match those in your manifest. Flags say %q; manifest is %q", ms.ManifestID, yml.ID())
 	}
+	return ms.SetManifest(yml)
+}
 
-	_, err = (*ms.Updater).Update(&yml, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+// SetManifest sets the manifest.
+func (ms *ManifestSet) SetManifest(m sous.Manifest) error {
+	_, err := (*ms.Updater).Update(&m, nil)
+	return err
 }

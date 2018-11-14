@@ -24,7 +24,7 @@ func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
 }
 
 // GetManifestGet injects a ManifestGet instances.
-func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer, upCap *restful.Updater) (actions.Action, error) {
+func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer, upCap *restful.Updater) (*actions.ManifestGet, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("Dryrun", DryrunNeither)
 
@@ -51,7 +51,7 @@ func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer,
 }
 
 // GetManifestSet injects a ManifestSet instance.
-func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Updater, in io.Reader) (actions.Action, error) {
+func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Updater, in io.Reader) (*actions.ManifestSet, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("Dryrun", DryrunNeither)
 	scoop := struct {
