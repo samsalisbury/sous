@@ -3,6 +3,7 @@ package actions
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
@@ -49,4 +50,18 @@ func (a *GetArtifact) Do() error {
 	fmt.Fprintf(os.Stdout, "name: %s\ndigest: %s\ntype: %s\n", ba.VersionName, ba.DigestReference, ba.Type)
 
 	return nil
+}
+
+// ArtifactExists returns (true, nil) if the artifact exists,
+// (false, nil) it the artifact does not exist and (undefined, error)
+// if the check is not successful.
+func (a *GetArtifact) ArtifactExists() (bool, error) {
+	err := a.Do()
+	if err == nil {
+		return true, nil // fmt.Errorf("artifact already registered")
+	}
+	if strings.Contains(err.Error(), "404 Not Found") {
+		return false, nil
+	}
+	return false, err
 }

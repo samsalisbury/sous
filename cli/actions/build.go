@@ -2,7 +2,6 @@ package actions
 
 import (
 	"fmt"
-	"strings"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -31,21 +30,14 @@ func (sb *Build) Do() error {
 		}
 	}
 
-	if err := assertArtifactNotRegistered(sb.GetArtifact.Do()); err != nil {
-		return cmdr.EnsureErrorResult(err)
+	registered, err := sb.GetArtifact.ArtifactExists()
+	if err != nil {
+		return fmt.Errorf("unable to verify artifact existence: %s", err)
 	}
-
-	var err error
-	sb.result, err = sb.BuildManager.Build()
-	return err
-}
-
-func assertArtifactNotRegistered(err error) error {
-	if err == nil {
+	if registered {
 		return fmt.Errorf("artifact already registered")
 	}
-	if strings.Contains(err.Error(), "404 Not Found") {
-		return nil
-	}
-	return fmt.Errorf("unable to verify artifact existence: %s", err)
+
+	sb.result, err = sb.BuildManager.Build()
+	return err
 }

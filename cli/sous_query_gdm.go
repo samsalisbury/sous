@@ -1,7 +1,10 @@
 package cli
 
 import (
+	"flag"
+	"log"
 	"os"
+	"sync"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
@@ -13,9 +16,9 @@ import (
 type SousQueryGDM struct {
 	StateManager *graph.ClientStateManager
 	flags        struct {
-		singularity string
-		registry    string
+		noimage bool
 	}
+	SousGraph *graph.SousGraph
 }
 
 func init() { QuerySubcommands["gdm"] = &SousQueryGDM{} }
@@ -35,6 +38,11 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 	psy.Add(&config.DeployFilterFlags{})
 }
 
+// AddFlags adds the flags for 'sous query gdm'.
+func (sb *SousQueryGDM) AddFlags(fs *flag.FlagSet) {
+	fs.BoolVar(&sb.flags.noimage, "noimage", false, "list only deployments that have no registered image")
+}
+
 // Execute defines the behavior of `sous query gdm`
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 
@@ -43,10 +51,59 @@ func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	deployments, err := state.Deployments()
+
+	totalCount := deployments.Len()
+
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
+	if !sb.flags.noimage {
+		sous.DumpDeployments(os.Stdout, deployments)
+		return cmdr.Success()
+	}
 
-	sous.DumpDeployments(os.Stdout, deployments)
-	return cmdr.Success()
+	filtered := sous.NewDeployments()
+	wg := sync.WaitGroup{}
+
+	ds := deployments.Snapshot()
+
+	wg.Add(len(ds))
+	errs := make(chan error, len(ds))
+	getArtifactMutex := sync.Mutex{}
+
+	for _, d := range ds {
+		d := d
+		go func() {
+			defer wg.Done()
+			opts := graph.ArtifactOpts{
+				SourceID: config.NewSourceIDFlags(d.SourceID),
+			}
+			getArtifactMutex.Lock()
+			getArtifact, err := sb.SousGraph.GetGetArtifact(opts)
+			getArtifactMutex.Unlock()
+			if err != nil {
+				errs <- err
+				return
+			}
+			exists, err := getArtifact.ArtifactExists()
+			if err != nil {
+				errs <- err
+				return
+			}
+			if exists {
+				filtered.Add(d)
+			}
+		}()
+	}
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		log.Println(err)
+	}
+
+	sous.DumpDeployments(os.Stdout, filtered)
+
+	filteredCount := filtered.Len()
+	return cmdr.Successf("%d/%d deployments matched your filter", filteredCount, totalCount)
 }

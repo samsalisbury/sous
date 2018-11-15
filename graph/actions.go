@@ -126,7 +126,7 @@ type ArtifactOpts struct {
 }
 
 //GetGetArtifact will return artifact for cli add artifact
-func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (actions.Action, error) {
+func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (*actions.GetArtifact, error) {
 	di.guardedAdd("SourceIDFlags", &opts.SourceID)
 	scoop := struct {
 		LogSink    LogSink
@@ -139,7 +139,6 @@ func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (actions.Action, error) {
 		return nil, err
 	}
 	return &actions.GetArtifact{
-
 		LogSink:    scoop.LogSink.LogSink.Child("get-artifact"),
 		User:       scoop.User,
 		Config:     scoop.Config.Config,
@@ -147,7 +146,7 @@ func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (actions.Action, error) {
 		HTTPClient: scoop.HTTP,
 		Repo:       opts.SourceID.Repo,
 		Offset:     opts.SourceID.Offset,
-		Tag:        opts.SourceID.Tag, //might need to switch to version and seperate concept of tag and semv
+		Tag:        opts.SourceID.Tag,
 	}, nil
 }
 
