@@ -47,7 +47,7 @@ func (a *GetArtifact) Do() error {
 
 	a.BuildArtifact = ba
 
-	fmt.Fprintf(os.Stdout, "name: %s\ndigest: %s\ntype: %s\n", ba.VersionName, ba.DigestReference, ba.Type)
+	fmt.Fprintf(os.Stderr, "name: %s\ndigest: %s\ntype: %s\n", ba.VersionName, ba.DigestReference, ba.Type)
 
 	return nil
 }

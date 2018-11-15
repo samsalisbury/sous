@@ -2,6 +2,7 @@ package cli
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -17,6 +18,7 @@ type SousQueryGDM struct {
 	StateManager *graph.ClientStateManager
 	flags        struct {
 		noimage bool
+		format  string
 	}
 	SousGraph *graph.SousGraph
 }
@@ -41,6 +43,24 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 // AddFlags adds the flags for 'sous query gdm'.
 func (sb *SousQueryGDM) AddFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&sb.flags.noimage, "noimage", false, "list only deployments that have no registered image")
+	fs.StringVar(&sb.flags.format, "format", "table", "output format, one of (table, json)")
+}
+
+func (sb *SousQueryGDM) dump(ds sous.Deployments) cmdr.Result {
+	var err error
+	switch sb.flags.format {
+	default:
+		err = fmt.Errorf("output format %q not allowed, pick one of: table, json", sb.flags.format)
+		fallthrough
+	case "table":
+		sous.DumpDeployments(os.Stdout, ds)
+	case "json":
+		sous.JSONDeployments(os.Stdout, ds)
+	}
+	if err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
+	return cmdr.Success()
 }
 
 // Execute defines the behavior of `sous query gdm`
@@ -58,8 +78,7 @@ func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 	if !sb.flags.noimage {
-		sous.DumpDeployments(os.Stdout, deployments)
-		return cmdr.Success()
+		return sb.dump(deployments)
 	}
 
 	filtered := sous.NewDeployments()
@@ -102,8 +121,8 @@ func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 		log.Println(err)
 	}
 
-	sous.DumpDeployments(os.Stdout, filtered)
-
 	filteredCount := filtered.Len()
-	return cmdr.Successf("%d/%d deployments matched your filter", filteredCount, totalCount)
+	log.Printf("%d/%d deployments matched your filter", filteredCount, totalCount)
+	return sb.dump(filtered)
+
 }
