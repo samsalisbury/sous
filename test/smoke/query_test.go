@@ -29,23 +29,38 @@ func TestQuery(t *testing.T) {
 			filters   string
 			wantCount int
 		}{
-			{"", 1},
-			{"hasowners=true", 1},
-			{"hasowners=false", 0},
+			// There are 12 total deployments to start with:
+			//   3x3 clusters in initial state +
+			//
+			// TODO SS: Make initial state explicit in tests like this where it
+			//          greatly affects the output.
+			{"", 12},
+			{"hasowners=true", 0},
+			{"hasowners=false", 12},
 			{"hasimage=true", 1},
-			{"hasimage=false", 0},
+			{"hasimage=false", 11},
 			{"zeroinstances=true", 0},
-			{"zeroinstances=false", 1},
+			{"zeroinstances=false", 12},
 		}
 
 		for _, c := range cases {
 			t.Run(c.filters, func(t *testing.T) {
 				got := p.MustRun(t, "query gdm", nil, "-format", "json",
 					"-filters", c.filters)
-				count := len(strings.Split(got, "\n"))
+				got = strings.TrimSpace(got)
+				lines := strings.Split(got, "\n")
+				var nonemptyLines []string
+				for _, l := range lines {
+					l = strings.TrimSpace(l)
+					if l == "" {
+						continue
+					}
+					nonemptyLines = append(nonemptyLines, l)
+				}
+				count := len(nonemptyLines)
 				if count != c.wantCount {
-					t.Errorf("filter %q got %d results, want %d",
-						c.filters, count, c.wantCount)
+					t.Errorf("filter %q got %d results, want %d; output: %s",
+						c.filters, count, c.wantCount, got)
 				}
 			})
 		}
