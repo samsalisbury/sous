@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/opentable/sous/config"
@@ -17,7 +19,7 @@ import (
 type SousQueryGDM struct {
 	StateManager *graph.ClientStateManager
 	flags        struct {
-		noimage bool
+		filters string
 		format  string
 	}
 	SousGraph *graph.SousGraph
@@ -42,7 +44,7 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 
 // AddFlags adds the flags for 'sous query gdm'.
 func (sb *SousQueryGDM) AddFlags(fs *flag.FlagSet) {
-	fs.BoolVar(&sb.flags.noimage, "noimage", false, "list only deployments that have no registered image")
+	fs.StringVar(&sb.flags.filters, "filters", "", "filter the output, space-separatey list, e.g. 'hasimage=true zeroinstances=false")
 	fs.StringVar(&sb.flags.format, "format", "table", "output format, one of (table, json)")
 }
 
@@ -63,24 +65,7 @@ func (sb *SousQueryGDM) dump(ds sous.Deployments) cmdr.Result {
 	return cmdr.Success()
 }
 
-// Execute defines the behavior of `sous query gdm`
-func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
-
-	state, err := sb.StateManager.ReadState()
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-	deployments, err := state.Deployments()
-
-	totalCount := deployments.Len()
-
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-	if !sb.flags.noimage {
-		return sb.dump(deployments)
-	}
-
+func (sb *SousQueryGDM) hasImageFilter(deployments sous.Deployments, which bool) sous.Deployments {
 	filtered := sous.NewDeployments()
 	wg := sync.WaitGroup{}
 
@@ -120,9 +105,86 @@ func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 	for err := range errs {
 		log.Println(err)
 	}
+	return filtered
+}
+
+func zeroInstanceFilter(ds sous.Deployments, which bool) sous.Deployments {
+	return ds.Filter(func(d *sous.Deployment) bool {
+		return d.NumInstances == 0 == which
+	})
+}
+
+func (sb *SousQueryGDM) getFilter(name string) (func(sous.Deployments, bool) sous.Deployments, error) {
+	switch name {
+	default:
+		return nil, fmt.Errorf("filter %q not recognised; pick either hasimage or zeroinstances", name)
+	case "hasimage":
+		return sb.hasImageFilter, nil
+	case "zeroinstances":
+		return zeroInstanceFilter, nil
+	}
+}
+
+func (sb *SousQueryGDM) parseFilters() ([]func(sous.Deployments) sous.Deployments, error) {
+	var filters []func(sous.Deployments) sous.Deployments
+	if sb.flags.filters == "" {
+		return nil, nil
+	}
+	parts := strings.Fields(sb.flags.filters)
+	for _, p := range parts {
+		kv := strings.Split(p, "=")
+		if len(kv) != 2 {
+			return nil, cmdr.UsageErrorf("filter %q not valid; format is name=(true|false)")
+		}
+		k, v := kv[0], kv[1]
+		f, err := sb.getFilter(k)
+		if err != nil {
+			return nil, err
+		}
+		tf, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, cmdr.UsageErrorf("filter %q accepts true or false, not %q", k, v)
+		}
+		filters = append(filters, func(ds sous.Deployments) sous.Deployments {
+			return f(ds, tf)
+		})
+	}
+	return filters, nil
+}
+
+func (sb *SousQueryGDM) filter(ds sous.Deployments) (sous.Deployments, error) {
+	filters, err := sb.parseFilters()
+	if err != nil {
+		return sous.NewDeployments(), err
+	}
+	for _, f := range filters {
+		ds = f(ds)
+	}
+	return ds, nil
+}
+
+// Execute defines the behavior of `sous query gdm`
+func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
+
+	state, err := sb.StateManager.ReadState()
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+	deployments, err := state.Deployments()
+
+	totalCount := deployments.Len()
+
+	if err != nil {
+		return EnsureErrorResult(err)
+	}
+
+	filtered, err := sb.filter(deployments)
+	if err != nil {
+		return cmdr.EnsureErrorResult(err)
+	}
 
 	filteredCount := filtered.Len()
-	log.Printf("%d/%d deployments matched your filter", filteredCount, totalCount)
+	log.Printf("%d results (of %q total deployments)", filteredCount, totalCount)
 	return sb.dump(filtered)
 
 }
