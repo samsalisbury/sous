@@ -44,7 +44,7 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 
 // AddFlags adds the flags for 'sous query gdm'.
 func (sb *SousQueryGDM) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&sb.flags.filters, "filters", "", "filter the output, space-separatey list, e.g. 'hasimage=true zeroinstances=false")
+	fs.StringVar(&sb.flags.filters, "filters", "", "filter the output, space-separatey list, e.g. 'hasimage=true zeroinstances=false hasowners=true")
 	fs.StringVar(&sb.flags.format, "format", "table", "output format, one of (table, json)")
 }
 
@@ -68,10 +68,23 @@ func (sb *SousQueryGDM) dump(ds sous.Deployments) cmdr.Result {
 type deployFilter func(sous.Deployments, bool) sous.Deployments
 type boundFilter func(sous.Deployments) sous.Deployments
 
+func simpleFilter(p func(*sous.Deployment) bool) deployFilter {
+	return func(ds sous.Deployments, which bool) sous.Deployments {
+		return ds.Filter(func(d *sous.Deployment) bool {
+			return p(d) == which
+		})
+	}
+}
+
 func (sb *SousQueryGDM) availableFilters() map[string]deployFilter {
 	return map[string]deployFilter{
-		"hasimage":      sb.hasImageFilter,
-		"zeroinstances": zeroInstanceFilter,
+		"hasimage": sb.hasImageFilter,
+		"zeroinstances": simpleFilter(func(d *sous.Deployment) bool {
+			return d.NumInstances == 0
+		}),
+		"hasowners": simpleFilter(func(d *sous.Deployment) bool {
+			return len(d.Owners) != 0
+		}),
 	}
 }
 
@@ -124,12 +137,6 @@ func (sb *SousQueryGDM) hasImageFilter(deployments sous.Deployments, which bool)
 		log.Println(err)
 	}
 	return filtered
-}
-
-func zeroInstanceFilter(ds sous.Deployments, which bool) sous.Deployments {
-	return ds.Filter(func(d *sous.Deployment) bool {
-		return d.NumInstances == 0 == which
-	})
 }
 
 func (sb *SousQueryGDM) badFilterNameError(attempted string) error {
