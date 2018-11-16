@@ -44,7 +44,7 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 
 // AddFlags adds the flags for 'sous query gdm'.
 func (sb *SousQueryGDM) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&sb.flags.filters, "filters", "", "filter the output, space-separatey list, e.g. 'hasimage=true zeroinstances=false hasowners=true")
+	fs.StringVar(&sb.flags.filters, "filters", "", "filter the output, space-separated list, e.g. 'hasimage=true zeroinstances=false hasowners=true'")
 	fs.StringVar(&sb.flags.format, "format", "table", "output format, one of (table, json)")
 }
 
@@ -52,7 +52,7 @@ func (sb *SousQueryGDM) dump(ds sous.Deployments) cmdr.Result {
 	var err error
 	switch sb.flags.format {
 	default:
-		err = fmt.Errorf("output format %q not allowed, pick one of: table, json", sb.flags.format)
+		err = fmt.Errorf("output format %q not valid, pick one of: table, json", sb.flags.format)
 		fallthrough
 	case "table":
 		sous.DumpDeployments(os.Stdout, ds)
