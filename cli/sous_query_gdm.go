@@ -125,7 +125,7 @@ func (sb *SousQueryGDM) hasImageFilter(deployments sous.Deployments, which bool)
 				errs <- err
 				return
 			}
-			if exists {
+			if exists == which {
 				filtered.Add(d)
 			}
 		}()
