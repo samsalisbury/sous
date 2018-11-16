@@ -65,6 +65,16 @@ func (sb *SousQueryGDM) dump(ds sous.Deployments) cmdr.Result {
 	return cmdr.Success()
 }
 
+type deployFilter func(sous.Deployments, bool) sous.Deployments
+type boundFilter func(sous.Deployments) sous.Deployments
+
+func (sb *SousQueryGDM) availableFilters() map[string]deployFilter {
+	return map[string]deployFilter{
+		"hasimage":      sb.hasImageFilter,
+		"zeroinstances": zeroInstanceFilter,
+	}
+}
+
 func (sb *SousQueryGDM) hasImageFilter(deployments sous.Deployments, which bool) sous.Deployments {
 	filtered := sous.NewDeployments()
 	wg := sync.WaitGroup{}
@@ -114,19 +124,16 @@ func zeroInstanceFilter(ds sous.Deployments, which bool) sous.Deployments {
 	})
 }
 
-func (sb *SousQueryGDM) getFilter(name string) (func(sous.Deployments, bool) sous.Deployments, error) {
-	switch name {
-	default:
+func (sb *SousQueryGDM) getFilter(name string) (deployFilter, error) {
+	f, ok := sb.availableFilters()[name]
+	if !ok {
 		return nil, fmt.Errorf("filter %q not recognised; pick either hasimage or zeroinstances", name)
-	case "hasimage":
-		return sb.hasImageFilter, nil
-	case "zeroinstances":
-		return zeroInstanceFilter, nil
 	}
+	return f, nil
 }
 
-func (sb *SousQueryGDM) parseFilters() ([]func(sous.Deployments) sous.Deployments, error) {
-	var filters []func(sous.Deployments) sous.Deployments
+func (sb *SousQueryGDM) parseFilters() ([]boundFilter, error) {
+	var filters []boundFilter
 	if sb.flags.filters == "" {
 		return nil, nil
 	}
@@ -163,7 +170,7 @@ func (sb *SousQueryGDM) filter(ds sous.Deployments) (sous.Deployments, error) {
 	return ds, nil
 }
 
-// Execute defines the behavior of `sous query gdm`
+// Execute defines the behavior of `sous query gdm`.
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 
 	state, err := sb.StateManager.ReadState()
