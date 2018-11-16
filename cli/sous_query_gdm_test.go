@@ -45,3 +45,39 @@ func TestSimpleFilter(t *testing.T) {
 		t.Errorf("got %d false results; want %d", gotFalse, wantFalse)
 	}
 }
+
+func TestSousQueryGDM_parseFilters_ok(t *testing.T) {
+	cases := []struct {
+		filters   string
+		wantCount int
+	}{
+		{"", 0},
+		{"hasimage=true", 1},
+		{"hasimage=false", 1},
+		{"hasowners=true", 1},
+		{"hasowners=false", 1},
+		{"zeroinstances=true", 1},
+		{"zeroinstances=false", 1},
+		{"zeroinstances=false hasowners=true", 2},
+		{"zeroinstances=false hasowners=true hasimage=false", 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.filters, func(t *testing.T) {
+			c := &SousQueryGDM{}
+			c.flags.filters = tc.filters
+			gotFilters, err := c.parseFilters()
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotCount := len(gotFilters)
+			if gotCount != tc.wantCount {
+				t.Errorf("got count %d; want %d", gotCount, tc.wantCount)
+			}
+			for i, f := range gotFilters {
+				if f == nil {
+					t.Errorf("filter %d is nil", i)
+				}
+			}
+		})
+	}
+}
