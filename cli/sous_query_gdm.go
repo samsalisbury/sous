@@ -75,6 +75,14 @@ func (sb *SousQueryGDM) availableFilters() map[string]deployFilter {
 	}
 }
 
+func (sb *SousQueryGDM) availableFilterNames() []string {
+	var names []string
+	for k := range sb.availableFilters() {
+		names = append(names, k)
+	}
+	return names
+}
+
 func (sb *SousQueryGDM) hasImageFilter(deployments sous.Deployments, which bool) sous.Deployments {
 	filtered := sous.NewDeployments()
 	wg := sync.WaitGroup{}
@@ -124,10 +132,15 @@ func zeroInstanceFilter(ds sous.Deployments, which bool) sous.Deployments {
 	})
 }
 
+func (sb *SousQueryGDM) badFilterNameError(attempted string) error {
+	return cmdr.UsageErrorf("filter %q not recognised; pick one of: %s",
+		attempted, strings.Join(sb.availableFilterNames(), ", "))
+}
+
 func (sb *SousQueryGDM) getFilter(name string) (deployFilter, error) {
 	f, ok := sb.availableFilters()[name]
 	if !ok {
-		return nil, fmt.Errorf("filter %q not recognised; pick either hasimage or zeroinstances", name)
+		return nil, sb.badFilterNameError(name)
 	}
 	return f, nil
 }
@@ -141,7 +154,7 @@ func (sb *SousQueryGDM) parseFilters() ([]boundFilter, error) {
 	for _, p := range parts {
 		kv := strings.Split(p, "=")
 		if len(kv) != 2 {
-			return nil, cmdr.UsageErrorf("filter %q not valid; format is name=(true|false)")
+			return nil, cmdr.UsageErrorf("filter %q not valid; format is <name>=(true|false)")
 		}
 		k, v := kv[0], kv[1]
 		f, err := sb.getFilter(k)
