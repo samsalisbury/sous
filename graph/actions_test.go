@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"os"
 	"testing"
 
 	"github.com/opentable/sous/cli/actions"
@@ -35,10 +36,12 @@ func fixtureDeployFilterFlags() config.DeployFilterFlags {
 func fixtureGraph(t *testing.T) *SousGraph {
 	graph := DefaultTestGraph(t)
 	graph.Add(&config.Verbosity{})
+
 	tg := psyringe.TestPsyringe{Psyringe: graph.Psyringe}
 	tg.Replace(LocalSousConfig{
 		Config: &config.Config{Server: "not empty"},
 	})
+	tg.Replace(ClientBundle{"cluster1": nil})
 	tg.Replace(func() lazyNameCache {
 		return func() (*docker.NameCache, error) {
 			return &docker.NameCache{}, nil
@@ -159,4 +162,56 @@ func TestGetAddArtifact(t *testing.T) {
 	ga, err := fg.GetAddArtifact(opts)
 	require.Nil(t, err)
 	require.NotNil(t, ga)
+}
+
+func TestGetJenkins(t *testing.T) {
+	fg := fixtureGraph(t)
+	opts := DeployActionOpts{
+		DFF: config.DeployFilterFlags{
+			DeploymentIDFlags: config.DeploymentIDFlags{
+				ManifestIDFlags: config.ManifestIDFlags{
+					SourceLocationFlags: config.SourceLocationFlags{
+						Repo: "repo1",
+					},
+				},
+				Cluster: "cluster1",
+			},
+			SourceVersionFlags: config.SourceVersionFlags{
+				Tag: "1.2.3",
+			},
+		},
+	}
+	action, err := fg.GetJenkins(opts)
+	require.NoError(t, err)
+	require.NotNil(t, action)
+	require.NoError(t, os.Setenv("SOUS_USE_SOUS_SERVER", "YES"))
+	action, err = fg.GetJenkins(opts)
+	require.NoError(t, err)
+	require.NotNil(t, action)
+}
+
+func TestGetDeploy(t *testing.T) {
+	fg := fixtureGraph(t)
+	opts := DeployActionOpts{
+		DFF: config.DeployFilterFlags{
+			DeploymentIDFlags: config.DeploymentIDFlags{
+				ManifestIDFlags: config.ManifestIDFlags{
+					SourceLocationFlags: config.SourceLocationFlags{
+						Repo: "repo1",
+					},
+				},
+				Cluster: "cluster1",
+			},
+			SourceVersionFlags: config.SourceVersionFlags{
+				Tag: "1.2.3",
+			},
+		},
+	}
+	action, err := fg.GetDeploy(opts)
+	require.NoError(t, err)
+	require.NotNil(t, action)
+	require.NoError(t, os.Setenv("SOUS_USE_SOUS_SERVER", "YES"))
+	action, err = fg.GetDeploy(opts)
+	require.NoError(t, err)
+	require.NotNil(t, action)
 }
