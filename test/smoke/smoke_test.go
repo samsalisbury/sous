@@ -26,6 +26,28 @@ func TestSmoke(t *testing.T) {
 		assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
 	})
 
+	m.Run("scale", func(t *testing.T, f *fixture) {
+		p := setupProject(t, f, f.Projects.HTTPServer())
+		flags := &sousFlags{kind: "http-service", tag: "1.2.3", cluster: "cluster1", repo: p.repo}
+		reqID := f.DefaultSingReqID(t, flags)
+
+		assumeSuccessfullyDeployed(t, f, p, flags, reqID)
+
+		// TODO SS: Make scale provide same feedback as deploy (i.e. don't
+		// return until the job is done) then remove those forced deploy
+		// calls below. They exist only for the sake of the test.
+
+		p.MustRun(t, "scale", flags.DeploymentIDFlags(), "3")
+		p.MustRun(t, "deploy", flags.SousDeployFlags(), "-force")
+
+		assertNumInstances(t, f, reqID, 3)
+
+		p.MustRun(t, "scale", flags.DeploymentIDFlags(), "1")
+		p.MustRun(t, "deploy", flags.SousDeployFlags(), "-force")
+
+		assertNumInstances(t, f, reqID, 1)
+	})
+
 	m.Run("fail-zero-instances", func(t *testing.T, f *fixture) {
 		p := setupProject(t, f, f.Projects.HTTPServer())
 
