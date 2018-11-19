@@ -7,13 +7,6 @@ import (
 	"testing"
 )
 
-func assumeSuccessfullyDeployed(t *testing.T, f *fixture, p *sousProject, flags *sousFlags, reqID string) {
-	initBuildDeploy(t, p, flags, setMinimalMemAndCPUNumInst1)
-	assertActiveStatus(t, f, reqID)
-	assertSingularityRequestTypeService(t, f, reqID)
-	assertNonNilHealthCheckOnLatestDeploy(t, f, reqID)
-}
-
 func TestQuery(t *testing.T) {
 
 	m := newRunner(t, matrix())
