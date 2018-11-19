@@ -30,7 +30,8 @@ func TestQuery(t *testing.T) {
 			wantCount int
 		}{
 			// There are 12 total deployments to start with:
-			//   3x3 clusters in initial state +
+			//   3 manifests x 3 clusters in initial state +
+			//   1 manifest x 3 clusters created by the test.
 			//
 			// TODO SS: Make initial state explicit in tests like this where it
 			//          greatly affects the output.
