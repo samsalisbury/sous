@@ -5,6 +5,7 @@ import (
 
 	"github.com/opentable/sous/ext/github"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/samsalisbury/semv"
 	"github.com/stretchr/testify/assert"
 )
@@ -199,5 +200,32 @@ func TestNewSourceIDFlags(t *testing.T) {
 	if got != want {
 		t.Errorf("got %v; want %v", got, want)
 	}
+}
 
+func TestDeployFilterFlags_EachField(t *testing.T) {
+	f := DeployFilterFlags{}
+	f.Cluster = "cluster1"
+	f.Flavor = "flavor1"
+	f.Offset = "offset1"
+	f.Repo = "repo1"
+	f.Revision = "revision1"
+	f.Tag = "tag1"
+	got := map[logging.FieldName]string{}
+	f.EachField(func(name logging.FieldName, value interface{}) {
+		got[name] = value.(string)
+	})
+	fn := func(name logging.FieldName, want string) {
+		v, ok := got[name]
+		if !ok {
+			t.Errorf("missing field %q", name)
+		} else if v != want {
+			t.Errorf("got %s=%q; want %q", name, v, want)
+		}
+	}
+	fn(logging.FilterCluster, "cluster1")
+	fn(logging.FilterFlavor, "flavor1")
+	fn(logging.FilterOffset, "offset1")
+	fn(logging.FilterRepo, "repo1")
+	fn(logging.FilterRevision, "revision1")
+	fn(logging.FilterTag, "tag1")
 }
