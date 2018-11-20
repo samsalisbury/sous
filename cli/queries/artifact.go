@@ -28,3 +28,11 @@ func (q *ArtifactQuery) ByID(sid sous.SourceID) (*sous.BuildArtifact, error) {
 	}
 	return nil, err
 }
+
+// Exists returns true if the artifact exists. If it returns a non-nil error,
+// the other return value is undefined, and it was not possible to determine
+// if the artifact exists or not.
+func (q *ArtifactQuery) Exists(sid sous.SourceID) (bool, error) {
+	a, err := q.ByID(sid)
+	return a != nil, err
+}

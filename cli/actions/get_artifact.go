@@ -55,6 +55,5 @@ func (a *GetArtifact) ArtifactExists() (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("source ID not valid: %s", err)
 	}
-	art, err := a.Query.ByID(sid)
-	return art != nil, err
+	return a.Query.Exists(sid)
 }
