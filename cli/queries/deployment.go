@@ -1,10 +1,8 @@
 package queries
 
 import (
-	"log"
 	"strconv"
 	"strings"
-	"sync"
 
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -14,17 +12,6 @@ import (
 type Deployment struct {
 	StateManager  sous.StateManager
 	ArtifactQuery ArtifactQuery
-}
-
-// DeploymentFilters is the argument that determines which deployments are
-// returned by a query.
-type DeploymentFilters struct {
-	AttributeFilters *DeploymentAttributeFilters
-}
-
-// DeploymentAttributeFilters filters deployments based on their attributes.
-type DeploymentAttributeFilters struct {
-	filters []boundDeployFilter
 }
 
 // DeploymentQueryResult is the result of the query.
@@ -54,20 +41,10 @@ func (q *Deployment) Result(f DeploymentFilters) (DeploymentQueryResult, error) 
 	return DeploymentQueryResult{Deployments: f.AttributeFilters.apply(ds)}, err
 }
 
-type deployFilter func(sous.Deployments, bool) sous.Deployments
-type boundDeployFilter func(sous.Deployments) sous.Deployments
-
-func simpleFilter(p func(*sous.Deployment) bool) deployFilter {
-	return func(ds sous.Deployments, which bool) sous.Deployments {
-		return ds.Filter(func(d *sous.Deployment) bool {
-			return p(d) == which
-		})
-	}
-}
-
 func (q *Deployment) availableFilters() map[string]deployFilter {
+	hif := newHasImageFilter(q.ArtifactQuery)
 	return map[string]deployFilter{
-		"hasimage": q.hasImageFilter,
+		"hasimage": hif.hasImage,
 		"zeroinstances": simpleFilter(func(d *sous.Deployment) bool {
 			return d.NumInstances == 0
 		}),
@@ -83,38 +60,6 @@ func (q *Deployment) availableFilterNames() []string {
 		names = append(names, k)
 	}
 	return names
-}
-
-func (q *Deployment) hasImageFilter(deployments sous.Deployments, which bool) sous.Deployments {
-	filtered := sous.NewDeployments()
-	wg := sync.WaitGroup{}
-
-	ds := deployments.Snapshot()
-
-	wg.Add(len(ds))
-	errs := make(chan error, len(ds))
-
-	for _, d := range ds {
-		d := d
-		go func() {
-			defer wg.Done()
-			a, err := q.ArtifactQuery.ByID(d.SourceID)
-			if err != nil {
-				errs <- err
-				return
-			}
-			if a != nil == which {
-				filtered.Add(d)
-			}
-		}()
-	}
-	wg.Wait()
-	close(errs)
-
-	for err := range errs {
-		log.Println(err)
-	}
-	return filtered
 }
 
 func (q *Deployment) badFilterNameError(attempted string) error {
@@ -155,11 +100,4 @@ func (q *Deployment) parseFilters(s string) ([]boundDeployFilter, error) {
 		})
 	}
 	return filters, nil
-}
-
-func (f *DeploymentAttributeFilters) apply(ds sous.Deployments) sous.Deployments {
-	for _, f := range f.filters {
-		ds = f(ds)
-	}
-	return ds
 }
