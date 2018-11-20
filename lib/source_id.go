@@ -76,6 +76,15 @@ func (sid SourceID) QueryValues() url.Values {
 	return v
 }
 
+// HTTPQueryMap is similar to QueryValues but returns a flat map.
+func (sid SourceID) HTTPQueryMap() map[string]string {
+	return map[string]string{
+		"repo":    sid.Location.Repo,
+		"offset":  sid.Location.Dir,
+		"version": sid.Version.String(),
+	}
+}
+
 // EachField implements logging.EachFielder on SourceID.
 func (sid SourceID) EachField(fn logging.FieldReportFn) {
 	fn(logging.SousSourceId, sid.String())

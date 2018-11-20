@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/opentable/sous/cli/actions"
+	"github.com/opentable/sous/cli/queries"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -129,24 +130,18 @@ type ArtifactOpts struct {
 func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (*actions.GetArtifact, error) {
 	di.guardedAdd("SourceIDFlags", &opts.SourceID)
 	scoop := struct {
-		LogSink    LogSink
-		User       sous.User
-		LocalShell LocalWorkDirShell
-		Config     LocalSousConfig
-		HTTP       HTTPClient
+		Query   queries.ArtifactQuery
+		LogSink LogSink
 	}{}
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
 	return &actions.GetArtifact{
-		LogSink:    scoop.LogSink.LogSink.Child("get-artifact"),
-		User:       scoop.User,
-		Config:     scoop.Config.Config,
-		LocalShell: scoop.LocalShell,
-		HTTPClient: scoop.HTTP,
-		Repo:       opts.SourceID.Repo,
-		Offset:     opts.SourceID.Offset,
-		Tag:        opts.SourceID.Tag,
+		Query:   scoop.Query,
+		LogSink: scoop.LogSink.LogSink.Child("get-artifact"),
+		Repo:    opts.SourceID.Repo,
+		Offset:  opts.SourceID.Offset,
+		Tag:     opts.SourceID.Tag,
 	}, nil
 }
 

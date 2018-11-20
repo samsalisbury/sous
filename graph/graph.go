@@ -196,6 +196,7 @@ func BuildBaseGraph(version semv.Version, in io.Reader, out, err io.Writer) *Sou
 	AddDocker(graph)
 	AddSingularity(graph)
 	AddInternals(graph)
+	AddQueries(graph)
 	graph.Add(graph)
 	return graph
 }
@@ -280,6 +281,11 @@ func AddSingularity(graph adder) {
 	graph.Add(
 		newDeployer,
 	)
+}
+
+// AddQueries adds queries.
+func AddQueries(graph adder) {
+	graph.Add(newArtifactQuery)
 }
 
 // AddInternals adds the dependency contructors that are internal to Sous.
