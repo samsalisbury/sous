@@ -64,7 +64,7 @@ func TestDeploymentQuery_parseFilters_ok(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.filters, func(t *testing.T) {
 			sm := sous.NewDummyStateManager()
-			c := DeploymentQuery{
+			c := Deployment{
 				StateManager: sm,
 			}
 			gotFilters, err := c.parseFilters(tc.filters)

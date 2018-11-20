@@ -10,8 +10,8 @@ import (
 	"github.com/opentable/sous/util/cmdr"
 )
 
-// DeploymentQuery supports querying deployments.
-type DeploymentQuery struct {
+// Deployment supports querying deployments.
+type Deployment struct {
 	StateManager  sous.StateManager
 	ArtifactQuery ArtifactQuery
 }
@@ -19,16 +19,16 @@ type DeploymentQuery struct {
 // DeploymentFilters is the argument that determines which deployments are
 // returned by a query.
 type DeploymentFilters struct {
-	AttributeFilters *AttributeFilters
+	AttributeFilters *DeploymentAttributeFilters
 }
 
-// AttributeFilters filters deployments based on their attributes.
-type AttributeFilters struct {
-	filters []boundFilter
+// DeploymentAttributeFilters filters deployments based on their attributes.
+type DeploymentAttributeFilters struct {
+	filters []boundDeployFilter
 }
 
-// QueryResult is the result of the query.
-type QueryResult struct {
+// DeploymentQueryResult is the result of the query.
+type DeploymentQueryResult struct {
 	// Deployments is the final query result.
 	Deployments sous.Deployments
 }
@@ -36,26 +36,26 @@ type QueryResult struct {
 // ParseAttributeFilters parses deployment filters in the format:
 //   <name>=<true|false> <name2>=<true|false>
 // It returns a valid set of deployment filters.
-func (q *DeploymentQuery) ParseAttributeFilters(s string) (*AttributeFilters, error) {
+func (q *Deployment) ParseAttributeFilters(s string) (*DeploymentAttributeFilters, error) {
 	f, err := q.parseFilters(s)
 	if err != nil {
 		return nil, err
 	}
-	return &AttributeFilters{filters: f}, nil
+	return &DeploymentAttributeFilters{filters: f}, nil
 }
 
 // Result returns all the deployments matched by f.
-func (q *DeploymentQuery) Result(f DeploymentFilters) (QueryResult, error) {
+func (q *Deployment) Result(f DeploymentFilters) (DeploymentQueryResult, error) {
 	s, err := q.StateManager.ReadState()
 	if err != nil {
-		return QueryResult{Deployments: sous.NewDeployments()}, err
+		return DeploymentQueryResult{Deployments: sous.NewDeployments()}, err
 	}
 	ds, err := s.Deployments()
-	return QueryResult{Deployments: f.AttributeFilters.apply(ds)}, err
+	return DeploymentQueryResult{Deployments: f.AttributeFilters.apply(ds)}, err
 }
 
 type deployFilter func(sous.Deployments, bool) sous.Deployments
-type boundFilter func(sous.Deployments) sous.Deployments
+type boundDeployFilter func(sous.Deployments) sous.Deployments
 
 func simpleFilter(p func(*sous.Deployment) bool) deployFilter {
 	return func(ds sous.Deployments, which bool) sous.Deployments {
@@ -65,7 +65,7 @@ func simpleFilter(p func(*sous.Deployment) bool) deployFilter {
 	}
 }
 
-func (q *DeploymentQuery) availableFilters() map[string]deployFilter {
+func (q *Deployment) availableFilters() map[string]deployFilter {
 	return map[string]deployFilter{
 		"hasimage": q.hasImageFilter,
 		"zeroinstances": simpleFilter(func(d *sous.Deployment) bool {
@@ -77,7 +77,7 @@ func (q *DeploymentQuery) availableFilters() map[string]deployFilter {
 	}
 }
 
-func (q *DeploymentQuery) availableFilterNames() []string {
+func (q *Deployment) availableFilterNames() []string {
 	var names []string
 	for k := range q.availableFilters() {
 		names = append(names, k)
@@ -85,7 +85,7 @@ func (q *DeploymentQuery) availableFilterNames() []string {
 	return names
 }
 
-func (q *DeploymentQuery) hasImageFilter(deployments sous.Deployments, which bool) sous.Deployments {
+func (q *Deployment) hasImageFilter(deployments sous.Deployments, which bool) sous.Deployments {
 	filtered := sous.NewDeployments()
 	wg := sync.WaitGroup{}
 
@@ -117,12 +117,12 @@ func (q *DeploymentQuery) hasImageFilter(deployments sous.Deployments, which boo
 	return filtered
 }
 
-func (q *DeploymentQuery) badFilterNameError(attempted string) error {
+func (q *Deployment) badFilterNameError(attempted string) error {
 	return cmdr.UsageErrorf("filter %q not recognised; pick one of: %s",
 		attempted, strings.Join(q.availableFilterNames(), ", "))
 }
 
-func (q *DeploymentQuery) getFilter(name string) (deployFilter, error) {
+func (q *Deployment) getFilter(name string) (deployFilter, error) {
 	f, ok := q.availableFilters()[name]
 	if !ok {
 		return nil, q.badFilterNameError(name)
@@ -130,8 +130,8 @@ func (q *DeploymentQuery) getFilter(name string) (deployFilter, error) {
 	return f, nil
 }
 
-func (q *DeploymentQuery) parseFilters(s string) ([]boundFilter, error) {
-	var filters []boundFilter
+func (q *Deployment) parseFilters(s string) ([]boundDeployFilter, error) {
+	var filters []boundDeployFilter
 	if s == "" {
 		return nil, nil
 	}
@@ -157,7 +157,7 @@ func (q *DeploymentQuery) parseFilters(s string) ([]boundFilter, error) {
 	return filters, nil
 }
 
-func (f *AttributeFilters) apply(ds sous.Deployments) sous.Deployments {
+func (f *DeploymentAttributeFilters) apply(ds sous.Deployments) sous.Deployments {
 	for _, f := range f.filters {
 		ds = f(ds)
 	}

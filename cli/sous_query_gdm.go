@@ -15,7 +15,7 @@ import (
 
 // SousQueryGDM is the description of the `sous query gdm` command
 type SousQueryGDM struct {
-	DeploymentQuery queries.DeploymentQuery
+	DeploymentQuery queries.Deployment
 	flags           struct {
 		filters string
 		format  string

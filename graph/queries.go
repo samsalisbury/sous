@@ -12,8 +12,8 @@ func newArtifactQuery(c HTTPClient, u sous.User) queries.ArtifactQuery {
 	}
 }
 
-func newDeploymentQuery(sm *ClientStateManager, aq queries.ArtifactQuery) queries.DeploymentQuery {
-	return queries.DeploymentQuery{
+func newDeploymentQuery(sm *ClientStateManager, aq queries.ArtifactQuery) queries.Deployment {
+	return queries.Deployment{
 		StateManager:  sm,
 		ArtifactQuery: aq,
 	}
