@@ -180,3 +180,24 @@ func TestSourceIDFlags_SourceID(t *testing.T) {
 		}
 	})
 }
+
+func TestNewSourceIDFlags(t *testing.T) {
+	sid, err := sous.NewSourceID("repo1", "offset1", "1")
+	if err != nil {
+		t.Fatalf("test setup failed: %s", err)
+	}
+	got := NewSourceIDFlags(sid)
+	want := SourceIDFlags{
+		SourceLocationFlags: SourceLocationFlags{
+			Repo:   "repo1",
+			Offset: "offset1",
+		},
+		SourceVersionFlags: SourceVersionFlags{
+			Tag: "1",
+		},
+	}
+	if got != want {
+		t.Errorf("got %v; want %v", got, want)
+	}
+
+}
