@@ -6,47 +6,7 @@ import (
 	sous "github.com/opentable/sous/lib"
 )
 
-func TestSimpleFilter(t *testing.T) {
-
-	deploy := func(sid sous.SourceID) *sous.Deployment {
-		return &sous.Deployment{SourceID: sid}
-	}
-
-	repoSID := func(repo string) sous.SourceID {
-		return sous.SourceID{Location: sous.SourceLocation{Repo: repo}}
-	}
-
-	ds := sous.NewDeployments(
-		deploy(repoSID("X")),
-		deploy(repoSID("Y")),
-		deploy(repoSID("Z")),
-	)
-
-	filter := simpleFilter(func(d *sous.Deployment) bool {
-		return d.SourceID == repoSID("X")
-	})
-
-	trueResult := filter(ds, true)
-	falseResult := filter(ds, false)
-
-	gotTrue := trueResult.Len()
-	gotFalse := falseResult.Len()
-
-	wantTrue := 1
-	wantFalse := 2
-	if wantTrue+wantFalse != ds.Len() {
-		t.Fatalf("bad test: wantTrue + wantFalse != total")
-	}
-
-	if gotTrue != wantTrue {
-		t.Errorf("got %d true results; want %d", gotTrue, wantTrue)
-	}
-	if gotFalse != wantFalse {
-		t.Errorf("got %d false results; want %d", gotFalse, wantFalse)
-	}
-}
-
-func TestDeploymentQuery_parseFilters_ok(t *testing.T) {
+func TestDeployment_ParseAttributeFilters_ok(t *testing.T) {
 	cases := []struct {
 		filters   string
 		wantCount int
@@ -67,19 +27,42 @@ func TestDeploymentQuery_parseFilters_ok(t *testing.T) {
 			c := Deployment{
 				StateManager: sm,
 			}
-			gotFilters, err := c.parseFilters(tc.filters)
+			got, err := c.ParseAttributeFilters(tc.filters)
 			if err != nil {
 				t.Fatal(err)
 			}
-			gotCount := len(gotFilters)
+			gotCount := len(got.filters)
 			if gotCount != tc.wantCount {
 				t.Errorf("got count %d; want %d", gotCount, tc.wantCount)
 			}
-			for i, f := range gotFilters {
+			for i, f := range got.filters {
 				if f == nil {
 					t.Errorf("filter %d is nil", i)
 				}
 			}
 		})
+	}
+}
+
+func TestDeployment_Result(t *testing.T) {
+	sm := sous.NewDummyStateManager()
+	sm.State = sous.DefaultStateFixture()
+	aq := ArtifactQuery{}
+	q := Deployment{
+		StateManager:  sm,
+		ArtifactQuery: aq,
+	}
+	af, err := q.ParseAttributeFilters("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := q.Result(DeploymentFilters{AttributeFilters: af})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := 9 // NOTE SS: sous.DefaultStateFixture returns 9 deployments as standard.
+	got := r.Deployments.Len()
+	if got != want {
+		t.Errorf("got %d deployments; want %d", got, want)
 	}
 }
