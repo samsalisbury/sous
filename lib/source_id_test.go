@@ -80,6 +80,27 @@ func TestNewSourceID_success(t *testing.T) {
 	}
 }
 
+func TestParseSourceID_errs(t *testing.T) {
+	cases := []struct {
+		in, wantErr string
+	}{
+		{"", `invalid source ID ""`},
+		{"x", `parsing: No version found in "x" (did find repo: "x")`},
+		{"x,y", `invalid version "y": unexpected character 'y' at position 0`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.in, func(t *testing.T) {
+			_, gotErr := ParseSourceID(tc.in)
+			if gotErr == nil {
+				t.Fatalf("got nil; want error %q", tc.wantErr)
+			}
+			if gotErr.Error() != tc.wantErr {
+				t.Errorf("got error %q; want %q", gotErr, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestNewSourceID_failure(t *testing.T) {
 	sid, err := NewSourceID("", "", "not a version")
 	expected := "unexpected character 'n' at position 0"

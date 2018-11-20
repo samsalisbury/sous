@@ -150,13 +150,19 @@ func parseChunks(sourceStr string) []string {
 }
 
 func sourceIDFromChunks(source string, chunks []string) (SourceID, error) {
+	if len(chunks) == 0 {
+		return SourceID{}, fmt.Errorf("invalid source ID %q", source)
+	}
 	if len(chunks[0]) == 0 {
 		return SourceID{}, errors.Wrap(&MissingRepo{source}, "parsing")
 	}
 	repoURL := chunks[0]
+	if len(chunks) == 1 {
+		return SourceID{}, errors.Wrapf(&MissingVersion{source, repoURL}, "parsing")
+	}
 	version, err := semv.Parse(string(chunks[1]))
 	if err != nil {
-		return SourceID{}, err
+		return SourceID{}, errors.Wrapf(err, "invalid version %q", string(chunks[1]))
 	}
 	repoOffset := ""
 	if len(chunks) > 2 {
