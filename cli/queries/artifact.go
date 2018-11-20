@@ -23,7 +23,7 @@ func (q *ArtifactQuery) ByID(sid sous.SourceID) (*sous.BuildArtifact, error) {
 	if err == nil {
 		return ba, nil
 	}
-	if strings.HasPrefix(err.Error(), "404 Not Found") {
+	if strings.Contains(err.Error(), "404 Not Found") {
 		return nil, nil
 	}
 	return nil, err
