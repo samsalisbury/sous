@@ -1,4 +1,4 @@
-package cli
+package queries
 
 import (
 	"testing"
@@ -46,7 +46,7 @@ func TestSimpleFilter(t *testing.T) {
 	}
 }
 
-func TestSousQueryGDM_parseFilters_ok(t *testing.T) {
+func TestDeploymentQuery_parseFilters_ok(t *testing.T) {
 	cases := []struct {
 		filters   string
 		wantCount int
@@ -63,9 +63,11 @@ func TestSousQueryGDM_parseFilters_ok(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.filters, func(t *testing.T) {
-			c := &SousQueryGDM{}
-			c.flags.filters = tc.filters
-			gotFilters, err := c.parseFilters()
+			sm := sous.NewDummyStateManager()
+			c := DeploymentQuery{
+				StateManager: sm,
+			}
+			gotFilters, err := c.parseFilters(tc.filters)
 			if err != nil {
 				t.Fatal(err)
 			}
