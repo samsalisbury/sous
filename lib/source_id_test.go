@@ -194,3 +194,29 @@ func TestSourceID_roundtrip_String_Parse(t *testing.T) {
 		}
 	}
 }
+
+func TestSourceID_HTTPQueryMap(t *testing.T) {
+	sid, err := NewSourceID("a", "b", "1")
+	if err != nil {
+		t.Fatalf("test setup failed: %s", err)
+	}
+	got := sid.HTTPQueryMap()
+	repo, ok := got["repo"]
+	if !ok {
+		t.Error("no repo field")
+	} else if repo != "a" {
+		t.Errorf("got repo %q; want %q", repo, "a")
+	}
+	offset, ok := got["offset"]
+	if !ok {
+		t.Errorf("no offset field")
+	} else if offset != "b" {
+		t.Errorf("got offset %q; want %q", offset, "b")
+	}
+	version, ok := got["version"]
+	if !ok {
+		t.Error("no version field")
+	} else if version != "1" {
+		t.Errorf("got version %q; want %q", version, "1")
+	}
+}
