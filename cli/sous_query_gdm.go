@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"strings"
-	"sync"
 
+	"github.com/opentable/sous/cli/queries"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
@@ -17,12 +15,11 @@ import (
 
 // SousQueryGDM is the description of the `sous query gdm` command
 type SousQueryGDM struct {
-	StateManager *graph.ClientStateManager
-	flags        struct {
+	DeploymentQuery queries.DeploymentQuery
+	flags           struct {
 		filters string
 		format  string
 	}
-	SousGraph *graph.SousGraph
 }
 
 func init() { QuerySubcommands["gdm"] = &SousQueryGDM{} }
@@ -65,153 +62,22 @@ func (sb *SousQueryGDM) dump(ds sous.Deployments) cmdr.Result {
 	return cmdr.Success()
 }
 
-type deployFilter func(sous.Deployments, bool) sous.Deployments
-type boundFilter func(sous.Deployments) sous.Deployments
-
-func simpleFilter(p func(*sous.Deployment) bool) deployFilter {
-	return func(ds sous.Deployments, which bool) sous.Deployments {
-		return ds.Filter(func(d *sous.Deployment) bool {
-			return p(d) == which
-		})
-	}
-}
-
-func (sb *SousQueryGDM) availableFilters() map[string]deployFilter {
-	return map[string]deployFilter{
-		"hasimage": sb.hasImageFilter,
-		"zeroinstances": simpleFilter(func(d *sous.Deployment) bool {
-			return d.NumInstances == 0
-		}),
-		"hasowners": simpleFilter(func(d *sous.Deployment) bool {
-			return len(d.Owners) != 0
-		}),
-	}
-}
-
-func (sb *SousQueryGDM) availableFilterNames() []string {
-	var names []string
-	for k := range sb.availableFilters() {
-		names = append(names, k)
-	}
-	return names
-}
-
-func (sb *SousQueryGDM) hasImageFilter(deployments sous.Deployments, which bool) sous.Deployments {
-	filtered := sous.NewDeployments()
-	wg := sync.WaitGroup{}
-
-	ds := deployments.Snapshot()
-
-	wg.Add(len(ds))
-	errs := make(chan error, len(ds))
-	getArtifactMutex := sync.Mutex{}
-
-	for _, d := range ds {
-		d := d
-		go func() {
-			defer wg.Done()
-			opts := graph.ArtifactOpts{
-				SourceID: config.NewSourceIDFlags(d.SourceID),
-			}
-			getArtifactMutex.Lock()
-			getArtifact, err := sb.SousGraph.GetGetArtifact(opts)
-			getArtifactMutex.Unlock()
-			if err != nil {
-				errs <- err
-				return
-			}
-			exists, err := getArtifact.ArtifactExists()
-			if err != nil {
-				errs <- err
-				return
-			}
-			if exists == which {
-				filtered.Add(d)
-			}
-		}()
-	}
-	wg.Wait()
-	close(errs)
-
-	for err := range errs {
-		log.Println(err)
-	}
-	return filtered
-}
-
-func (sb *SousQueryGDM) badFilterNameError(attempted string) error {
-	return cmdr.UsageErrorf("filter %q not recognised; pick one of: %s",
-		attempted, strings.Join(sb.availableFilterNames(), ", "))
-}
-
-func (sb *SousQueryGDM) getFilter(name string) (deployFilter, error) {
-	f, ok := sb.availableFilters()[name]
-	if !ok {
-		return nil, sb.badFilterNameError(name)
-	}
-	return f, nil
-}
-
-func (sb *SousQueryGDM) parseFilters() ([]boundFilter, error) {
-	var filters []boundFilter
-	if sb.flags.filters == "" {
-		return nil, nil
-	}
-	parts := strings.Fields(sb.flags.filters)
-	for _, p := range parts {
-		kv := strings.Split(p, "=")
-		if len(kv) != 2 {
-			return nil, cmdr.UsageErrorf("filter %q not valid; format is <name>=(true|false)")
-		}
-		k, v := kv[0], kv[1]
-		f, err := sb.getFilter(k)
-		if err != nil {
-			return nil, err
-		}
-		tf, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, cmdr.UsageErrorf("filter %q accepts true or false, not %q", k, v)
-		}
-		filters = append(filters, func(ds sous.Deployments) sous.Deployments {
-			return f(ds, tf)
-		})
-	}
-	return filters, nil
-}
-
-func (sb *SousQueryGDM) filter(ds sous.Deployments) (sous.Deployments, error) {
-	filters, err := sb.parseFilters()
-	if err != nil {
-		return sous.NewDeployments(), err
-	}
-	for _, f := range filters {
-		ds = f(ds)
-	}
-	return ds, nil
-}
-
 // Execute defines the behavior of `sous query gdm`.
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
+	af, err := sb.DeploymentQuery.ParseAttributeFilters(sb.flags.filters)
+	if err != nil {
+		return cmdr.UsageErrorf("parsing filters: %s", err)
+	}
 
-	state, err := sb.StateManager.ReadState()
+	filters := queries.DeploymentFilters{
+		AttributeFilters: af,
+	}
+
+	result, err := sb.DeploymentQuery.Result(filters)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	deployments, err := state.Deployments()
 
-	totalCount := deployments.Len()
-
-	if err != nil {
-		return EnsureErrorResult(err)
-	}
-
-	filtered, err := sb.filter(deployments)
-	if err != nil {
-		return cmdr.EnsureErrorResult(err)
-	}
-
-	filteredCount := filtered.Len()
-	log.Printf("%d results (of %q total deployments)", filteredCount, totalCount)
-	return sb.dump(filtered)
-
+	log.Printf("%d results", result.Deployments.Len())
+	return sb.dump(result.Deployments)
 }

@@ -286,6 +286,7 @@ func AddSingularity(graph adder) {
 // AddQueries adds queries.
 func AddQueries(graph adder) {
 	graph.Add(newArtifactQuery)
+	graph.Add(newDeploymentQuery)
 }
 
 // AddInternals adds the dependency contructors that are internal to Sous.
