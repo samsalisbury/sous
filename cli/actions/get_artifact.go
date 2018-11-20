@@ -3,7 +3,6 @@ package actions
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/opentable/sous/cli/queries"
 	sous "github.com/opentable/sous/lib"
@@ -52,12 +51,10 @@ func (a *GetArtifact) Do() error {
 // (false, nil) it the artifact does not exist and (undefined, error)
 // if the check is not successful.
 func (a *GetArtifact) ArtifactExists() (bool, error) {
-	err := a.Do()
-	if err == nil {
-		return true, nil // fmt.Errorf("artifact already registered")
+	sid, err := sous.NewSourceID(a.Repo, a.Offset, a.Tag)
+	if err != nil {
+		return false, fmt.Errorf("source ID not valid: %s", err)
 	}
-	if strings.Contains(err.Error(), "404 Not Found") {
-		return false, nil
-	}
-	return false, err
+	art, err := a.Query.ByID(sid)
+	return art != nil, err
 }
