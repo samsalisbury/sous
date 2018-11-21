@@ -1,6 +1,9 @@
 package sous
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 //go:generate ggen cmap.CMap(cmap.go) sous.DeployStates(deploystates.go) CMKey:DeployID Value:*DeployState
 //go:generate stringer -type=DeployStatus
@@ -17,6 +20,17 @@ type DeployState struct {
 
 func (ds DeployState) String() string {
 	return fmt.Sprintf("DEPLOYMENT:%s STATUS:%s EXECUTORDATA:%v", ds.Deployment.String(), ds.Status, ds.ExecutorData)
+}
+
+// TabbedDeployStatusHeaders returns the names of the fields for Tabbed, suitable
+// for use with text/tabwriter.
+func TabbedDeployStatusHeaders() string {
+	return strings.Join([]string{TabbedDeploymentHeaders(), "Status"}, "\t")
+}
+
+// Tabbed returns the fields of a DeployState formatted in a tab delimited list.
+func (d *DeployState) Tabbed() string {
+	return strings.Join([]string{d.Deployment.Tabbed(), d.Status.String()}, "\t")
 }
 
 // Clone returns an independent clone of this DeployState.
