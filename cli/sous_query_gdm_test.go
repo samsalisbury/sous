@@ -25,6 +25,7 @@ func TestSousQueryGDM_dump(t *testing.T) {
 		sb := &SousQueryGDM{}
 		gotBuf := &bytes.Buffer{}
 		sb.Out = gotBuf
+		sb.Err = ioutil.Discard
 
 		sb.flags.format = formatFlag
 

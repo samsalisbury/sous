@@ -2,7 +2,7 @@ package cli
 
 import (
 	"flag"
-	"log"
+	"fmt"
 
 	"github.com/opentable/sous/cli/queries"
 	"github.com/opentable/sous/config"
@@ -20,6 +20,7 @@ type SousQueryGDM struct {
 	}
 
 	Out graph.OutWriter
+	Err graph.ErrWriter
 }
 
 func init() { QuerySubcommands["gdm"] = &SousQueryGDM{} }
@@ -75,7 +76,7 @@ func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	log.Printf("%d results", result.Deployments.Len())
+	fmt.Fprintf(sb.Err, "%d results\n", result.Deployments.Len())
 	if err := sb.dump(result.Deployments); err != nil {
 		return EnsureErrorResult(err)
 	}
