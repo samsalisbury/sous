@@ -7,6 +7,13 @@ import (
 	sous "github.com/opentable/sous/lib"
 )
 
+// MaxConcurrentArtifactQueries is the max number of concurrent artifact
+// queries. 100 is a conservative value to ensure we don't run out of file
+// descriptors locally.
+// NOTE: If users complain this is too slow we could make this configurable
+//       by env var, or perhaps lookup the max file descriptors via ulimit -n...
+const MaxConcurrentArtifactQueries = 100
+
 // DeploymentFilters is the argument that determines which deployments are
 // returned by a query.
 type DeploymentFilters struct {
@@ -52,9 +59,8 @@ func (f hasImageFilter) hasImage(deployments sous.Deployments, which bool) sous.
 
 	wg.Add(len(ds))
 	errs := make(chan error, len(ds))
-	maxConcurrent := 10
-	pool := make(chan struct{}, maxConcurrent)
-	for i := 0; i < maxConcurrent; i++ {
+	pool := make(chan struct{}, MaxConcurrentArtifactQueries)
+	for i := 0; i < MaxConcurrentArtifactQueries; i++ {
 		pool <- struct{}{}
 	}
 
