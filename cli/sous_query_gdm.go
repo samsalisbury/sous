@@ -2,7 +2,6 @@ package cli
 
 import (
 	"flag"
-	"fmt"
 	"log"
 
 	"github.com/opentable/sous/cli/queries"
@@ -46,21 +45,18 @@ func (sb *SousQueryGDM) AddFlags(fs *flag.FlagSet) {
 	fs.StringVar(&sb.flags.format, "format", "table", "output format, one of (table, json)")
 }
 
-func (sb *SousQueryGDM) dump(ds sous.Deployments) cmdr.Result {
+func (sb *SousQueryGDM) dump(ds sous.Deployments) error {
 	var err error
 	switch sb.flags.format {
 	default:
-		err = fmt.Errorf("output format %q not valid, pick one of: table, json", sb.flags.format)
+		err = cmdr.UsageErrorf("output format %q not valid, pick one of: table, json", sb.flags.format)
 		fallthrough
 	case "", "table":
 		sous.DumpDeployments(sb.Out, ds)
 	case "json":
 		sous.JSONDeployments(sb.Out, ds)
 	}
-	if err != nil {
-		return cmdr.EnsureErrorResult(err)
-	}
-	return cmdr.Success()
+	return err
 }
 
 // Execute defines the behavior of `sous query gdm`.
@@ -80,5 +76,8 @@ func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
 	}
 
 	log.Printf("%d results", result.Deployments.Len())
-	return sb.dump(result.Deployments)
+	if err := sb.dump(result.Deployments); err != nil {
+		return EnsureErrorResult(err)
+	}
+	return cmdr.Success()
 }
