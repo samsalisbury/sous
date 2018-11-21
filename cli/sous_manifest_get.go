@@ -37,7 +37,7 @@ func (smg *SousManifestGet) Execute(args []string) cmdr.Result {
 	}
 
 	if err := mg.Do(); err != nil {
-		return EnsureErrorResult(err)
+		return cmdr.EnsureErrorResult(err)
 	}
 
 	return cmdr.Success()

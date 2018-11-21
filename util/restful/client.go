@@ -71,7 +71,10 @@ type (
 	}
 
 	// DummyHTTPClient doesn't really make HTTP requests.
-	DummyHTTPClient struct{}
+	DummyHTTPClient struct {
+		// Error returned by all calls.
+		AlwaysReturnErr error
+	}
 
 	// Comparable is a required interface for Update and Delete, which provides
 	// the mechanism for comparing the remote resource to the local data.
@@ -239,23 +242,23 @@ func (client *LiveHTTPClient) update(urlPath string, qParms map[string]string, f
 }
 
 // Create implements HTTPClient on DummyHTTPClient - it does nothing and returns nil.
-func (*DummyHTTPClient) Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	return nil, nil
+func (d *DummyHTTPClient) Create(urlPath string, qParms map[string]string, rqBody interface{}, headers map[string]string) (UpdateDeleter, error) {
+	return nil, d.AlwaysReturnErr
 }
 
 // Retrieve implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
-	return nil, nil
+func (d *DummyHTTPClient) Retrieve(urlPath string, qParms map[string]string, rzBody interface{}, headers map[string]string) (UpdateDeleter, error) {
+	return nil, d.AlwaysReturnErr
 }
 
 // Update implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, headers map[string]string) error {
-	return nil
+func (d *DummyHTTPClient) update(urlPath string, qParms map[string]string, from *resourceState, qBody Comparable, headers map[string]string) error {
+	return d.AlwaysReturnErr
 }
 
 // Delete implements HTTPClient on DummyHTTPClient - it does nothing and returns nil
-func (*DummyHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
-	return nil
+func (d *DummyHTTPClient) deelete(urlPath string, qParms map[string]string, from *resourceState, headers map[string]string) error {
+	return d.AlwaysReturnErr
 }
 
 // ***

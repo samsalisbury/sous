@@ -171,7 +171,8 @@ func newUser(c LocalSousConfig) sous.User {
 	return c.User
 }
 
-func newSousGraph() *SousGraph {
+// NewSousGraph returns a new sous graph.
+func NewSousGraph() *SousGraph {
 	return &SousGraph{
 		addGuards: map[string]bool{},
 		Psyringe:  psyringe.New(),
@@ -180,7 +181,7 @@ func newSousGraph() *SousGraph {
 
 // BuildBaseGraph constructs a graph with essentials - intended for testing
 func BuildBaseGraph(version semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
-	graph := newSousGraph()
+	graph := NewSousGraph()
 	graph.Add(
 		version,
 		sous.TraceID(uuid.NewV4().String()),
