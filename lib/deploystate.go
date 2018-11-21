@@ -29,8 +29,8 @@ func TabbedDeployStatusHeaders() string {
 }
 
 // Tabbed returns the fields of a DeployState formatted in a tab delimited list.
-func (d *DeployState) Tabbed() string {
-	return strings.Join([]string{d.Deployment.Tabbed(), d.Status.String()}, "\t")
+func (ds *DeployState) Tabbed() string {
+	return strings.Join([]string{ds.Deployment.Tabbed(), ds.Status.String()}, "\t")
 }
 
 // Clone returns an independent clone of this DeployState.
