@@ -108,8 +108,20 @@ func TestSousQueryGDM_Execute(t *testing.T) {
 					format:  format,
 				},
 				Out: ioutil.Discard,
+				Err: ioutil.Discard,
 			}
-			got := sb.Execute(nil).ExitCode()
+			var got int
+			func() {
+				defer func() {
+					p := recover()
+					if p == nil {
+						return
+					}
+					t.Fatalf("panicked: %v", p)
+				}()
+				got = sb.Execute(nil).ExitCode()
+			}()
+
 			if got != wantExitCode {
 				t.Errorf("got exit code %d; want %d", got, wantExitCode)
 			}
