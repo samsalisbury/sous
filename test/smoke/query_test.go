@@ -35,6 +35,10 @@ func TestQuery(t *testing.T) {
 			{"hasimage=false", 11},
 			{"zeroinstances=true", 0},
 			{"zeroinstances=false", 12},
+			{"hasowners=false hasimage=true", 1},
+			{"zeroinstances=false hasimage=true", 1},
+			{"hasowners=false zeroinstances=true", 0},
+			{"hasowners=true zeroinstances=true", 0},
 		}
 
 		for _, c := range cases {
