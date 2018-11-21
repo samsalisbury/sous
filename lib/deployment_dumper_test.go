@@ -19,6 +19,22 @@ func TestDumpDeployments(t *testing.T) {
 	assert.Regexp(`andromeda`, io.String())
 }
 
+func TestDumpDeployStatuses(t *testing.T) {
+	assert := assert.New(t)
+
+	io := &bytes.Buffer{}
+	ds := NewDeployStates()
+	status := DeployStatusPending
+	ds.Add(&DeployState{
+		Status:     status,
+		Deployment: Deployment{ClusterName: "andromeda"},
+	})
+
+	DumpDeployStatuses(io, ds)
+	assert.Regexp(`andromeda`, io.String())
+	assert.Regexp(status.String(), io.String())
+}
+
 func TestJSONDeployments(t *testing.T) {
 	io := &bytes.Buffer{}
 	ds := NewDeployments()
