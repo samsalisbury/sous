@@ -27,10 +27,8 @@ func (mg *ManifestGet) Do() error {
 	if err != nil {
 		return err
 	}
-	yml, err := yaml.Marshal(mani)
-	if err != nil {
-		return err
-	}
+	// yaml.Marshal cannot return an error, it panics if anything goes wrong.
+	yml, _ := yaml.Marshal(mani)
 	mg.OutWriter.Write(yml)
 	return nil
 }
