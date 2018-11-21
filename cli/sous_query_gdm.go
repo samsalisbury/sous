@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/opentable/sous/cli/queries"
 	"github.com/opentable/sous/config"
@@ -20,6 +19,8 @@ type SousQueryGDM struct {
 		filters string
 		format  string
 	}
+
+	Out graph.OutWriter
 }
 
 func init() { QuerySubcommands["gdm"] = &SousQueryGDM{} }
@@ -51,10 +52,10 @@ func (sb *SousQueryGDM) dump(ds sous.Deployments) cmdr.Result {
 	default:
 		err = fmt.Errorf("output format %q not valid, pick one of: table, json", sb.flags.format)
 		fallthrough
-	case "table":
-		sous.DumpDeployments(os.Stdout, ds)
+	case "", "table":
+		sous.DumpDeployments(sb.Out, ds)
 	case "json":
-		sous.JSONDeployments(os.Stdout, ds)
+		sous.JSONDeployments(sb.Out, ds)
 	}
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
