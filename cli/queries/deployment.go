@@ -41,6 +41,9 @@ func (q *Deployment) Result(f DeploymentFilters) (DeploymentQueryResult, error) 
 	return DeploymentQueryResult{Deployments: f.AttributeFilters.apply(ds)}, err
 }
 
+// filterOrder dictates the order filters should be run in, if present.
+var filterOrder = []string{"zeroinstances", "hasowners", "hasimage"}
+
 func (q *Deployment) availableFilters() map[string]deployFilter {
 	hif := newHasImageFilter(q.ArtifactQuery)
 	return map[string]deployFilter{
@@ -76,10 +79,10 @@ func (q *Deployment) getFilter(name string) (deployFilter, error) {
 }
 
 func (q *Deployment) parseFilters(s string) ([]boundDeployFilter, error) {
-	var filters []boundDeployFilter
 	if s == "" {
 		return nil, nil
 	}
+	named := map[string]boundDeployFilter{}
 	parts := strings.Fields(s)
 	for _, p := range parts {
 		kv := strings.Split(p, "=")
@@ -95,9 +98,15 @@ func (q *Deployment) parseFilters(s string) ([]boundDeployFilter, error) {
 		if err != nil {
 			return nil, cmdr.UsageErrorf("filter %q accepts true or false, not %q", k, v)
 		}
-		filters = append(filters, func(ds sous.Deployments) sous.Deployments {
+		named[k] = func(ds sous.Deployments) sous.Deployments {
 			return f(ds, tf)
-		})
+		}
+	}
+	var filters []boundDeployFilter
+	for _, name := range filterOrder {
+		if f, ok := named[name]; ok {
+			filters = append(filters, f)
+		}
 	}
 	return filters, nil
 }
