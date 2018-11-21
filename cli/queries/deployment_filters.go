@@ -52,11 +52,18 @@ func (f hasImageFilter) hasImage(deployments sous.Deployments, which bool) sous.
 
 	wg.Add(len(ds))
 	errs := make(chan error, len(ds))
+	maxConcurrent := 10
+	pool := make(chan struct{}, maxConcurrent)
+	for i := 0; i < maxConcurrent; i++ {
+		pool <- struct{}{}
+	}
 
 	for _, d := range ds {
 		d := d
 		go func() {
 			defer wg.Done()
+			<-pool
+			defer func() { pool <- struct{}{} }()
 			exists, err := f.check(d.SourceID)
 			if err != nil {
 				errs <- err
