@@ -1,6 +1,7 @@
 package smoke
 
 import (
+	"database/sql"
 	"fmt"
 	"net"
 	"os"
@@ -8,9 +9,11 @@ import (
 	"testing"
 
 	"github.com/opentable/sous/config"
+	"github.com/opentable/sous/ext/docker"
 	"github.com/opentable/sous/ext/storage"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/filemap"
+	"github.com/opentable/sous/util/firsterr"
 	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
@@ -23,9 +26,11 @@ type sousServer struct {
 	ClusterName         string
 	// Num is the instance number for display purposes.
 	Num int
+	// Name is derived from Num.
+	Name string
 }
 
-func makeInstance(t *testing.T, f fixtureConfig, binPath string, i int, clusterName, addr string) (*sousServer, error) {
+func makeInstance(t *testing.T, f *fixtureConfig, binPath string, i int, clusterName, addr string) (*sousServer, error) {
 	num := i + 1
 
 	_, port, err := net.SplitHostPort(addr)
@@ -33,6 +38,7 @@ func makeInstance(t *testing.T, f fixtureConfig, binPath string, i int, clusterN
 		return nil, errors.Wrapf(err, "getting port")
 	}
 	name := fmt.Sprintf("server%d-%s", num, port)
+	name = fmt.Sprintf("server%d", num)
 
 	bin := f.newBin(t, binPath, name)
 
@@ -50,27 +56,98 @@ func makeInstance(t *testing.T, f fixtureConfig, binPath string, i int, clusterN
 		ClusterName: clusterName,
 		StateDir:    stateDir,
 		Num:         num,
+		Name:        name,
 	}, nil
 }
 
-func seedDB(config *config.Config, state *sous.State) error {
-	db, err := config.Database.DB()
-	if err != nil {
-		return err
-	}
+func seedDB(db *sql.DB, state *sous.State) error {
 	mgr := storage.NewPostgresStateManager(db, logging.SilentLogSet())
 
 	return mgr.WriteState(state, sous.User{})
 }
 
-func (i *sousServer) configure(t *testing.T, f fixtureConfig, config *config.Config, remoteGDMDir string) error {
+func (i *sousServer) initDB(t *testing.T) storage.PostgresConfig {
+	dbport := "6543"
+	if np, set := os.LookupEnv("PGPORT"); set {
+		dbport = np
+	}
+	host := "localhost"
+	if h, set := os.LookupEnv("PGHOST"); set {
+		host = h
+	}
+	dbname := sous.DBNameForTest(t, i.Num)
+	if _, err := sous.SetupDBNamed(t, dbname); err != nil {
+		rtLog("%s:db:%s> create failed: %s", i.ID(), dbname, err)
+		t.Fatalf("create database failed: %s", err)
+	}
+	rtLog("%s:db:%s> created", i.ID(), dbname)
+	return storage.PostgresConfig{
+		User:   "postgres",
+		DBName: dbname,
+		Host:   host,
+		Port:   dbport,
+	}
+}
 
-	// TODO SS: Seed DB only when test starts.
-	if err := seedDB(config, f.InitialState); err != nil {
-		return err
+func (i *sousServer) initConfigAndState(t *testing.T, f *fixtureConfig, siblingURLs map[string]string) (*config.Config, error) {
+
+	pgConfig := i.initDB(t)
+
+	config := &config.Config{
+		StateLocation:   i.StateDir,
+		SiblingURLs:     siblingURLs,
+		Database:        pgConfig,
+		DatabasePrimary: f.DBPrimary,
+		Docker: docker.Config{
+			RegistryHost: f.EnvDesc.RegistryName(),
+		},
+		User: sous.User{
+			Name:  "Sous Server " + i.ClusterName,
+			Email: "sous-" + i.ClusterName + "@example.com",
+		},
 	}
 
+	config.Logging.Basic.Level = "debug"
+
+	return config, firsterr.Parallel().Set(
+		func(e *error) {
+			if !f.shouldHavePostgresState() {
+				return
+			}
+			var db *sql.DB
+			db, *e = config.Database.DB()
+			if *e == nil {
+				*e = seedDB(db, f.InitialState)
+			}
+		},
+		func(e *error) {
+			if !f.shouldHaveGitState() {
+				return
+			}
+			*e = i.initializeGitState(t, f)
+		},
+	)
+}
+
+func (i *sousServer) initializeGitState(t *testing.T, f *fixtureConfig) error {
 	if err := os.MkdirAll(i.StateDir, 0777); err != nil {
+		return err
+	}
+	gdmDir := f.newEmptyDir(i.StateDir)
+	g := newGitClient(t, f, i.Name)
+	g.CD(gdmDir)
+	g.cloneIntoCurrentDir(t, gitRepoSpec{
+		OriginURL: f.remoteGDM(t),
+		UserName:  fmt.Sprintf("Sous Server %s", i.ClusterName),
+		UserEmail: fmt.Sprintf("sous-%s@example.com", i.ClusterName),
+	})
+	return nil
+}
+
+func (i *sousServer) configure(t *testing.T, f *fixtureConfig, siblingURLs map[string]string) error {
+
+	config, err := i.initConfigAndState(t, f, siblingURLs)
+	if err != nil {
 		return err
 	}
 
@@ -81,15 +158,6 @@ func (i *sousServer) configure(t *testing.T, f fixtureConfig, config *config.Con
 
 	i.Service.Configure(filemap.FileMap{
 		"config.yaml": string(configYAML),
-	})
-
-	gdmDir := f.newEmptyDir(i.StateDir)
-	g := newGitClient(t, f, fmt.Sprintf("server%d", i.Num))
-	g.CD(gdmDir)
-	g.cloneIntoCurrentDir(t, f, gitRepoSpec{
-		OriginURL: remoteGDMDir,
-		UserName:  fmt.Sprintf("Sous Server %s", i.ClusterName),
-		UserEmail: fmt.Sprintf("sous-%s@example.com", i.ClusterName),
 	})
 
 	return nil

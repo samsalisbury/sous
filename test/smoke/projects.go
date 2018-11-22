@@ -205,7 +205,7 @@ func setupProject(t *testing.T, f *fixture, fm filemap.FileMap, config ...func(*
 		t.Fatalf("Setup failed to generate valid git origin URL: %s", err)
 	}
 
-	g.init(t, f.fixtureConfig, *c.gitRepoSpec)
+	g.init(t, *c.gitRepoSpec)
 
 	if err := fm.Write(projectDir); err != nil {
 		t.Fatalf("filemap.Write: %s", err)

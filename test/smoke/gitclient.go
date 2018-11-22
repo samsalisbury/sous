@@ -8,7 +8,7 @@ type gitClient struct {
 	Bin
 }
 
-func newGitClient(t *testing.T, f fixtureConfig, name string) *gitClient {
+func newGitClient(t *testing.T, f *fixtureConfig, name string) *gitClient {
 	t.Helper()
 	bin := f.newBin(t, "git", name)
 	addGitEnvVars(bin.Env)
@@ -36,7 +36,7 @@ func defaultGitRepoSpec(config ...func(*gitRepoSpec)) gitRepoSpec {
 	return s
 }
 
-func (g *gitClient) init(t *testing.T, f fixtureConfig, spec gitRepoSpec) {
+func (g *gitClient) init(t *testing.T, spec gitRepoSpec) {
 	t.Helper()
 	g.Bin.Configure()
 
@@ -45,7 +45,7 @@ func (g *gitClient) init(t *testing.T, f fixtureConfig, spec gitRepoSpec) {
 	g.configRepo(t, spec)
 }
 
-func (g *gitClient) cloneIntoCurrentDir(t *testing.T, f fixtureConfig, spec gitRepoSpec) {
+func (g *gitClient) cloneIntoCurrentDir(t *testing.T, spec gitRepoSpec) {
 	t.Helper()
 	g.Bin.Configure()
 

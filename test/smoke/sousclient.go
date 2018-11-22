@@ -19,10 +19,10 @@ type sousClient struct {
 	Bin
 	// Config is set after calling Configure()
 	Config        config.Config
-	FixtureConfig fixtureConfig
+	FixtureConfig *fixtureConfig
 }
 
-func makeClient(t *testing.T, f fixtureConfig, sousBin string) *sousClient {
+func makeClient(t *testing.T, f *fixtureConfig, sousBin string) *sousClient {
 	clientName := "client1"
 	c := &sousClient{
 		Bin:           f.newBin(t, sousBin, clientName),

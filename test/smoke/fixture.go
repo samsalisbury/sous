@@ -6,11 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
+	"github.com/opentable/sous/ext/storage"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/logging"
 	"github.com/opentable/sous/util/testmatrix"
 	"github.com/samsalisbury/semv"
 )
@@ -27,7 +30,6 @@ type fixtureBase struct {
 // fixtureConfig is a priori sous-specific fixture stuff.
 type fixtureConfig struct {
 	fixtureBase
-	Scenario scenario
 	// ClusterSuffix is used to add a suffix to each generated cluster name.
 	// This can be used to segregate parallel tests.
 	ClusterSuffix string
@@ -35,20 +37,23 @@ type fixtureConfig struct {
 	UserEmail     string
 	Projects      projectList
 	InitialState  *sous.State
+	DBPrimary     bool
 
 	Singularity *testSingularity
+
+	remoteGDMOnce sync.Once
 }
 
 // fixture is the full rich fixture object passed to tests.
 type fixture struct {
-	fixtureConfig
+	*fixtureConfig
 	Cluster bunchOfSousServers
 	Client  *sousClient
 }
 
 var sousBin = mustGetSousBin()
 
-func newFixtureConfig(testName string, s testmatrix.Scenario) fixtureConfig {
+func newFixtureConfig(testName string, s testmatrix.Scenario) *fixtureConfig {
 	base := fixtureBase{
 		TestName: testName,
 		BaseDir:  getDataDir(testName),
@@ -57,7 +62,9 @@ func newFixtureConfig(testName string, s testmatrix.Scenario) fixtureConfig {
 
 	scenario := unwrapScenario(s)
 	envDesc := getEnvDesc()
+
 	clusterSuffix := strings.Replace(testName, "/", "_", -1)
+
 	s9y := newSingularity(envDesc.SingularityURL())
 	s9y.ClusterSuffix = clusterSuffix
 	state := sous.StateFixture(sous.StateFixtureOpts{
@@ -65,15 +72,17 @@ func newFixtureConfig(testName string, s testmatrix.Scenario) fixtureConfig {
 		ManifestCount: 3,
 		ClusterSuffix: clusterSuffix,
 	})
+
 	addURLsToState(state, envDesc)
-	return fixtureConfig{
+
+	return &fixtureConfig{
 		fixtureBase:   base,
-		Scenario:      scenario,
 		ClusterSuffix: clusterSuffix,
 		EnvDesc:       getEnvDesc(),
 		UserEmail:     "sous_client1@example.com",
 		Projects:      scenario.projects,
 		InitialState:  state,
+		DBPrimary:     scenario.dbPrimary,
 		Singularity:   s9y,
 	}
 }
@@ -91,9 +100,52 @@ func (f *fixtureBase) newEmptyDir(path string) string {
 	return path
 }
 
+func (f *fixtureBase) getDir(path string) string {
+	return f.absPath(path)
+}
+
 func (f *fixtureBase) newBin(t *testing.T, path, instanceName string) Bin {
 	binBaseDir := f.absPath(filepath.Join("actors", instanceName))
 	return NewBin(t, path, instanceName, binBaseDir, f.BaseDir, f.Finished)
+}
+
+func (f *fixtureConfig) shouldHavePostgresState() bool {
+	return f.DBPrimary
+}
+
+func (f *fixtureConfig) shouldHaveGitState() bool {
+	return !f.DBPrimary
+}
+
+func createRemoteGDM(t *testing.T, f *fixtureConfig, clientName, gdmDir string) {
+
+	g := newGitClient(t, f, "serverbunch1")
+	tempGDMDir := f.newEmptyDir(gdmDir + "-temp")
+	g.CD(tempGDMDir)
+
+	g.init(t, gitRepoSpec{
+		OriginURL: "none",
+		UserName:  "serverbunch1",
+		UserEmail: "serverbunch1@example.org",
+	})
+
+	dsm := storage.NewDiskStateManager(tempGDMDir, logging.SilentLogSet())
+	if err := dsm.WriteState(f.InitialState, sous.User{}); err != nil {
+		t.Fatalf("writing initial state: %s", err)
+	}
+
+	g.MustRun(t, "add", nil, ".")
+	g.MustRun(t, "commit", nil, "-m", "initial commit: "+clientName)
+	g.CD("..")
+	g.MustRun(t, "clone", nil, "--bare", tempGDMDir, gdmDir)
+}
+
+func (f *fixtureConfig) remoteGDM(t *testing.T) (gdmDir string) {
+	f.remoteGDMOnce.Do(func() {
+		gdmDir := f.newEmptyDir("remote-gdm")
+		createRemoteGDM(t, f, "serverbunch1", gdmDir)
+	})
+	return f.getDir("remote-gdm")
 }
 
 // newFixture transforms a testmatrix.Scenario into a sous-specific fixture.
