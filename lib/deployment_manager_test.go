@@ -8,7 +8,7 @@ import (
 
 func TestDeploymentManager_ReadDeployment(t *testing.T) {
 
-	innerState := DefaultStateFixture()
+	innerState := DefaultStateFixtureWithFlavorsOffsets()
 	dummy := &DummyStateManager{
 		State: innerState,
 	}
