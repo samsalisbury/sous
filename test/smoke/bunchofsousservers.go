@@ -126,7 +126,7 @@ func (c *bunchOfSousServers) configure(t *testing.T, f fixtureConfig) error {
 		}
 		config.Logging.Basic.Level = "debug"
 		if err := i.configure(t, f, config, c.RemoteGDMDir); err != nil {
-			return errors.Wrapf(err, "configuring instance %d", i)
+           return errors.Wrapf(err, "configuring instance %d", i.Num)
 		}
 	}
 	return nil

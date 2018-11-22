@@ -87,7 +87,7 @@ func (q *Deployment) parseFilters(s string) ([]boundDeployFilter, error) {
 	for _, p := range parts {
 		kv := strings.Split(p, "=")
 		if len(kv) != 2 {
-			return nil, cmdr.UsageErrorf("filter %q not valid; format is <name>=(true|false)")
+           return nil, cmdr.UsageErrorf("filter %q not valid; format is <name>=(true|false)", p)
 		}
 		k, v := kv[0], kv[1]
 		f, err := q.getFilter(k)
