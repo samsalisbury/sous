@@ -133,6 +133,7 @@ INTEGRATION_TEST_PATHS ?= ./integration ./ext/storage ./ext/docker ./test
 
 ifneq ($(GO_TEST_PATH),)
 GO_TEST_PATHS ?= $(GO_TEST_PATH)
+endif
 
 ifeq ($(GO_TEST_PATHS),)
 GO_TEST_PATHS := $(shell go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./...)
@@ -140,7 +141,6 @@ else
 INTEGRATION_TEST_PATHS := $(GO_TEST_PATHS)
 endif
 
-endif
 SOUS_TC_PACKAGES=$(shell docker run --rm -v $(PWD):/go/src/github.com/opentable/sous -w /go/src/github.com/opentable/sous golang:1.10 go list -f '{{if len .TestGoFiles}}{{.ImportPath}}{{end}}' ./... | sed 's/_\/app/github.com\/opentable\/sous/')
 
 

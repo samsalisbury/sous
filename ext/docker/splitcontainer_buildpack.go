@@ -60,36 +60,23 @@ func (sbp *SplitBuildpack) Detect(ctx *sous.BuildContext) (*sous.DetectResult, e
 
 	messages.ReportLogFieldsMessage("Inspecting Dockerfile", logging.DebugLevel, sbp.log, dfPath)
 
-	ast, err := parseDockerfile(ctx.Sh.Abs(dfPath))
-	if err != nil {
-		return nil, err
-	}
+	detector, err := inspectDockerfile(ctx.Sh.Abs(dfPath), ctx.Source.DevBuild, ctx.Sh, dfPath, sbp.registry, sbp.log)
 
-	detector := &splitDetector{
-		rootAst:  ast,
-		registry: sbp.registry,
-		froms:    []*parser.Node{},
-		envs:     []*parser.Node{},
-		ls:       sbp.log,
+	sbp.detected = &sous.DetectResult{
+		Compatible: false,
 	}
-
-	// check the local image for dev build
-	if ctx.Source.DevBuild {
-		err = firsterr.Returned(
-			detector.absorbDockerfile,
-			detector.fetchFromRunSpec,
-			func() error { return detector.checkLocalImage(ctx) },
-			detector.processEnv,
-		)
-	} else {
-		err = firsterr.Returned(
-			detector.absorbDockerfile,
-			detector.fetchFromRunSpec,
-			detector.processEnv,
-		)
+	if err == nil {
+		if specPath, has := detector.envValue(SOUS_RUN_IMAGE_SPEC); has {
+			sbp.detected = &sous.DetectResult{
+				Compatible: true,
+				Data: detectData{
+					RunImageSpecPath:  specPath,
+					HasAppVersionArg:  detector.versionArg,
+					HasAppRevisionArg: detector.revisionArg,
+				},
+			}
+		}
 	}
-
-	sbp.detected = detector.result()
 
 	return sbp.detected, err
 }

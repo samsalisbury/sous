@@ -160,7 +160,7 @@ func TestBuildDeployment(t *testing.T) {
 			},
 
 			Healthcheck: &dtos.HealthcheckOptions{
-				Uri: "/health-report",
+				Uri:                    "/health-report",
 				ResponseTimeoutSeconds: 350,
 				StartupTimeoutSeconds:  700,
 			},

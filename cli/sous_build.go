@@ -2,12 +2,9 @@ package cli
 
 import (
 	"flag"
-	"fmt"
-	"strings"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
-	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
 )
 
@@ -18,12 +15,9 @@ type (
 		DeployFilterFlags config.DeployFilterFlags `inject:"optional"`
 		PolicyFlags       config.PolicyFlags       `inject:"optional"`
 
-		BuildManager *sous.BuildManager
-
 		SousGraph *graph.SousGraph
-		opts      graph.ArtifactOpts
 
-		RFF *graph.RefinedResolveFilter
+		opts graph.BuildActionOpts
 	}
 )
 
@@ -58,40 +52,14 @@ func (sb *SousBuild) RegisterOn(psy Addable) {
 
 // Execute fulfills the cmdr.Executor interface
 func (sb *SousBuild) Execute(args []string) cmdr.Result {
-	if len(args) != 0 {
-		if err := sb.BuildManager.OffsetFromWorkdir(args[0]); err != nil {
-			return cmdr.EnsureErrorResult(err)
-		}
-	}
-
-	sb.DeployFilterFlags.Repo = sb.RFF.Repo.ValueOr("")
-
-	opts := graph.ArtifactOpts{
-		SourceID: sb.DeployFilterFlags.SourceIDFlags(),
-	}
-	getArtifact, err := sb.SousGraph.GetGetArtifact(opts)
-	if err != nil {
-		return cmdr.InternalErrorf("%s", err)
-	}
-
-	if err := assertArtifactNotRegistered(getArtifact.Do()); err != nil {
-		return cmdr.EnsureErrorResult(err)
-	}
-
-	result, err := sb.BuildManager.Build()
-
+	sb.opts.CLIArgs = args
+	sb.opts.DFF = sb.DeployFilterFlags
+	build, err := sb.SousGraph.GetBuild(sb.opts)
 	if err != nil {
 		return cmdr.EnsureErrorResult(err)
 	}
-	return cmdr.Success(result)
-}
-
-func assertArtifactNotRegistered(err error) error {
-	if err == nil {
-		return fmt.Errorf("artifact already registered")
+	if err := build.Do(); err != nil {
+		return cmdr.EnsureErrorResult(err)
 	}
-	if strings.Contains(err.Error(), "404 Not Found") {
-		return nil
-	}
-	return fmt.Errorf("unable to verify artifact existence: %s", err)
+	return cmdr.Success(build.Result())
 }
