@@ -14,19 +14,19 @@ var sup *testmatrix.Supervisor
 // themselves.
 type runner struct{ *testmatrix.Runner }
 
+type test func(*testing.T, *fixture)
+
 // Run is analogous to Runner.Run, but accepts a func in terms of strongly typed
 // fixture rather than having to manually unwrap scenarios.
-func (r *runner) Run(name string, test func(*testing.T, *fixture)) {
+func (r *runner) Run(name string, test test) {
 	r.Runner.Run(name, func(t *testing.T, c testmatrix.Context) {
 		test(t, c.F.(*fixture))
 	})
 }
 
-type scenarioTest func(*testing.T, testmatrix.Scenario, *testmatrix.LateFixture)
-
 type fixtureConfigFunc func(*fixtureConfig)
 
-func (r *runner) RunScenario(name string, ff fixtureConfigFunc, test testmatrix.Test) {
+func (r *runner) RunScenario(name string, ff fixtureConfigFunc, test test) {
 	r.Runner.RunScenario(name, func(t *testing.T, s testmatrix.Scenario, lf *testmatrix.LateFixture) {
 		scenario := unwrapScenario(s)
 		fix := newConfiguredFixture(t, scenario, ff)
