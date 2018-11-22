@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 	log.SetFlags(log.Ltime)
 	flag.Parse()
 	testmatrix.Quiet = quiet()
-	sup = testmatrix.Init(matrix, newFixture, func() error {
+	sup = testmatrix.Init(matrix, fixtureFactory, func() error {
 		return firsterr.Parallel().Set(
 			func(e *error) { *e = resetSingularity() },
 			func(e *error) { *e = stopPIDs() },

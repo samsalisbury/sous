@@ -48,14 +48,13 @@ type fixture struct {
 
 var sousBin = mustGetSousBin()
 
-func newFixtureConfig(testName string, s testmatrix.Scenario) fixtureConfig {
+func newFixtureConfig(testName string, s scenario) fixtureConfig {
 	base := fixtureBase{
 		TestName: testName,
 		BaseDir:  getDataDir(testName),
 		Finished: make(chan struct{}),
 	}
 
-	scenario := unwrapScenario(s)
 	envDesc := getEnvDesc()
 	clusterSuffix := strings.Replace(testName, "/", "_", -1)
 	s9y := newSingularity(envDesc.SingularityURL())
@@ -68,11 +67,11 @@ func newFixtureConfig(testName string, s testmatrix.Scenario) fixtureConfig {
 	addURLsToState(state, envDesc)
 	return fixtureConfig{
 		fixtureBase:   base,
-		Scenario:      scenario,
+		Scenario:      s,
 		ClusterSuffix: clusterSuffix,
 		EnvDesc:       getEnvDesc(),
 		UserEmail:     "sous_client1@example.com",
-		Projects:      scenario.projects,
+		Projects:      s.projects,
 		InitialState:  state,
 		Singularity:   s9y,
 	}
@@ -96,7 +95,7 @@ func (f *fixtureBase) newBin(t *testing.T, path, instanceName string) Bin {
 	return NewBin(t, path, instanceName, binBaseDir, f.BaseDir, f.Finished)
 }
 
-func newConfiguredFixture(t *testing.T, s testmatrix.Scenario, mod ...func(*fixtureConfig)) *fixture {
+func newConfiguredFixture(t *testing.T, s scenario, mod ...func(*fixtureConfig)) *fixture {
 	config := newFixtureConfig(t.Name(), s)
 
 	for _, m := range mod {
@@ -129,8 +128,12 @@ func newConfiguredFixture(t *testing.T, s testmatrix.Scenario, mod ...func(*fixt
 }
 
 // newFixture transforms a testmatrix.Scenario into a sous-specific fixture.
-func newFixture(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
+func newFixture(t *testing.T, s scenario) *fixture {
 	return newConfiguredFixture(t, s)
+}
+
+func fixtureFactory(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
+	return newFixture(t, unwrapScenario(s))
 }
 
 // Teardown performs conditional cleanup of resources used in the test.

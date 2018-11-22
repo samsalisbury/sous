@@ -24,9 +24,13 @@ func (r *runner) Run(name string, test func(*testing.T, *fixture)) {
 
 type scenarioTest func(*testing.T, testmatrix.Scenario, *testmatrix.LateFixture)
 
-func (r *runner) RunScenario(name string, test scenarioTest) {
-	r.Runner.RunScenario(name, func(t *testing.T, s testmatrix.Scenario, f *testmatrix.LateFixture) {
-		test(t, s, f)
+type fixtureConfigFunc func(*fixtureConfig)
+
+func (r *runner) RunScenario(name string, ff fixtureConfigFunc, test testmatrix.Test) {
+	r.Runner.RunScenario(name, func(t *testing.T, s testmatrix.Scenario, lf *testmatrix.LateFixture) {
+		scenario := unwrapScenario(s)
+		fix := newConfiguredFixture(t, scenario, ff)
+		lf.Set(fix)
 	})
 }
 
