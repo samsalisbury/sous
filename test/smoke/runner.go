@@ -31,6 +31,7 @@ func (r *runner) RunScenario(name string, ff fixtureConfigFunc, test test) {
 		scenario := unwrapScenario(s)
 		fix := newConfiguredFixture(t, scenario, ff)
 		lf.Set(fix)
+		test(t, fix)
 	})
 }
 
