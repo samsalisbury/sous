@@ -6,8 +6,8 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"text/template"
 
-	"github.com/alecthomas/template"
 	"github.com/samsalisbury/semv"
 )
 
