@@ -655,18 +655,20 @@ func newPrimaryStateManager(c LocalSousConfig, gm gitStateManager, dm DistStateM
 // there were no errors constructing it. Otherwise it emits a log message with
 // the error and falls back to the log-only state manager.
 func newSecondaryStateManager(log LogSink, c LocalSousConfig, gm gitStateManager, dm DistStateManager) secondaryStateManager {
+	var sm sous.StateManager
+	var err error
+	var name string
 	if c.DatabasePrimary {
-		if gm.Error != nil {
-			logging.WarnMsg(log, "secondary state manager: falling back to log-only: git unavailable: %s", gm.Error)
-			return storage.NewLogOnlyStateManager(log.Child("log-only-statemanager"))
-		}
-		return gm.StateManager
+		name, sm, err = "db", dm.StateManager, dm.Error
+	} else {
+		name, sm, err = "git", gm.StateManager, gm.Error
 	}
-	if dm.Error != nil {
-		logging.WarnMsg(log, "secondary state manager: falling back to log-only: db unavailable: %s", gm.Error)
-		return storage.NewLogOnlyStateManager(log.Child("log-only-statemanager"))
+	if err == nil {
+		return sm
 	}
-	return dm.StateManager
+	logging.WarnMsg(log, "secondary state manager %q unavailable: %s", name, err)
+	logging.WarnMsg(log, "secondary state manager: falling back to log-only")
+	return storage.NewLogOnlyStateManager(log.Child("log-only-statemanager"))
 }
 
 func newServerStateManager(log LogSink, primary primaryStateManager, secondary secondaryStateManager) *ServerStateManager {
