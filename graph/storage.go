@@ -20,19 +20,25 @@ type (
 	ServerStateManager struct{ sous.StateManager }
 	// ServerClusterManager wraps the sous.ClusterManager interface and is used by `sous server`
 	ServerClusterManager struct{ sous.ClusterManager }
-	// DistStateManager wraps sous.StateManager interfaces and is used by `sous server`
+
+	// stateManagerAndErr contains a distributed state manager and the error
+	// returned from its construction.
 	stateManagerAndErr struct {
 		sous.StateManager
 		Error error
 	}
 
-	// DistStateManager contains a distributed state manager and the error
-	// returned from its construction.
+	// DistStateManager wraps sous.StateManager interfaces and is used by `sous server`
 	DistStateManager stateManagerAndErr
 	gitStateManager  stateManagerAndErr
 
 	primaryStateManager   sous.StateManager
 	secondaryStateManager sous.StateManager
+
+	duplexStateManager struct {
+		primary   primaryStateManager
+		secondary secondaryStateManager
+	}
 )
 
 // newClientStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
@@ -46,10 +52,14 @@ func newClientStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, 
 	return &ClientStateManager{StateManager: hsm}, nil
 }
 
-func newServerStateManager(log LogSink, primary primaryStateManager, secondary secondaryStateManager) *ServerStateManager {
+func newDuplexStateManager(p primaryStateManager, s secondaryStateManager) duplexStateManager {
+	return duplexStateManager{primary: p, secondary: s}
+}
+
+func newServerStateManager(log LogSink, dsm duplexStateManager) *ServerStateManager {
 	return &ServerStateManager{
 		StateManager: storage.NewDuplexStateManager(
-			primary, secondary, log.Child("duplex-state"),
+			dsm.primary, dsm.secondary, log.Child("duplex-state"),
 		),
 	}
 }
@@ -60,24 +70,27 @@ func newHTTPStateManager(cl HTTPClient, tid sous.TraceID, log LogSink) *sous.HTT
 
 // newPrimaryStateManager returns the configured primary, and any error
 // encountered in its construction.
-func newPrimaryStateManager(c LocalSousConfig, gm gitStateManager, dm DistStateManager) (primaryStateManager, error) {
+func newPrimaryStateManager(c LocalSousConfig, git gitStateManager, dist DistStateManager) (primaryStateManager, error) {
 	if c.DatabasePrimary {
-		return dm.StateManager, dm.Error
+		return dist.StateManager, dist.Error
 	}
-	return gm.StateManager, gm.Error
+	return git.StateManager, git.Error
 }
 
 // newSecondaryStateManager returns the configured secondary state manager if
 // there were no errors constructing it. Otherwise it emits a log message with
 // the error and falls back to the log-only state manager.
-func newSecondaryStateManager(log LogSink, c LocalSousConfig, gm gitStateManager, dm DistStateManager) secondaryStateManager {
+func newSecondaryStateManager(log LogSink, c LocalSousConfig, git gitStateManager, dist DistStateManager) secondaryStateManager {
+
+	databaseSecondary := !c.DatabasePrimary
 	var sm sous.StateManager
 	var err error
 	var name string
-	if c.DatabasePrimary {
-		name, sm, err = "db", dm.StateManager, dm.Error
+
+	if databaseSecondary {
+		name, sm, err = "db", dist.StateManager, dist.Error
 	} else {
-		name, sm, err = "git", gm.StateManager, gm.Error
+		name, sm, err = "git", git.StateManager, git.Error
 	}
 	if err == nil {
 		return sm
@@ -93,15 +106,12 @@ func newServerClusterManager(c LocalSousConfig, log LogSink, primary primaryStat
 
 func newDistributedStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) DistStateManager {
 	var dist sous.StateManager
-	err := mdb.Err
-	if err == nil {
-		dist, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
+	if mdb.Err != nil {
+		return DistStateManager{Error: mdb.Err}
 	}
+	dist, err := newDistributedStorage(mdb.Db, c, tid, rf, log)
 
-	return DistStateManager{
-		StateManager: dist,
-		Error:        err,
-	}
+	return DistStateManager{StateManager: dist, Error: err}
 }
 
 func newGitStateManager(dm *storage.DiskStateManager, log LogSink) gitStateManager {

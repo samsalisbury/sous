@@ -212,6 +212,7 @@ func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
 		newMaybeDatabase, // we need to be able to progress in the absence of a DB.
+		newDuplexStateManager,
 		newServerStateManager,
 		newServerClusterManager,
 		newDistributedStateManager,

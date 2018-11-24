@@ -150,26 +150,6 @@ func TestComponentLocatorInjection(t *testing.T) {
 	assert.Equal(t, locator.Version.Format("M.m.p"), "2.3.7")
 }
 
-/*
-Nixing these tests: server/client state managers should be selected based on `sous server` or not.
-func TestStateManagerSelectsServer(t *testing.T) {
-	smgr := injectedStateManager(t, &config.Config{Server: "http://example.com", StateLocation: "/tmp/sous"})
-
-	if _, ok := smgr.StateManager.(*sous.HTTPStateManager); !ok {
-		t.Errorf("Injected %#v which isn't a HTTPStateManager", smgr.StateManager)
-	}
-}
-
-func TestStateManagerSelectsDuplex(t *testing.T) {
-	smgr := injectedStateManager(t, &config.Config{Server: "", StateLocation: "/tmp/sous"})
-
-	_, ok := smgr.StateManager.(*storage.DuplexStateManager)
-	if !ok {
-		t.Errorf("Injected %#v which isn't a DuplexStateManager", smgr.StateManager)
-	}
-}
-*/
-
 var silentLogSink = DefaultLogSink{LogSink: nonDefaultSilentLogSink}
 
 var nonDefaultSilentLogSink = LogSink{LogSink: logging.SilentLogSet()}
