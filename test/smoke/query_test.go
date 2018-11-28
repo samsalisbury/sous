@@ -19,7 +19,7 @@ func TestQuery(t *testing.T) {
 		assumeSuccessfullyDeployed(t, f, p, flags, reqID)
 
 		cases := []struct {
-			filters   string
+			filters   []string
 			wantCount int
 		}{
 			// There are 12 total deployments to start with:
@@ -28,22 +28,23 @@ func TestQuery(t *testing.T) {
 			//
 			// TODO SS: Make initial state explicit in tests like this where it
 			//          greatly affects the output.
-			{"", 12},
-			{"-hasowners=true", 0},
-			{"-hasowners=false", 12},
-			{"-hasimage=true", 1},
-			{"-hasimage=false", 11},
-			{"-zeroinstances=true", 0},
-			{"-zeroinstances=false", 12},
-			{"-hasowners=false -hasimage=true", 1},
-			{"-zeroinstances=false -hasimage=true", 1},
-			{"-hasowners=false -zeroinstances=true", 0},
-			{"-hasowners=true -zeroinstances=true", 0},
+			{[]string{}, 12},
+			{[]string{"-hasowners=true"}, 0},
+			{[]string{"-hasowners=false"}, 12},
+			{[]string{"-hasimage=true"}, 1},
+			{[]string{"-hasimage=false"}, 11},
+			{[]string{"-zeroinstances=true"}, 0},
+			{[]string{"-zeroinstances=false"}, 12},
+			{[]string{"-hasowners=false", "-hasimage=true"}, 1},
+			{[]string{"-zeroinstances=false", "-hasimage=true"}, 1},
+			{[]string{"-hasowners=false", "-zeroinstances=true"}, 0},
+			{[]string{"-hasowners=true", "-zeroinstances=true"}, 0},
 		}
 
 		for _, c := range cases {
-			t.Run(c.filters, func(t *testing.T) {
-				got := p.MustRun(t, "query gdm", nil, "-format", "json", c.filters)
+			t.Run(strings.Join(c.filters, " "), func(t *testing.T) {
+				extraFlags := append([]string{"-format", "json"}, c.filters...)
+				got := p.MustRun(t, "query gdm", nil, extraFlags...)
 				got = strings.TrimSpace(got)
 				lines := strings.Split(got, "\n")
 				var nonemptyLines []string
