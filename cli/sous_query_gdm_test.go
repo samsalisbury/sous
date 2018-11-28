@@ -101,11 +101,9 @@ func TestSousQueryGDM_Execute(t *testing.T) {
 					},
 				},
 				flags: struct {
-					filters string
-					format  string
+					format string
 				}{
-					filters: filters,
-					format:  format,
+					format: format,
 				},
 				Out: ioutil.Discard,
 				Err: ioutil.Discard,
@@ -129,14 +127,8 @@ func TestSousQueryGDM_Execute(t *testing.T) {
 	}
 
 	const success = 0
-	const usageErr = 64
 
 	assertExitCode("", "", success)
 	assertExitCode("json", "hasimage=true", success)
 	assertExitCode("table", "", success)
-
-	assertExitCode("table", "invalid", usageErr)
-	assertExitCode("", "invalid", usageErr)
-	assertExitCode("invalid", "", usageErr)
-	assertExitCode("invalid", "invalid", usageErr)
 }

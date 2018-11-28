@@ -29,22 +29,21 @@ func TestQuery(t *testing.T) {
 			// TODO SS: Make initial state explicit in tests like this where it
 			//          greatly affects the output.
 			{"", 12},
-			{"hasowners=true", 0},
-			{"hasowners=false", 12},
-			{"hasimage=true", 1},
-			{"hasimage=false", 11},
-			{"zeroinstances=true", 0},
-			{"zeroinstances=false", 12},
-			{"hasowners=false hasimage=true", 1},
-			{"zeroinstances=false hasimage=true", 1},
-			{"hasowners=false zeroinstances=true", 0},
-			{"hasowners=true zeroinstances=true", 0},
+			{"-hasowners=true", 0},
+			{"-hasowners=false", 12},
+			{"-hasimage=true", 1},
+			{"-hasimage=false", 11},
+			{"-zeroinstances=true", 0},
+			{"-zeroinstances=false", 12},
+			{"-hasowners=false -hasimage=true", 1},
+			{"-zeroinstances=false -hasimage=true", 1},
+			{"-hasowners=false -zeroinstances=true", 0},
+			{"-hasowners=true -zeroinstances=true", 0},
 		}
 
 		for _, c := range cases {
 			t.Run(c.filters, func(t *testing.T) {
-				got := p.MustRun(t, "query gdm", nil, "-format", "json",
-					"-filters", c.filters)
+				got := p.MustRun(t, "query gdm", nil, "-format", "json", c.filters)
 				got = strings.TrimSpace(got)
 				lines := strings.Split(got, "\n")
 				var nonemptyLines []string

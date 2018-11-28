@@ -1,7 +1,10 @@
 package queries
 
 import (
+	"flag"
+	"fmt"
 	"log"
+	"strconv"
 	"sync"
 
 	sous "github.com/opentable/sous/lib"
@@ -17,12 +20,53 @@ const MaxConcurrentArtifactQueries = 100
 // DeploymentFilters is the argument that determines which deployments are
 // returned by a query.
 type DeploymentFilters struct {
-	AttributeFilters *DeploymentAttributeFilters
+	AttributeFilters DeploymentAttributeFilters
 }
 
 // DeploymentAttributeFilters filters deployments based on their attributes.
 type DeploymentAttributeFilters struct {
 	filters []boundDeployFilter
+	flagMap map[string]*string
+}
+
+// AddFlags adds the available filters from q as flags to fs.
+func (f *DeploymentAttributeFilters) AddFlags(q *Deployment, fs *flag.FlagSet) {
+	f.flagMap = map[string]*string{}
+	for _, n := range q.availableFilterNames() {
+		f.flagMap[n] = new(string)
+		help := fmt.Sprintf("filter based on %s (true|false|<empty string>)", n)
+		fs.StringVar(f.flagMap[n], n, "", help)
+	}
+}
+
+// UnpackFlags should be called after flag.Parse and sets the filters up
+// accordingly, overwriting any currently setup filters.
+func (f *DeploymentAttributeFilters) UnpackFlags(q *Deployment) error {
+	named := map[string]boundDeployFilter{}
+	for name, val := range f.flagMap {
+		if val == nil || *val == "" {
+			continue
+		}
+		v, err := strconv.ParseBool(*val)
+		if err != nil {
+			return fmt.Errorf("value %q for flag %s not valid (want true or false)",
+				val, name)
+		}
+		f, err := q.getFilter(name)
+		if err != nil {
+			return err
+		}
+		named[name] = func(ds sous.Deployments) sous.Deployments {
+			return f(ds, v)
+		}
+	}
+	f.filters = nil
+	for _, name := range filterOrder {
+		if filter, ok := named[name]; ok {
+			f.filters = append(f.filters, filter)
+		}
+	}
+	return nil
 }
 
 func (f *DeploymentAttributeFilters) apply(ds sous.Deployments) sous.Deployments {

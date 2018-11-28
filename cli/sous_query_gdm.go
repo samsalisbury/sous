@@ -15,9 +15,9 @@ import (
 type SousQueryGDM struct {
 	DeploymentQuery queries.Deployment
 	flags           struct {
-		filters string
-		format  string
+		format string
 	}
+	filters queries.DeploymentFilters
 
 	Out graph.OutWriter
 	Err graph.ErrWriter
@@ -42,7 +42,7 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 
 // AddFlags adds the flags for 'sous query gdm'.
 func (sb *SousQueryGDM) AddFlags(fs *flag.FlagSet) {
-	fs.StringVar(&sb.flags.filters, "filters", "", "filter the output, space-separated list, e.g. 'hasimage=true zeroinstances=false hasowners=true'")
+	sb.filters.AttributeFilters.AddFlags(&sb.DeploymentQuery, fs)
 	fs.StringVar(&sb.flags.format, "format", "table", "output format, one of (table, json)")
 }
 
@@ -62,16 +62,11 @@ func (sb *SousQueryGDM) dump(ds sous.Deployments) error {
 
 // Execute defines the behavior of `sous query gdm`.
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
-	af, err := sb.DeploymentQuery.ParseAttributeFilters(sb.flags.filters)
-	if err != nil {
-		return cmdr.UsageErrorf("parsing filters: %s", err)
+	if err := sb.filters.AttributeFilters.UnpackFlags(&sb.DeploymentQuery); err != nil {
+		return cmdr.UsageErrorf("filter flags: %s", err)
 	}
 
-	filters := queries.DeploymentFilters{
-		AttributeFilters: af,
-	}
-
-	result, err := sb.DeploymentQuery.Result(filters)
+	result, err := sb.DeploymentQuery.Result(sb.filters)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
