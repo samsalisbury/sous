@@ -1,7 +1,6 @@
 package queries
 
 import (
-	"strconv"
 	"strings"
 
 	sous "github.com/opentable/sous/lib"
@@ -18,17 +17,6 @@ type Deployment struct {
 type DeploymentQueryResult struct {
 	// Deployments is the final query result.
 	Deployments sous.Deployments
-}
-
-// ParseAttributeFilters parses deployment filters in the format:
-//   <name>=<true|false> <name2>=<true|false>
-// It returns a valid set of deployment filters.
-func (q *Deployment) ParseAttributeFilters(s string) (*DeploymentAttributeFilters, error) {
-	f, err := q.parseFilters(s)
-	if err != nil {
-		return nil, err
-	}
-	return &DeploymentAttributeFilters{filters: f}, nil
 }
 
 // Result returns all the deployments matched by f.
@@ -76,37 +64,4 @@ func (q *Deployment) getFilter(name string) (deployFilter, error) {
 		return nil, q.badFilterNameError(name)
 	}
 	return f, nil
-}
-
-func (q *Deployment) parseFilters(s string) ([]boundDeployFilter, error) {
-	if s == "" {
-		return nil, nil
-	}
-	named := map[string]boundDeployFilter{}
-	parts := strings.Fields(s)
-	for _, p := range parts {
-		kv := strings.Split(p, "=")
-		if len(kv) != 2 {
-			return nil, cmdr.UsageErrorf("filter %q not valid; format is <name>=(true|false)", p)
-		}
-		k, v := kv[0], kv[1]
-		f, err := q.getFilter(k)
-		if err != nil {
-			return nil, err
-		}
-		tf, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, cmdr.UsageErrorf("filter %q accepts true or false, not %q", k, v)
-		}
-		named[k] = func(ds sous.Deployments) sous.Deployments {
-			return f(ds, tf)
-		}
-	}
-	var filters []boundDeployFilter
-	for _, name := range filterOrder {
-		if f, ok := named[name]; ok {
-			filters = append(filters, f)
-		}
-	}
-	return filters, nil
 }
