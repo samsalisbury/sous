@@ -45,5 +45,6 @@ func (sd *SousJenkins) Execute(args []string) cmdr.Result {
 		return EnsureErrorResult(err)
 	}
 
-	return cmdr.Success("Done.")
+	success := "Pipeline metadata stored in Manifest, Jenkinsfile created."
+	return cmdr.Success(success)
 }
