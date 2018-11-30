@@ -2,6 +2,7 @@ package queries
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
@@ -109,4 +110,36 @@ func TestParallelFilter_ok(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestParallelFilter_err(t *testing.T) {
+	ds := sous.NewDeployments(
+		deploy(repoSID("X")),
+		deploy(repoSID("Y")),
+		deploy(repoSID("Z")),
+	)
+	assertErr := func(t *testing.T, filter deployFilter, wantErrContaining string) {
+		t.Helper()
+		_, err := filter(ds, true)
+		if err == nil {
+			t.Fatalf("got nil; want error containing %q", wantErrContaining)
+		}
+		got := err.Error()
+		if !strings.Contains(got, wantErrContaining) {
+			t.Errorf("got error %q; want %q", got, wantErrContaining)
+		}
+
+	}
+	t.Run("zero concurrency", func(t *testing.T) {
+		filter := parallelFilter(0, func(*sous.Deployment) (bool, error) {
+			return true, nil // this func body is irrelevant
+		})
+		assertErr(t, filter, "zero maxConcurrent not allowed")
+	})
+	t.Run("filter err", func(t *testing.T) {
+		filter := parallelFilter(0, func(*sous.Deployment) (bool, error) {
+			return true, fmt.Errorf("this error")
+		})
+		assertErr(t, filter, "this error")
+	})
 }
