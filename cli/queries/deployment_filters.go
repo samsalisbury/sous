@@ -70,8 +70,8 @@ func (f *DeploymentAttributeFilters) UnpackFlags(q *Deployment) error {
 }
 
 func (f *DeploymentAttributeFilters) apply(ds sous.Deployments) sous.Deployments {
-	for _, f := range f.filters {
-		ds = f(ds)
+	for _, filter := range f.filters {
+		ds = filter(ds)
 	}
 	return ds
 }
