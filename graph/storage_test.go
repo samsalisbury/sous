@@ -17,12 +17,14 @@ func TestNewPrimaryStateManager(t *testing.T) {
 	gitSM, distSM := twoDistinctStateManagers(t)
 
 	result := func(t *testing.T, c config.Config, gitErr, distErr error) (sous.StateManager, error) {
+		t.Helper()
 		git := gitStateManager{StateManager: gitSM, Error: gitErr}
 		dist := DistStateManager{StateManager: distSM, Error: distErr}
 		lsc := LocalSousConfig{Config: &c}
 		return newPrimaryStateManager(lsc, git, dist)
 	}
 	assertPrimary := func(t *testing.T, c config.Config, gitErr, distErr error, want sous.StateManager) {
+		t.Helper()
 		got, err := result(t, c, nil, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -32,6 +34,7 @@ func TestNewPrimaryStateManager(t *testing.T) {
 		}
 	}
 	assertErr := func(t *testing.T, c config.Config, gitErr, distErr error, want string) {
+		t.Helper()
 		_, err := result(t, c, gitErr, distErr)
 		if err == nil {
 			t.Fatalf("got nil; want error %q", want)
