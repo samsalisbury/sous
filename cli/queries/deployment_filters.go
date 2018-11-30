@@ -56,7 +56,7 @@ func (f *DeploymentAttributeFilters) UnpackFlags(q *Deployment) error {
 		if err != nil {
 			return err
 		}
-		named[name] = func(ds sous.Deployments) sous.Deployments {
+		named[name] = func(ds sous.Deployments) (sous.Deployments, error) {
 			return f(ds, v)
 		}
 	}
@@ -69,26 +69,30 @@ func (f *DeploymentAttributeFilters) UnpackFlags(q *Deployment) error {
 	return nil
 }
 
-func (f *DeploymentAttributeFilters) apply(ds sous.Deployments) sous.Deployments {
+func (f *DeploymentAttributeFilters) apply(ds sous.Deployments) (sous.Deployments, error) {
+	var err error
 	for _, filter := range f.filters {
-		ds = filter(ds)
+		ds, err = filter(ds)
+		if err != nil {
+			return ds, err
+		}
 	}
-	return ds
+	return ds, nil
 }
 
-type deployFilter func(sous.Deployments, bool) sous.Deployments
-type boundDeployFilter func(sous.Deployments) sous.Deployments
+type deployFilter func(sous.Deployments, bool) (sous.Deployments, error)
+type boundDeployFilter func(sous.Deployments) (sous.Deployments, error)
 
 func simpleFilter(p func(*sous.Deployment) bool) deployFilter {
-	return func(ds sous.Deployments, which bool) sous.Deployments {
+	return func(ds sous.Deployments, which bool) (sous.Deployments, error) {
 		return ds.Filter(func(d *sous.Deployment) bool {
 			return p(d) == which
-		})
+		}), nil
 	}
 }
 
 func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) deployFilter {
-	return func(deployments sous.Deployments, which bool) sous.Deployments {
+	return func(deployments sous.Deployments, which bool) (sous.Deployments, error) {
 		// NOTE: We take snapshot here so that len cannot change. Deployments is
 		// a concurrent map, so we have to assume len can change at any time.
 		ds := deployments.Snapshot()
@@ -129,6 +133,6 @@ func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) d
 		for err := range errs {
 			log.Println(err)
 		}
-		return filtered
+		return filtered, nil
 	}
 }

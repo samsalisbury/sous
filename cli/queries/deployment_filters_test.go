@@ -26,8 +26,15 @@ func TestSimpleFilter(t *testing.T) {
 		return d.SourceID == repoSID("X")
 	})
 
-	trueResult := filter(ds, true)
-	falseResult := filter(ds, false)
+	trueResult, trueErr := filter(ds, true)
+	falseResult, falseErr := filter(ds, false)
+
+	if trueErr != nil {
+		t.Fatal(trueErr)
+	}
+	if falseErr != nil {
+		t.Fatal(falseErr)
+	}
 
 	gotTrue := trueResult.Len()
 	gotFalse := falseResult.Len()
@@ -66,8 +73,15 @@ func TestParallelFilter_ok(t *testing.T) {
 		return d.SourceID == repoSID("X"), nil
 	})
 
-	trueResult := filter(ds, true)
-	falseResult := filter(ds, false)
+	trueResult, trueErr := filter(ds, true)
+	falseResult, falseErr := filter(ds, false)
+
+	if trueErr != nil {
+		t.Fatal(trueErr)
+	}
+	if falseErr != nil {
+		t.Fatal(falseErr)
+	}
 
 	gotTrue := trueResult.Len()
 	gotFalse := falseResult.Len()

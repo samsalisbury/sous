@@ -1,6 +1,7 @@
 package queries
 
 import (
+	"fmt"
 	"strings"
 
 	sous "github.com/opentable/sous/lib"
@@ -26,7 +27,12 @@ func (q *Deployment) Result(f DeploymentFilters) (DeploymentQueryResult, error) 
 		return DeploymentQueryResult{Deployments: sous.NewDeployments()}, err
 	}
 	ds, err := s.Deployments()
-	return DeploymentQueryResult{Deployments: f.AttributeFilters.apply(ds)}, err
+	if err != nil {
+		return DeploymentQueryResult{},
+			fmt.Errorf("getting initial deployments: %s", err)
+	}
+	ds, err = f.AttributeFilters.apply(ds)
+	return DeploymentQueryResult{Deployments: ds}, err
 }
 
 // filterOrder dictates the order filters should be run in, if present.
