@@ -171,6 +171,7 @@ func TestParallelFilter_maxConcurrent(t *testing.T) {
 		ds.Add(deploy(repoSID(strconv.Itoa(i))))
 	}
 	for maxConcurrent := 1; maxConcurrent <= 10; maxConcurrent++ {
+		maxConcurrent := maxConcurrent
 		var current, max int
 		// mu is used to synchrnonise updating current and max
 		mu := sync.Mutex{}
@@ -200,6 +201,7 @@ func TestParallelFilter_maxConcurrent(t *testing.T) {
 		}()
 
 		t.Run(fmt.Sprintf("maxConcurrent=%d", maxConcurrent), func(t *testing.T) {
+			t.Parallel()
 			pf := parallelFilter(maxConcurrent, filterFunc)
 			got, err := pf(ds, true)
 			if err != nil {
@@ -212,7 +214,7 @@ func TestParallelFilter_maxConcurrent(t *testing.T) {
 				t.Errorf("got %d concurrent filter funcs; want <= %d", max, maxConcurrent)
 			}
 			if max != maxConcurrent {
-				t.Logf("NOTE: we didn't hit max concurrent!")
+				t.Logf("NOTE: we didn't hit max concurrent; this probably isn't an issue")
 			}
 		})
 	}
