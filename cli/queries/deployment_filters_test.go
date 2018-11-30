@@ -118,6 +118,7 @@ func TestParallelFilter_err(t *testing.T) {
 		deploy(repoSID("Y")),
 		deploy(repoSID("Z")),
 	)
+
 	assertErr := func(t *testing.T, filter deployFilter, wantErrContaining string) {
 		t.Helper()
 		_, err := filter(ds, true)
@@ -130,19 +131,30 @@ func TestParallelFilter_err(t *testing.T) {
 		}
 
 	}
+
 	t.Run("zero concurrency", func(t *testing.T) {
 		filter := parallelFilter(0, func(*sous.Deployment) (bool, error) {
 			return true, nil // this func body is irrelevant
 		})
 		assertErr(t, filter, "maxConcurrent < 1 not allowed")
 	})
+
 	for maxConcurrent := 1; maxConcurrent <= 3; maxConcurrent++ {
 		t.Run(fmt.Sprintf("maxConcurrent=%d", maxConcurrent), func(t *testing.T) {
-			t.Run("filter err", func(t *testing.T) {
+			t.Run("error every time", func(t *testing.T) {
 				filter := parallelFilter(maxConcurrent, func(*sous.Deployment) (bool, error) {
-					return true, fmt.Errorf("this error")
+					return true, fmt.Errorf("always error")
 				})
-				assertErr(t, filter, "this error")
+				assertErr(t, filter, "always error")
+			})
+			t.Run("error on one occasion", func(t *testing.T) {
+				filter := parallelFilter(maxConcurrent, func(d *sous.Deployment) (bool, error) {
+					if d.SourceID == repoSID("Y") {
+						return true, fmt.Errorf("error on Y")
+					}
+					return true, nil
+				})
+				assertErr(t, filter, "error on Y")
 			})
 		})
 	}
