@@ -34,7 +34,7 @@ func TestSousVersion(t *testing.T) {
 	term.Stdout.ShouldHaveLineContaining("sous version")
 }
 
-func TestSous_Init(t *testing.T) {
+func TestSous_Init_without_kind_flag(t *testing.T) {
 	term := NewTerminal(t, `0.0.0`)
 
 	term.RunCommand("sous init")
@@ -42,7 +42,18 @@ func TestSous_Init(t *testing.T) {
 	term.Stdout.ShouldHaveNumLines(0)
 	term.Stderr.ShouldHaveNumLines(1)
 
-	term.Stderr.ShouldHaveExactLine(`kind "" not defined, pick one of "scheduled", "http-service" or "on-demand"`)
+	term.Stderr.ShouldHaveExactLine("missing or empty flag -kind")
+}
+
+func TestSous_Init_with_wrong_kind_type(t *testing.T) {
+	term := NewTerminal(t, `0.0.0`)
+
+	term.RunCommand("sous init -kind hello")
+
+	term.Stdout.ShouldHaveNumLines(0)
+	term.Stderr.ShouldHaveNumLines(1)
+
+	term.Stderr.ShouldHaveExactLine(`kind "hello" not defined, pick one of "scheduled", "http-service" or "on-demand"`)
 }
 
 func TestSousConfig_validConfig(t *testing.T) {
