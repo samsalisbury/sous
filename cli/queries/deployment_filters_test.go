@@ -2,8 +2,11 @@ package queries
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	sous "github.com/opentable/sous/lib"
 )
@@ -158,4 +161,60 @@ func TestParallelFilter_err(t *testing.T) {
 			})
 		})
 	}
+}
+
+// TestParallelFilter_maxConcurrent tests that the maxConcurrent value is
+// respected.
+func TestParallelFilter_maxConcurrent(t *testing.T) {
+	ds := sous.NewDeployments()
+	for i := 0; i < 1000; i++ {
+		ds.Add(deploy(repoSID(strconv.Itoa(i))))
+	}
+	for maxConcurrent := 1; maxConcurrent <= 10; maxConcurrent++ {
+		var current, max int
+		// mu is used to synchrnonise updating current and max
+		mu := sync.Mutex{}
+		// blocker is used to coordinate filter func ending
+		blocker := make(chan struct{})
+
+		filterFunc := func(*sous.Deployment) (bool, error) {
+			mu.Lock()
+			current++
+			if current > max {
+				max = current
+			}
+			defer func() {
+				mu.Lock()
+				defer mu.Unlock()
+				current--
+			}()
+			mu.Unlock()
+			<-blocker
+			return true, nil
+		}
+		// Let's try to hit max with this naughty sleep before allowing filters
+		// to start returning.
+		go func() {
+			time.Sleep(time.Second)
+			close(blocker)
+		}()
+
+		t.Run(fmt.Sprintf("maxConcurrent=%d", maxConcurrent), func(t *testing.T) {
+			pf := parallelFilter(maxConcurrent, filterFunc)
+			got, err := pf(ds, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Len() != ds.Len() {
+				t.Errorf("got %d results; want %d", got.Len(), ds.Len())
+			}
+			if max > maxConcurrent {
+				t.Errorf("got %d concurrent filter funcs; want <= %d", max, maxConcurrent)
+			}
+			if max != maxConcurrent {
+				t.Logf("NOTE: we didn't hit max concurrent!")
+			}
+		})
+	}
+
 }
