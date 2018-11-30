@@ -43,29 +43,65 @@ func assertResultCount(t *testing.T, ds sous.Deployments, filter deployFilter, w
 }
 
 func TestSimpleFilter(t *testing.T) {
+	ds := sous.NewDeployments(
+		deploy(repoSID("X")),
+		deploy(repoSID("Y")),
+		deploy(repoSID("Z")),
+	)
+	t.Run("0 results", func(t *testing.T) {
+		filter := simpleFilter(func(d *sous.Deployment) bool {
+			return d.SourceID == repoSID("?")
+		})
+		assertResultCount(t, ds, filter, 0)
+	})
 	t.Run("1 result", func(t *testing.T) {
-		ds := sous.NewDeployments(
-			deploy(repoSID("X")),
-			deploy(repoSID("Y")),
-			deploy(repoSID("Z")),
-		)
 		filter := simpleFilter(func(d *sous.Deployment) bool {
 			return d.SourceID == repoSID("X")
 		})
 		assertResultCount(t, ds, filter, 1)
 	})
+	t.Run("2 results", func(t *testing.T) {
+		filter := simpleFilter(func(d *sous.Deployment) bool {
+			return d.SourceID != repoSID("X")
+		})
+		assertResultCount(t, ds, filter, 2)
+	})
+	t.Run("all results", func(t *testing.T) {
+		filter := simpleFilter(func(d *sous.Deployment) bool {
+			return true
+		})
+		assertResultCount(t, ds, filter, 3)
+	})
 }
 
 func TestParallelFilter_ok(t *testing.T) {
+	ds := sous.NewDeployments(
+		deploy(repoSID("X")),
+		deploy(repoSID("Y")),
+		deploy(repoSID("Z")),
+	)
+	t.Run("0 results", func(t *testing.T) {
+		filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
+			return d.SourceID == repoSID("?"), nil
+		})
+		assertResultCount(t, ds, filter, 0)
+	})
 	t.Run("1 result", func(t *testing.T) {
-		ds := sous.NewDeployments(
-			deploy(repoSID("X")),
-			deploy(repoSID("Y")),
-			deploy(repoSID("Z")),
-		)
 		filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
 			return d.SourceID == repoSID("X"), nil
 		})
 		assertResultCount(t, ds, filter, 1)
+	})
+	t.Run("2 results", func(t *testing.T) {
+		filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
+			return d.SourceID != repoSID("X"), nil
+		})
+		assertResultCount(t, ds, filter, 2)
+	})
+	t.Run("all results", func(t *testing.T) {
+		filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
+			return true, nil
+		})
+		assertResultCount(t, ds, filter, 3)
 	})
 }
