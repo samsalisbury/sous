@@ -93,6 +93,9 @@ func simpleFilter(p func(*sous.Deployment) bool) deployFilter {
 
 func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) deployFilter {
 	return func(deployments sous.Deployments, which bool) (sous.Deployments, error) {
+		if maxConcurrent < 1 {
+			return deployments, fmt.Errorf("maxConcurrent < 1 not allowed")
+		}
 		// NOTE: We take snapshot here so that len cannot change. Deployments is
 		// a concurrent map, so we have to assume len can change at any time.
 		ds := deployments.Snapshot()
