@@ -106,8 +106,8 @@ func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) d
 		wg.Add(len(ds))
 
 		errs := make(chan error, len(ds))
-		pool := make(chan struct{}, MaxConcurrentArtifactQueries)
-		for i := 0; i < MaxConcurrentArtifactQueries; i++ {
+		pool := make(chan struct{}, maxConcurrent)
+		for i := 0; i < maxConcurrent; i++ {
 			pool <- struct{}{}
 		}
 
