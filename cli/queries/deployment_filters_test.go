@@ -9,18 +9,21 @@ import (
 func repoSID(repo string) sous.SourceID {
 	return sous.SourceID{Location: sous.SourceLocation{Repo: repo}}
 }
+func deploy(sid sous.SourceID) *sous.Deployment {
+	return &sous.Deployment{SourceID: sid}
+}
 
 func assertSingleMatchingResult(t *testing.T, filter deployFilter) {
-	t.Helper()
-	deploy := func(sid sous.SourceID) *sous.Deployment {
-		return &sous.Deployment{SourceID: sid}
-	}
-
 	ds := sous.NewDeployments(
 		deploy(repoSID("X")),
 		deploy(repoSID("Y")),
 		deploy(repoSID("Z")),
 	)
+	assertResultCount(t, ds, filter, 1)
+}
+
+func assertResultCount(t *testing.T, ds sous.Deployments, filter deployFilter, want int) {
+	t.Helper()
 
 	trueResult, trueErr := filter(ds, true)
 	falseResult, falseErr := filter(ds, false)
@@ -35,11 +38,8 @@ func assertSingleMatchingResult(t *testing.T, filter deployFilter) {
 	gotTrue := trueResult.Len()
 	gotFalse := falseResult.Len()
 
-	wantTrue := 1
-	wantFalse := 2
-	if wantTrue+wantFalse != ds.Len() {
-		t.Fatalf("bad test: wantTrue + wantFalse != total")
-	}
+	wantTrue := want
+	wantFalse := ds.Len() - want
 
 	if gotTrue != wantTrue {
 		t.Errorf("got %d true results; want %d", gotTrue, wantTrue)
