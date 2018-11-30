@@ -1,6 +1,7 @@
 package queries
 
 import (
+	"fmt"
 	"testing"
 
 	sous "github.com/opentable/sous/lib"
@@ -80,28 +81,32 @@ func TestParallelFilter_ok(t *testing.T) {
 		deploy(repoSID("Y")),
 		deploy(repoSID("Z")),
 	)
-	t.Run("0 results", func(t *testing.T) {
-		filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
-			return d.SourceID == repoSID("?"), nil
+	for maxConcurrent := 1; maxConcurrent <= 3; maxConcurrent++ {
+		t.Run(fmt.Sprintf("maxConcurrent=%d", maxConcurrent), func(t *testing.T) {
+			t.Run("0 results", func(t *testing.T) {
+				filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
+					return d.SourceID == repoSID("?"), nil
+				})
+				assertResultCount(t, ds, filter, 0)
+			})
+			t.Run("1 result", func(t *testing.T) {
+				filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
+					return d.SourceID == repoSID("X"), nil
+				})
+				assertResultCount(t, ds, filter, 1)
+			})
+			t.Run("2 results", func(t *testing.T) {
+				filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
+					return d.SourceID != repoSID("X"), nil
+				})
+				assertResultCount(t, ds, filter, 2)
+			})
+			t.Run("all results", func(t *testing.T) {
+				filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
+					return true, nil
+				})
+				assertResultCount(t, ds, filter, 3)
+			})
 		})
-		assertResultCount(t, ds, filter, 0)
-	})
-	t.Run("1 result", func(t *testing.T) {
-		filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
-			return d.SourceID == repoSID("X"), nil
-		})
-		assertResultCount(t, ds, filter, 1)
-	})
-	t.Run("2 results", func(t *testing.T) {
-		filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
-			return d.SourceID != repoSID("X"), nil
-		})
-		assertResultCount(t, ds, filter, 2)
-	})
-	t.Run("all results", func(t *testing.T) {
-		filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
-			return true, nil
-		})
-		assertResultCount(t, ds, filter, 3)
-	})
+	}
 }
