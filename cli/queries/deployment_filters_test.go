@@ -13,15 +13,6 @@ func deploy(sid sous.SourceID) *sous.Deployment {
 	return &sous.Deployment{SourceID: sid}
 }
 
-func assertSingleMatchingResult(t *testing.T, filter deployFilter) {
-	ds := sous.NewDeployments(
-		deploy(repoSID("X")),
-		deploy(repoSID("Y")),
-		deploy(repoSID("Z")),
-	)
-	assertResultCount(t, ds, filter, 1)
-}
-
 func assertResultCount(t *testing.T, ds sous.Deployments, filter deployFilter, want int) {
 	t.Helper()
 
@@ -50,15 +41,25 @@ func assertResultCount(t *testing.T, ds sous.Deployments, filter deployFilter, w
 }
 
 func TestSimpleFilter(t *testing.T) {
+	ds := sous.NewDeployments(
+		deploy(repoSID("X")),
+		deploy(repoSID("Y")),
+		deploy(repoSID("Z")),
+	)
 	filter := simpleFilter(func(d *sous.Deployment) bool {
 		return d.SourceID == repoSID("X")
 	})
-	assertSingleMatchingResult(t, filter)
+	assertResultCount(t, ds, filter, 1)
 }
 
 func TestParallelFilter_ok(t *testing.T) {
+	ds := sous.NewDeployments(
+		deploy(repoSID("X")),
+		deploy(repoSID("Y")),
+		deploy(repoSID("Z")),
+	)
 	filter := parallelFilter(1, func(d *sous.Deployment) (bool, error) {
 		return d.SourceID == repoSID("X"), nil
 	})
-	assertSingleMatchingResult(t, filter)
+	assertResultCount(t, ds, filter, 1)
 }
