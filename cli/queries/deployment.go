@@ -33,9 +33,11 @@ func (q *Deployment) Result(f DeploymentFilters) (DeploymentQueryResult, error) 
 var filterOrder = []string{"zeroinstances", "hasowners", "hasimage"}
 
 func (q *Deployment) availableFilters() map[string]deployFilter {
-	hif := newHasImageFilter(q.ArtifactQuery)
 	return map[string]deployFilter{
-		"hasimage": hif.hasImage,
+		"hasimage": parallelFilter(MaxConcurrentArtifactQueries,
+			func(d *sous.Deployment) (bool, error) {
+				return q.ArtifactQuery.Exists(d.SourceID)
+			}),
 		"zeroinstances": simpleFilter(func(d *sous.Deployment) bool {
 			return d.NumInstances == 0
 		}),

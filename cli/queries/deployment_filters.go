@@ -87,48 +87,48 @@ func simpleFilter(p func(*sous.Deployment) bool) deployFilter {
 	}
 }
 
-func newHasImageFilter(aq ArtifactQuery) hasImageFilter {
-	return hasImageFilter{check: aq.Exists}
-}
+func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) deployFilter {
+	return func(deployments sous.Deployments, which bool) sous.Deployments {
+		// NOTE: We take snapshot here so that len cannot change. Deployments is
+		// a concurrent map, so we have to assume len can change at any time.
+		ds := deployments.Snapshot()
+		// We take advantage of filtered being a concurrent map, writing to it
+		// willy nilly from the goroutines we start in the loop below.
+		filtered := sous.NewDeployments()
 
-type hasImageFilter struct {
-	check func(sous.SourceID) (bool, error)
-}
+		wg := sync.WaitGroup{}
+		wg.Add(len(ds))
 
-func (f hasImageFilter) hasImage(deployments sous.Deployments, which bool) sous.Deployments {
-	filtered := sous.NewDeployments()
-	wg := sync.WaitGroup{}
+		errs := make(chan error, len(ds))
+		pool := make(chan struct{}, MaxConcurrentArtifactQueries)
+		for i := 0; i < MaxConcurrentArtifactQueries; i++ {
+			pool <- struct{}{}
+		}
 
-	ds := deployments.Snapshot()
-
-	wg.Add(len(ds))
-	errs := make(chan error, len(ds))
-	pool := make(chan struct{}, MaxConcurrentArtifactQueries)
-	for i := 0; i < MaxConcurrentArtifactQueries; i++ {
-		pool <- struct{}{}
-	}
-
-	for _, d := range ds {
-		d := d
-		go func() {
-			defer wg.Done()
-			<-pool
-			defer func() { pool <- struct{}{} }()
-			exists, err := f.check(d.SourceID)
-			if err != nil {
-				errs <- err
-				return
-			}
-			if exists == which {
+		for _, d := range ds {
+			d := d
+			go func() {
+				defer wg.Done()
+				<-pool
+				defer func() { pool <- struct{}{} }()
+				match, err := p(d)
+				if err != nil {
+					errs <- err
+					return
+				}
+				if match != which {
+					return
+				}
+				// This .Add call is safe because filtered is a concurrent map.
 				filtered.Add(d)
-			}
-		}()
-	}
-	wg.Wait()
-	close(errs)
+			}()
+		}
+		wg.Wait()
+		close(errs)
 
-	for err := range errs {
-		log.Println(err)
+		for err := range errs {
+			log.Println(err)
+		}
+		return filtered
 	}
-	return filtered
 }
