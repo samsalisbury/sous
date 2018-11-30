@@ -3,7 +3,6 @@ package queries
 import (
 	"flag"
 	"fmt"
-	"log"
 	"strconv"
 	"sync"
 
@@ -130,12 +129,19 @@ func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) d
 				filtered.Add(d)
 			}()
 		}
-		wg.Wait()
-		close(errs)
-
-		for err := range errs {
-			log.Println(err)
-		}
-		return filtered, nil
+		done := make(chan error)
+		go func() {
+			select {
+			case <-func() chan struct{} {
+				c := make(chan struct{})
+				go func() { wg.Wait(); close(c) }()
+				return c
+			}():
+				close(done)
+			case err := <-errs: // do nothing
+				done <- err
+			}
+		}()
+		return filtered, <-done
 	}
 }

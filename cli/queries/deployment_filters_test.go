@@ -137,7 +137,7 @@ func TestParallelFilter_err(t *testing.T) {
 		assertErr(t, filter, "maxConcurrent < 1 not allowed")
 	})
 	t.Run("filter err", func(t *testing.T) {
-		filter := parallelFilter(0, func(*sous.Deployment) (bool, error) {
+		filter := parallelFilter(1, func(*sous.Deployment) (bool, error) {
 			return true, fmt.Errorf("this error")
 		})
 		assertErr(t, filter, "this error")
