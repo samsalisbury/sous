@@ -114,9 +114,9 @@ func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) d
 
 		for _, d := range ds {
 			d := d
+			<-pool
 			go func() {
 				defer wg.Done()
-				<-pool
 				defer func() { pool <- struct{}{} }()
 				match, err := p(d)
 				if err != nil {
