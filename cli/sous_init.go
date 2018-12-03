@@ -71,6 +71,10 @@ func (si *SousInit) AddFlags(fs *flag.FlagSet) {
 // Execute fulfills the cmdr.Executor interface
 func (si *SousInit) Execute(args []string) cmdr.Result {
 
+	if si.flags.Kind == "" {
+		return cmdr.UsageErrorf("missing or empty flag -kind")
+	}
+
 	kind := sous.ManifestKind(si.flags.Kind)
 	var skipHealth bool
 
