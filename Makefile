@@ -361,6 +361,7 @@ test-unit-base: $(COVER_DIR) $(GO_FILES)
 
 .PHONY: test-unit
 test-unit: test-unit-base
+	@echo "All unit tests passed."
 
 $(COVER_DIR)/count_merged.txt: $(COVER_DIR) $(GO_FILES)
 	go test \
