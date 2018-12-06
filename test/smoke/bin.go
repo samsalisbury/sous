@@ -199,7 +199,7 @@ func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*Execut
 	}
 	err = cmd.runWithTimeout(3 * time.Minute)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		log.Printf("Command failed: %s: %s", cmd.invocation, err)
 	}
 	return cmd.executed, err
 }

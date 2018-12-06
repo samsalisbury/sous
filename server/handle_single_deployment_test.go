@@ -20,11 +20,19 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func defaultState() *sous.State {
+	return sous.DefaultStateFixtureWithFlavorsOffsets()
+}
+
+func defaultStateManager() *sous.DummyStateManager {
+	return &sous.DummyStateManager{State: defaultState()}
+}
+
 func TestSingleDeploymentResource(t *testing.T) {
 	qs, _ := sous.NewQueueSetSpy()
 	cl := ComponentLocator{
 		QueueSet:     qs,
-		StateManager: &sous.DummyStateManager{State: sous.DefaultStateFixture()},
+		StateManager: defaultStateManager(),
 	}
 	r := newSingleDeploymentResource(cl)
 
@@ -158,7 +166,7 @@ func (scn psdhExScenario) assertNoR11nQueued(t *testing.T) {
 func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 	setup := func(sent *SingleDeploymentBody, did map[string]string) *psdhExScenario {
 		qs, qsCtrl := sous.NewQueueSetSpy()
-		sm := &sous.DummyStateManager{State: sous.DefaultStateFixture()}
+		sm := defaultStateManager()
 		log, _ := logging.NewLogSinkSpy()
 		cl := ComponentLocator{
 			StateManager: sm,
@@ -213,7 +221,8 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 
 	makeBodyAndQuery := func(t *testing.T, force bool) (*SingleDeploymentBody, map[string]string) {
 		t.Helper()
-		m, ok := sous.DefaultStateFixture().Manifests.Get(
+		s := defaultState()
+		m, ok := s.Manifests.Get(
 			sous.ManifestID{
 				Source: sous.SourceLocation{
 					Repo: "github.com/user1/repo1",
@@ -223,7 +232,8 @@ func TestPUTSingleDeploymentHandler_Exchange(t *testing.T) {
 			},
 		)
 		if !ok {
-			t.Fatal("Setup failed to get Manifest.")
+			t.Fatalf("Setup failed to get Manifest (from %d manifests): %v",
+				s.Manifests.Len(), s)
 		}
 		dep, ok := m.Deployments["cluster1"]
 		if !ok {

@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"database/sql"
 	"fmt"
 	"io"
 	"io/ioutil" //ok
@@ -14,7 +13,6 @@ import (
 	"github.com/opentable/sous/ext/git"
 	"github.com/opentable/sous/ext/github"
 	"github.com/opentable/sous/ext/singularity"
-	"github.com/opentable/sous/ext/storage"
 	"github.com/opentable/sous/lib"
 	"github.com/opentable/sous/server"
 	"github.com/opentable/sous/util/docker_registry"
@@ -82,26 +80,6 @@ type (
 	// DefaultLogSink depends only on a semv.Version so can be used prior to reading
 	// any configuration.
 	DefaultLogSink struct{ logging.LogSink }
-	// ClusterManager simply wraps the sous.ClusterManager interface
-	ClusterManager struct{ sous.ClusterManager }
-	// ClientStateManager wraps the sous.StateManager interface and is used by non-server sous commands
-	ClientStateManager struct{ sous.StateManager }
-	// ServerStateManager wraps the sous.StateManager interface and is used by `sous server`
-	ServerStateManager struct{ sous.StateManager }
-	// ServerClusterManager wraps the sous.ClusterManager interface and is used by `sous server`
-	ServerClusterManager struct{ sous.ClusterManager }
-	// DistStateManager wraps sous.StateManager interfaces and is used by `sous server`
-	DistStateManager struct {
-		sous.StateManager
-		Error error
-	}
-
-	gitStateManager struct {
-		sous.StateManager
-		Error error
-	}
-	diskStateManager struct{ sous.StateManager }
-
 	// Wrappers for the Inserter interface, to make explicit the difference
 	// between client and server handling.
 	serverInserter struct{ sous.Inserter }
@@ -236,11 +214,14 @@ func AddFilesystem(graph adder) {
 	graph.Add(
 		newConfigLoader,
 		newMaybeDatabase, // we need to be able to progress in the absence of a DB.
+		newDuplexStateManager,
 		newServerStateManager,
 		newServerClusterManager,
 		newDistributedStateManager,
 		newGitStateManager,
 		newDiskStateManager,
+		newPrimaryStateManager,
+		newSecondaryStateManager,
 	)
 }
 
@@ -642,101 +623,6 @@ func newInMemoryClient(srvr ServerHandler, log LogSink) (HTTPClient, error) {
 	return HTTPClient{HTTPClient: cl}, err
 }
 
-func newServerStateManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm DistStateManager) (*ServerStateManager, error) {
-	var primary, secondary sous.StateManager
-	var perr error
-	primary = gm.StateManager
-	perr = gm.Error
-
-	if perr != nil {
-		return nil, perr
-	}
-
-	//Temorarily adding logger as secondary (TODO://Fix distributed state manager and timeouts associated with updates)
-	secondary = storage.NewLogOnlyStateManager(log.Child("secondary"))
-
-	duplex := storage.NewDuplexStateManager(primary, secondary, log.Child("duplex-state"))
-	return &ServerStateManager{StateManager: duplex}, nil
-}
-
-func newServerClusterManager(c LocalSousConfig, log LogSink, gm gitStateManager, dm DistStateManager) (*ServerClusterManager, error) {
-	var cmgr sous.StateManager
-	var err error
-
-	if c.DatabasePrimary {
-		cmgr = dm.StateManager
-		err = dm.Error
-	} else {
-		cmgr = gm.StateManager
-		err = gm.Error
-	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	return &ServerClusterManager{ClusterManager: sous.MakeClusterManager(cmgr, log)}, nil
-}
-
-func newDistributedStateManager(c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) DistStateManager {
-	var dist sous.StateManager
-	err := mdb.Err
-	if err == nil {
-		dist, err = newDistributedStorage(mdb.Db, c, tid, rf, log)
-	}
-
-	return DistStateManager{
-		StateManager: dist,
-		Error:        err,
-	}
-}
-
-func newGitStateManager(dm *storage.DiskStateManager, log LogSink) gitStateManager {
-	return gitStateManager{StateManager: storage.NewGitStateManager(dm, log.Child("git-state-manager"))}
-}
-
-func newDiskStateManager(c LocalSousConfig, log LogSink) *storage.DiskStateManager {
-	return storage.NewDiskStateManager(c.StateLocation, log.Child("disk-state-manager"))
-}
-
-func newDistributedStorage(db *sql.DB, c LocalSousConfig, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (sous.StateManager, error) {
-	localName, err := rf.Cluster.Value()
-	if err != nil {
-		return nil, fmt.Errorf("Setting up distributed storage: cluster: %s", err) // errors.Wrapf && cli don't play nice
-	}
-
-	local := storage.NewPostgresStateManager(db, log.Child("database"))
-	list := ClientBundle{}
-	clusterNames := []string{}
-	for n, u := range c.SiblingURLs {
-		// XXX not immediately clear how to conserve the request id through the distributed storage.
-		cl, err := restful.NewClient(u, log.Child(n+".http-client"))
-		if err != nil {
-			return nil, err
-		}
-		list[n] = cl
-		clusterNames = append(clusterNames, n)
-	}
-	// XXX the first arg is used to get e.g. defs. Should be at least an in memory client for these purposes.
-	hsm := sous.NewHTTPStateManager(list[localName], tid, log.Child("http-state-manager"))
-	return sous.NewDispatchStateManager(localName, clusterNames, local, hsm, log.Child("state-manager")), nil
-}
-
-// newStateManager returns a wrapped sous.HTTPStateManager if cl is not nil.
-// Otherwise it returns a wrapped sous.GitStateManager, for local git based GDM.
-// If it returns a sous.GitStateManager, it emits a warning log.
-func newClientStateManager(cl HTTPClient, c LocalSousConfig, mdb MaybeDatabase, tid sous.TraceID, rf *sous.ResolveFilter, log LogSink) (*ClientStateManager, error) {
-	if c.Server == "" {
-		return nil, errors.New("no server configured for state management")
-	}
-	hsm := sous.NewHTTPStateManager(cl, tid, log.Child("http-state-manager"))
-	return &ClientStateManager{StateManager: hsm}, nil
-}
-
-func newHTTPStateManager(cl HTTPClient, tid sous.TraceID, log LogSink) *sous.HTTPStateManager {
-	return sous.NewHTTPStateManager(cl, tid, log.Child("http-state-manager"))
-}
-
 func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, logs LogSink) *sous.StatusPoller {
 	if cl.HTTPClient == nil {
 		messages.ReportLogFieldsMessageToConsole("Unable to poll for status.", logging.WarningLevel, logs, rf)
@@ -745,36 +631,6 @@ func newStatusPoller(cl HTTPClient, rf *RefinedResolveFilter, user sous.User, lo
 	messages.ReportLogFieldsMessageToConsole("...looks good...", logging.ExtraDebug1Level, logs)
 	return sous.NewStatusPoller(cl, (*sous.ResolveFilter)(rf), user, logs.Child("status-poller"))
 }
-
-/*
-XXX these are complicating injection
-func newLocalStateReader(sm *StateManager) StateReader {
-	return StateReader{sm}
-}
-
-func newLocalStateWriter(sm *StateManager) StateWriter {
-	return StateWriter{sm}
-}
-
-// NewCurrentState returns the current *sous.State.
-func NewCurrentState(sr StateReader, log LogSink) (*sous.State, error) {
-	state, err := sr.ReadState()
-	if os.IsNotExist(errors.Cause(err)) || storage.IsGSMError(err) {
-		messages.ReportLogFieldsMessageToConsole("error reading state, defaulting to empty state", logging.WarningLevel, log, err)
-		return sous.NewState(), nil
-	}
-	return state, initErr(err, "reading sous state")
-}
-
-// NewCurrentGDM returns the current GDM.
-func NewCurrentGDM(state *sous.State) (CurrentGDM, error) {
-	deployments, err := state.Deployments()
-	if err != nil {
-		return CurrentGDM{}, initErr(err, "expanding state")
-	}
-	return CurrentGDM{deployments}, initErr(err, "expanding state")
-}
-*/
 
 // The funcs named makeXXX below are used to create specific implementations of
 // sous native types.
