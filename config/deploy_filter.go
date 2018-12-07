@@ -71,6 +71,19 @@ func (f SourceIDFlags) SourceID() (sous.SourceID, error) {
 	}, nil
 }
 
+// NewSourceIDFlags returns a SourceIDFlags based on sid.
+func NewSourceIDFlags(sid sous.SourceID) SourceIDFlags {
+	return SourceIDFlags{
+		SourceLocationFlags: SourceLocationFlags{
+			Repo:   sid.Location.Repo,
+			Offset: sid.Location.Dir,
+		},
+		SourceVersionFlags: SourceVersionFlags{
+			Tag: sid.Version.String(),
+		},
+	}
+}
+
 // DeploymentIDFlags identify a Deployment.
 type DeploymentIDFlags struct {
 	ManifestIDFlags

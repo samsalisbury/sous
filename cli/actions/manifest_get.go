@@ -23,20 +23,27 @@ type ManifestGet struct {
 
 // Do implements Action on ManifestGet.
 func (mg *ManifestGet) Do() error {
+	mani, err := mg.GetManifest()
+	if err != nil {
+		return err
+	}
+	// yaml.Marshal cannot return an error, it panics if anything goes wrong.
+	yml, _ := yaml.Marshal(mani)
+	mg.OutWriter.Write(yml)
+	return nil
+}
+
+// GetManifest returns the sous.Manifest.
+func (mg *ManifestGet) GetManifest() (sous.Manifest, error) {
 	mani := sous.Manifest{}
 	up, err := mg.HTTPClient.Retrieve("./manifest", mg.TargetManifestID.QueryMap(), &mani, nil)
 
 	if err != nil {
-		return errors.Errorf("No manifest matched by %v yet. See `sous init` (%v)", mg.ResolveFilter, err)
+		return mani, errors.Errorf("No manifest matched by %v yet. See `sous init` (%v)", mg.ResolveFilter, err)
 	}
 	(*mg.UpdaterCapture) = up
 
 	messages.ReportLogFieldsMessage("Sous manifest in Execute", logging.ExtraDebug1Level, mg.LogSink, mani.ID())
 
-	yml, err := yaml.Marshal(mani)
-	if err != nil {
-		return err
-	}
-	mg.OutWriter.Write(yml)
-	return nil
+	return mani, err
 }

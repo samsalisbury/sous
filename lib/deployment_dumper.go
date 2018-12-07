@@ -1,6 +1,7 @@
 package sous
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"text/tabwriter"
@@ -17,6 +18,14 @@ func DumpDeployments(writer io.Writer, ds Deployments) {
 		fmt.Fprintln(w, d.Tabbed())
 	}
 	w.Flush()
+}
+
+// JSONDeployments prints deployments, one JSON document per line of output.
+func JSONDeployments(writer io.Writer, ds Deployments) {
+	j := json.NewEncoder(writer)
+	for _, d := range ds.Snapshot() {
+		j.Encode(d)
+	}
 }
 
 // DumpDeployStatuses prints a bunch of DeployStates to writer.

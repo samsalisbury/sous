@@ -1,8 +1,10 @@
 package cli
 
 import (
-	"os"
+	"flag"
+	"fmt"
 
+	"github.com/opentable/sous/cli/queries"
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/graph"
 	"github.com/opentable/sous/lib"
@@ -11,11 +13,14 @@ import (
 
 // SousQueryGDM is the description of the `sous query gdm` command
 type SousQueryGDM struct {
-	StateManager *graph.ClientStateManager
-	flags        struct {
-		singularity string
-		registry    string
+	DeploymentQuery queries.Deployment
+	flags           struct {
+		format string
 	}
+	filters queries.DeploymentFilters
+
+	Out graph.OutWriter
+	Err graph.ErrWriter
 }
 
 func init() { QuerySubcommands["gdm"] = &SousQueryGDM{} }
@@ -35,18 +40,40 @@ func (*SousQueryGDM) RegisterOn(psy Addable) {
 	psy.Add(&config.DeployFilterFlags{})
 }
 
-// Execute defines the behavior of `sous query gdm`
+// AddFlags adds the flags for 'sous query gdm'.
+func (sb *SousQueryGDM) AddFlags(fs *flag.FlagSet) {
+	sb.filters.AttributeFilters.AddFlags(&sb.DeploymentQuery, fs)
+	fs.StringVar(&sb.flags.format, "format", "table", "output format, one of (table, json)")
+}
+
+func (sb *SousQueryGDM) dump(ds sous.Deployments) error {
+	var err error
+	switch sb.flags.format {
+	default:
+		err = cmdr.UsageErrorf("output format %q not valid, pick one of: table, json", sb.flags.format)
+		fallthrough
+	case "", "table":
+		sous.DumpDeployments(sb.Out, ds)
+	case "json":
+		sous.JSONDeployments(sb.Out, ds)
+	}
+	return err
+}
+
+// Execute defines the behavior of `sous query gdm`.
 func (sb *SousQueryGDM) Execute(args []string) cmdr.Result {
+	if err := sb.filters.AttributeFilters.UnpackFlags(&sb.DeploymentQuery); err != nil {
+		return cmdr.UsageErrorf("filter flags: %s", err)
+	}
 
-	state, err := sb.StateManager.ReadState()
+	result, err := sb.DeploymentQuery.Result(sb.filters)
 	if err != nil {
 		return EnsureErrorResult(err)
 	}
-	deployments, err := state.Deployments()
-	if err != nil {
+
+	fmt.Fprintf(sb.Err, "%d results\n", result.Deployments.Len())
+	if err := sb.dump(result.Deployments); err != nil {
 		return EnsureErrorResult(err)
 	}
-
-	sous.DumpDeployments(os.Stdout, deployments)
 	return cmdr.Success()
 }

@@ -80,6 +80,27 @@ func TestNewSourceID_success(t *testing.T) {
 	}
 }
 
+func TestParseSourceID_errs(t *testing.T) {
+	cases := []struct {
+		in, wantErr string
+	}{
+		{"", `invalid source ID ""`},
+		{"x", `parsing: No version found in "x" (did find repo: "x")`},
+		{"x,y", `invalid version "y": unexpected character 'y' at position 0`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.in, func(t *testing.T) {
+			_, gotErr := ParseSourceID(tc.in)
+			if gotErr == nil {
+				t.Fatalf("got nil; want error %q", tc.wantErr)
+			}
+			if gotErr.Error() != tc.wantErr {
+				t.Errorf("got error %q; want %q", gotErr, tc.wantErr)
+			}
+		})
+	}
+}
+
 func TestNewSourceID_failure(t *testing.T) {
 	sid, err := NewSourceID("", "", "not a version")
 	expected := "unexpected character 'n' at position 0"
@@ -171,5 +192,31 @@ func TestSourceID_roundtrip_String_Parse(t *testing.T) {
 		if actual != expected {
 			t.Errorf("%+v round-tripped as %+v", actual, expected)
 		}
+	}
+}
+
+func TestSourceID_HTTPQueryMap(t *testing.T) {
+	sid, err := NewSourceID("a", "b", "1")
+	if err != nil {
+		t.Fatalf("test setup failed: %s", err)
+	}
+	got := sid.HTTPQueryMap()
+	repo, ok := got["repo"]
+	if !ok {
+		t.Error("no repo field")
+	} else if repo != "a" {
+		t.Errorf("got repo %q; want %q", repo, "a")
+	}
+	offset, ok := got["offset"]
+	if !ok {
+		t.Errorf("no offset field")
+	} else if offset != "b" {
+		t.Errorf("got offset %q; want %q", offset, "b")
+	}
+	version, ok := got["version"]
+	if !ok {
+		t.Error("no version field")
+	} else if version != "1" {
+		t.Errorf("got version %q; want %q", version, "1")
 	}
 }

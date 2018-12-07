@@ -27,6 +27,17 @@ with respect to its command line interface and HTTP interface
   or its parents must declare the SOUS_RUN_IMAGE_SPEC and BUILD_OUT environment variables.
   All known existing runmount containers already do this.
 
+### Added
+* Client: 'sous scale' command to tweak just the NumInstances field for a deployment.
+* Client: 'sous query gdm' now has a -format flag allowing you to specify 'json' or 'table' (default) output.
+* Client: 'sous query gdm' now has a -filter flag allowing you to filter, e.g.:
+  * `sous query gdm -filter "hasimage=false"` to find deployments that have no
+    image available to deploy.
+  * `sous query gdm -filter "hasimage=false zeroinstances=false"` refines the above filter to images that also are not scaled to zero instances.
+  * `sous query gdm -filter "hasowners=false" filters deployments to those that have no owners specified.
+  You can combine these 3 filters in any order, setting each to true or false.
+  We will be able to easily add more filters in future.
+
 ## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
 * Deployments to PROD clusters will use Jenkins agents with 'mesos-prod-sc'

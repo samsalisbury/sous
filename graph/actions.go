@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/opentable/sous/cli/actions"
+	"github.com/opentable/sous/cli/queries"
 	"github.com/opentable/sous/config"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/cmdr"
@@ -24,7 +25,7 @@ func (di *SousGraph) guardedAdd(guardName string, value interface{}) {
 }
 
 // GetManifestGet injects a ManifestGet instances.
-func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer, upCap *restful.Updater) (actions.Action, error) {
+func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer, upCap *restful.Updater) (*actions.ManifestGet, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("Dryrun", DryrunNeither)
 
@@ -51,7 +52,7 @@ func (di *SousGraph) GetManifestGet(dff config.DeployFilterFlags, out io.Writer,
 }
 
 // GetManifestSet injects a ManifestSet instance.
-func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Updater, in io.Reader) (actions.Action, error) {
+func (di *SousGraph) GetManifestSet(dff config.DeployFilterFlags, up *restful.Updater, in io.Reader) (*actions.ManifestSet, error) {
 	di.guardedAdd("DeployFilterFlags", &dff)
 	di.guardedAdd("Dryrun", DryrunNeither)
 	scoop := struct {
@@ -126,28 +127,21 @@ type ArtifactOpts struct {
 }
 
 //GetGetArtifact will return artifact for cli add artifact
-func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (actions.Action, error) {
+func (di *SousGraph) GetGetArtifact(opts ArtifactOpts) (*actions.GetArtifact, error) {
 	di.guardedAdd("SourceIDFlags", &opts.SourceID)
 	scoop := struct {
-		LogSink    LogSink
-		User       sous.User
-		LocalShell LocalWorkDirShell
-		Config     LocalSousConfig
-		HTTP       HTTPClient
+		Query   queries.ArtifactQuery
+		LogSink LogSink
 	}{}
 	if err := di.Inject(&scoop); err != nil {
 		return nil, err
 	}
 	return &actions.GetArtifact{
-
-		LogSink:    scoop.LogSink.LogSink.Child("get-artifact"),
-		User:       scoop.User,
-		Config:     scoop.Config.Config,
-		LocalShell: scoop.LocalShell,
-		HTTPClient: scoop.HTTP,
-		Repo:       opts.SourceID.Repo,
-		Offset:     opts.SourceID.Offset,
-		Tag:        opts.SourceID.Tag, //might need to switch to version and seperate concept of tag and semv
+		Query:   scoop.Query,
+		LogSink: scoop.LogSink.LogSink.Child("get-artifact"),
+		Repo:    opts.SourceID.Repo,
+		Offset:  opts.SourceID.Offset,
+		Tag:     opts.SourceID.Tag,
 	}, nil
 }
 

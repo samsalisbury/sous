@@ -149,7 +149,8 @@ func newUser(c LocalSousConfig) sous.User {
 	return c.User
 }
 
-func newSousGraph() *SousGraph {
+// NewSousGraph returns a new sous graph.
+func NewSousGraph() *SousGraph {
 	return &SousGraph{
 		addGuards: map[string]bool{},
 		Psyringe:  psyringe.New(),
@@ -158,7 +159,7 @@ func newSousGraph() *SousGraph {
 
 // BuildBaseGraph constructs a graph with essentials - intended for testing
 func BuildBaseGraph(version semv.Version, in io.Reader, out, err io.Writer) *SousGraph {
-	graph := newSousGraph()
+	graph := NewSousGraph()
 	graph.Add(
 		version,
 		sous.TraceID(uuid.NewV4().String()),
@@ -174,6 +175,7 @@ func BuildBaseGraph(version semv.Version, in io.Reader, out, err io.Writer) *Sou
 	AddDocker(graph)
 	AddSingularity(graph)
 	AddInternals(graph)
+	AddQueries(graph)
 	graph.Add(graph)
 	return graph
 }
@@ -261,6 +263,12 @@ func AddSingularity(graph adder) {
 	graph.Add(
 		newDeployer,
 	)
+}
+
+// AddQueries adds queries.
+func AddQueries(graph adder) {
+	graph.Add(newArtifactQuery)
+	graph.Add(newDeploymentQuery)
 }
 
 // AddInternals adds the dependency contructors that are internal to Sous.

@@ -19,6 +19,15 @@ func assertActiveStatus(t *testing.T, f *fixture, reqID string) {
 	}
 }
 
+func assertNumInstances(t *testing.T, f *fixture, reqID string, wantNum int32) {
+	t.Helper()
+	req := f.Singularity.MustGetRequestForDeployment(t, reqID)
+	gotNum := req.Request.Instances
+	if gotNum != wantNum {
+		t.Errorf("got %d instances; want %d", gotNum, wantNum)
+	}
+}
+
 func assertSingularityRequestID(t *testing.T, f *fixture, reqID string, want string) {
 	t.Helper()
 	req := f.Singularity.MustGetRequestForDeployment(t, reqID)
