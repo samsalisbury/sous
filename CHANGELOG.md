@@ -6,7 +6,15 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/)
 with respect to its command line interface and HTTP interface
 
-## [Unreleased](//github.com/opentable/sous/compare/0.5.120...master)
+## [Unreleased](//github.com/opentable/sous/compare/0.6.0...master)
+
+### Fixed
+
+### Changed
+
+### Added
+
+## [0.6.0](//github.com/opentable/sous/compare/0.5.120...0.6.0)
 
 ### Fixed
 * Error message when no manifest matches query on 'manifest get' and similar
@@ -17,7 +25,6 @@ with respect to its command line interface and HTTP interface
   which is invalid and failed the build.
 
 ### Changed
-* Client: sous jenkins cli revise format of generated Jenkinsfile
 * Client: 'sous build' fails early when trying to re-build an existing version tag.
   Previously the build succeeded, and pushed a new docker image, but subsequent
   deploys did not use the new docker image, since sous uses the image digest, not
@@ -26,17 +33,20 @@ with respect to its command line interface and HTTP interface
   environment variables. Specifically, to be considered runmount, the Dockerfile
   or its parents must declare the SOUS_RUN_IMAGE_SPEC and BUILD_OUT environment variables.
   All known existing runmount containers already do this.
+* Client: sous jenkins cli revise format of generated Jenkinsfile (note this feature is in
+  alpha, every part of how it works is subject to arbitrary change on each release, so do
+  not rely on it until it's ready).
 
 ### Added
 * Client: 'sous scale' command to tweak just the NumInstances field for a deployment.
 * Client: 'sous query gdm' now has a -format flag allowing you to specify 'json' or 'table' (default) output.
-* Client: 'sous query gdm' now has a -filter flag allowing you to filter, e.g.:
-  * `sous query gdm -filter "hasimage=false"` to find deployments that have no
-    image available to deploy.
-  * `sous query gdm -filter "hasimage=false zeroinstances=false"` refines the above filter to images that also are not scaled to zero instances.
-  * `sous query gdm -filter "hasowners=false" filters deployments to those that have no owners specified.
-  You can combine these 3 filters in any order, setting each to true or false.
-  We will be able to easily add more filters in future.
+* Client: 'sous query gdm' has new filter flags:
+  * `-hasimage=true|false` to find deployments that do or do not
+    have an image available to deploy.
+  * `-hasowners=true|false` to find deployments that do or do not have owners.
+  * `-zeroinstances=true|false` to filter by zeroinstances or not.
+  You can combine these filters in any order, sous optimises actual execution order
+  to return results as fast as it can.
 
 ## [0.5.120](//github.com/opentable/sous/compare/0.5.117...0.5.120)
 ### Fixed
