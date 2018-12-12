@@ -32,7 +32,6 @@ with respect to its command line interface and HTTP interface
 * Client: the runmount build strategy is detected based on Dockerfile
   environment variables. Specifically, to be considered runmount, the Dockerfile
   or its parents must declare the SOUS_RUN_IMAGE_SPEC and BUILD_OUT environment variables.
-  All known existing runmount containers already do this.
 * Client: sous jenkins cli revise format of generated Jenkinsfile (note this feature is in
   alpha, every part of how it works is subject to arbitrary change on each release, so do
   not rely on it until it's ready).
@@ -40,7 +39,7 @@ with respect to its command line interface and HTTP interface
 ### Added
 * Client: 'sous scale' command to tweak just the NumInstances field for a deployment.
 * Client: 'sous query gdm' now has a -format flag allowing you to specify 'json' or 'table' (default) output.
-* Client: 'sous query gdm' has new filter flags:
+* Client: 'sous query gdm' has 3 new filter flags:
   * `-hasimage=true|false` to find deployments that do or do not
     have an image available to deploy.
   * `-hasowners=true|false` to find deployments that do or do not have owners.
