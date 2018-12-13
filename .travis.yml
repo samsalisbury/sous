@@ -50,6 +50,7 @@ jobs:
     - stage: Release Binaries
       before_install: false
       install:
+      - bundle
       - make install-fpm
       - make install-xgo
       before_script:
