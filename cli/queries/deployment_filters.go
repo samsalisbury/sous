@@ -116,24 +116,26 @@ func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) d
 			pool <- struct{}{}
 		}
 
-		for _, d := range ds {
-			d := d
-			<-pool
-			go func() {
-				defer wg.Done()
-				defer func() { pool <- struct{}{} }()
-				match, err := p(d)
-				if err != nil {
-					errs <- err
-					return
-				}
-				if match != which {
-					return
-				}
-				// This .Add call is safe because filtered is a concurrent map.
-				filtered.Add(d)
-			}()
-		}
+		go func() {
+			for _, d := range ds {
+				d := d
+				<-pool
+				go func() {
+					defer wg.Done()
+					defer func() { pool <- struct{}{} }()
+					match, err := p(d)
+					if err != nil {
+						errs <- err
+						return
+					}
+					if match != which {
+						return
+					}
+					// This .Add call is safe because filtered is a concurrent map.
+					filtered.Add(d)
+				}()
+			}
+		}()
 
 		return filtered, <-errs
 	}
