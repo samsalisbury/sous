@@ -105,7 +105,12 @@ func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) d
 		wg := sync.WaitGroup{}
 		wg.Add(len(ds))
 
-		errs := make(chan error, len(ds))
+		errs := make(chan error)
+		go func() {
+			wg.Wait()
+			close(errs)
+		}()
+
 		pool := make(chan struct{}, maxConcurrent)
 		for i := 0; i < maxConcurrent; i++ {
 			pool <- struct{}{}
@@ -129,19 +134,7 @@ func parallelFilter(maxConcurrent int, p func(*sous.Deployment) (bool, error)) d
 				filtered.Add(d)
 			}()
 		}
-		done := make(chan error)
-		go func() {
-			select {
-			case <-func() chan struct{} {
-				c := make(chan struct{})
-				go func() { wg.Wait(); close(c) }()
-				return c
-			}():
-				close(done)
-			case err := <-errs: // do nothing
-				done <- err
-			}
-		}()
-		return filtered, <-done
+
+		return filtered, <-errs
 	}
 }
