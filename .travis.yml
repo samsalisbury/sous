@@ -48,6 +48,7 @@ env:
 jobs:
   include:
     - stage: Release Binaries
+      if: tag =~ ^[0-9]
       before_install: false
       install:
       - bundle
