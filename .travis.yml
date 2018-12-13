@@ -45,14 +45,19 @@ env:
     - TEST_COMMAND="GO_TEST_RUN=TestBugs/git/simple make test-smoke"
     - TEST_COMMAND="GO_TEST_RUN=TestDefs/git/simple make test-smoke"
     - TEST_COMMAND="GO_TEST_RUN=TestDefs/db/simple make test-smoke"
-before_deploy: git clean -fd && git reset --hard HEAD && go get github.com/karalabe/xgo
-  && make semvertagchk && make tag-in-changelog-check && bundle exec make -j2 release
 jobs:
   include:
     - stage: Release Binaries
       before_install: false
-      install: false
-      script: false
+      install:
+      - make install-fpm
+      - make install-xgo
+      before_script:
+      - git clean -fd && git reset --hard HEAD
+      - make semvertagchk
+      - make tag-in-changelog-check
+      script:
+      - bundle exec make -j2 release
       after_script: false
       after_success: false
       env:
