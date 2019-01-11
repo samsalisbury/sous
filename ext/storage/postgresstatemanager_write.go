@@ -310,12 +310,12 @@ func singularityClusterID(row sqlgen.RowDef, baseURL string) {
 }
 
 func singularityRequestBindingsID(row sqlgen.RowDef, reqID string) {
+	f := "(select singularity_deployment_bindings_id from singularity_deployment_bindings where singularity_request_id = ?)"
 	if reqID == "" {
-		row.FD("?", "singularity_deployment_bindings_id", nil)
+		row.FD(f, "singularity_deployment_bindings_id", nil)
 		return
 	}
-	row.FD("(select singularity_deployment_bindings_id from singularity_deployment_bindings where singularity_request_id = ?)",
-		"singularity_deployment_bindings_id", reqID)
+	row.FD(f, "singularity_deployment_bindings_id", reqID)
 }
 
 func startupFields(r sqlgen.RowDef, prefix string, s sous.Startup) {
