@@ -80,16 +80,16 @@ func (ds Deployments) PutbackManifests(defs Defs, olds Manifests, log logging.Lo
 				continue
 			}
 			if string(clusterVal) == v {
-				messages.ReportLogFieldsMessage("Redundant environment definition", logging.DebugLevel, log, k, v)
+				messages.ReportLogFieldsMessage("Redundant environment definition", logging.ExtremeLevel, log, k, v)
 				if was && hadSpec {
 					if _, present := oldSpec.Env[k]; present {
-						messages.ReportLogFieldsMessage("Env pair present in existing manifest: retained", logging.DebugLevel, log, k, v)
+						messages.ReportLogFieldsMessage("Env pair present in existing manifest: retained", logging.ExtremeLevel, log, k, v)
 					} else {
-						messages.ReportLogFieldsMessage("Env pair absent in existing manifest: deleted", logging.DebugLevel, log, k, v)
+						messages.ReportLogFieldsMessage("Env pair absent in existing manifest: deleted", logging.ExtremeLevel, log, k, v)
 						delete(spec.Env, k)
 					}
 				} else {
-					messages.ReportLogFieldsMessage("Manifest or cluster absent in existing manifest list: deleted", logging.DebugLevel, log, mid, d.ClusterName, k, v)
+					messages.ReportLogFieldsMessage("Manifest or cluster absent in existing manifest list: deleted", logging.ExtremeLevel, log, mid, d.ClusterName, k, v)
 					delete(spec.Env, k)
 				}
 			}
@@ -146,7 +146,7 @@ func (ds Deployments) RawManifests(defs Defs, log logging.LogSink) (Manifests, e
 				continue
 			}
 			if string(clusterVal) == v {
-				messages.ReportLogFieldsMessage("Redundant environment definition", logging.DebugLevel, log, k, v)
+				messages.ReportLogFieldsMessage("Redundant environment definition", logging.ExtremeLevel, log, k, v)
 			}
 		}
 		m.Deployments[d.ClusterName] = spec
