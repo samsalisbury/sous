@@ -50,7 +50,8 @@ func (gr *GDMResource) Get(_ *restful.RouteMap, ls logging.LogSink, writer http.
 
 // Exchange implements the Handler interface
 func (h *GETGDMHandler) Exchange() (interface{}, int) {
-	reportDebugHandleGDMMessage(fmt.Sprintf("Get GDM Handler Exchange with GDM: %v", h.GDM), nil, nil, h.LogSink)
+	reportHandleGDMMessage(fmt.Sprintf("GETGDMHandler.Exchange called with GDM: %v", h.GDM), nil, nil, h.LogSink, logging.ExtremeLevel)
+	reportHandleGDMMessage("GetGDMHandler.Exchange called", nil, nil, h.LogSink, logging.DebugLevel)
 
 	data := dto.GDMWrapper{Deployments: make([]*sous.Deployment, 0)}
 	deps, err := h.GDM.Deployments()
