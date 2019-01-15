@@ -98,7 +98,7 @@ func (msg *sqlMessage) DefaultLevel() logging.Level {
 // Message implements LogMessage on sqlMessage
 func (msg *sqlMessage) Message() string {
 	if msg.err == nil {
-		return "SQL query"
+		return "SQL query: " + msg.dir.String()
 	}
 	return msg.err.Error()
 }
