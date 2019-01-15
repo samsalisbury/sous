@@ -95,7 +95,7 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	state, err := h.StateManager.ReadState()
 	if err != nil {
 		msg := "Error loading state from storage"
-		reportHandleGDMMessage(msg, nil, err, h.LogSink)
+		reportHandleGDMMessage(msg, nil, err, h.LogSink, logging.WarningLevel)
 		return msg, http.StatusInternalServerError
 	}
 
@@ -104,14 +104,14 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 	state.Manifests, err = deps.PutbackManifests(state.Defs, state.Manifests, h.LogSink)
 	if err != nil {
 		msg := "Error getting state"
-		reportHandleGDMMessage(msg, nil, err, h.LogSink)
+		reportHandleGDMMessage(msg, nil, err, h.LogSink, logging.WarningLevel)
 		return msg, http.StatusConflict
 	}
 
 	flaws := state.Validate()
 	if len(flaws) > 0 {
 		msg := "Invalid GDM"
-		reportHandleGDMMessage(msg, flaws, nil, h.LogSink)
+		reportHandleGDMMessage(msg, flaws, nil, h.LogSink, logging.WarningLevel)
 		return msg, http.StatusBadRequest
 	}
 
@@ -121,7 +121,7 @@ func (h *PUTGDMHandler) Exchange() (interface{}, int) {
 
 	if err := h.StateManager.WriteState(state, sous.User(h.User)); err != nil {
 		msg := "Error committing state"
-		reportHandleGDMMessage(msg, flaws, err, h.LogSink)
+		reportHandleGDMMessage(msg, flaws, err, h.LogSink, logging.WarningLevel)
 		return msg, http.StatusInternalServerError
 	}
 	return "", http.StatusNoContent
@@ -132,19 +132,14 @@ type handleGDMMessage struct {
 	msg          string
 	flawsMessage sous.FlawMessage
 	err          error
-	debug        bool
+	level        logging.Level
 }
 
 func reportDebugHandleGDMMessage(msg string, flaws []sous.Flaw, err error, log logging.LogSink) {
-	reportHandleGDMMessage(msg, flaws, err, log, true)
+	reportHandleGDMMessage(msg, flaws, err, log, logging.DebugLevel)
 }
 
-func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.LogSink, debug ...bool) {
-
-	isDebug := false
-	if len(debug) > 0 {
-		isDebug = debug[0]
-	}
+func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.LogSink, level logging.Level) {
 
 	msgLog := handleGDMMessage{
 		msg:        msg,
@@ -153,19 +148,13 @@ func reportHandleGDMMessage(msg string, f []sous.Flaw, err error, log logging.Lo
 		flawsMessage: sous.FlawMessage{
 			Flaws: f,
 		},
-		debug: isDebug,
+		level: level,
 	}
 	logging.Deliver(log, msgLog)
 }
 
 func (msg handleGDMMessage) DefaultLevel() logging.Level {
-	level := logging.WarningLevel
-
-	if msg.debug == true {
-		level = logging.DebugLevel
-	}
-
-	return level
+	return msg.level
 }
 
 func (msg handleGDMMessage) Message() string {
