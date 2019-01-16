@@ -109,7 +109,7 @@ func TestPostgresStateManagerWriteState_success(t *testing.T) {
 		map[string]interface{}{
 			"@loglov3-otl":       logging.SousSql,
 			"severity":           logging.InformationLevel,
-			"call-stack-message": "SQL query",
+			"call-stack-message": "SQL query: read",
 		})
 
 	suite.require.NoError(suite.manager.WriteState(s, testUser))
