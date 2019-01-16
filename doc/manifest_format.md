@@ -45,38 +45,7 @@ Deployments:
     # Metadata stores values about deployments for outside applications to use
     # Appropriate values are beyond the scope of this guide.
     Metadata:
-      # The following metadata is used by the sous jenkins command.
-      # Note, all values have defaults, you don't actually need to specify anything to initially populate Metadata
-      # Run command: sous jenkins -cluster CLUSTER
-      # Then you can except the defaults, or use sous manifest edit and modify values
-      # sous jenkins command will merge what is set in manifest with the defaults, taking metadata as higher precedent, then saving off the merge back to the manifest metadata
-      SOUS_SMOKE_TEST: "YES"                            #If yes, will eval SOUS_SMOKE_TEST_COMMAND as a step, default "YES"
-      SOUS_SMOKE_TEST_COMMAND: make smoke               #Default value is "make smoke", evaluated if SOUS_SMOKE_TEST == "YES"
-      SOUS_STATIC_TEST: "YES"                           #If yes, will eval SOUS_STATIC_TEST_COMMAND as a step, default "YES"
-      SOUS_STATIC_TEST_COMMAND: make static             #Default value is "make static", evaluated if SOUS_STATIC_TEST == "YES"
-      SOUS_UNIT_TEST: "YES"                             #If yes, will eval SOUS_UNIT_TEST_COMMAND as a step, default "YES"
-      SOUS_UNIT_TEST_COMMAND: make unit                 #Default value is "make unit", evaluated if SOUS_UNIT_TEST == "YES"
-      SOUS_INTEGRATION_TEST: "YES"                      #If yes, will eval SOUS_INTEGRATION_TEST_COMMAND as a step, default "YES"
-      SOUS_INTEGRATION_TEST_COMMAND: make integration   #Default value is "make integration", evaluated if SOUS_INTEGRATION_TEST == "YES"
-      SOUS_RELEASE_BRANCH: master                       #Branch deployments are built from,  if current branch is != then will skip deploy, this allows PRs to run tests without deploying to environments, default value is "master"
-      SOUS_USE_RC: "NO"                                 #If yes, will allow deploys to RC, default value is "YES"
-      SOUS_DEPLOY_CI: "YES"                             #If yes, will allow deploys to CI, default value is "YES"
-      SOUS_DEPLOY_PP: "YES"                             #If yes, will allow deploys to CI, default value is "YES"
-      SOUS_DEPLOY_PROD: "YES"                           #If yes, will allow deploys to CI, default value is "YES"
-      SOUS_DEPLOY_PROD_QUERY_USER: "YES"                #If yes, will wait till user manually initiates Prod deploy, default value is "YES", will fail build after 1 day of waiting
-      SOUS_MANIFEST_ID:                                 #Set by sous jenkins command
-      SOUS_POST_CI_TEST: "YES"                          #If yes, will eval SOUS_POST_CI_TEST_COMMAND as a step, default "YES"
-      SOUS_POST_CI_TEST_COMMAND: make post-ci-test      #Default value is "make post-ci-test", evaluated if SOUS_POST_CI_TEST == "YES"
-      SOUS_POST_PP_TEST: "YES"                          #If yes, will eval SOUS_POST_PP_TEST_COMMAND as a step, default "YES"
-      SOUS_POST_PP_TEST_COMMAND: make post-pp-test      #Default value is "make post-pp-test", evaluated if SOUS_POST_PP_TEST == "YES"
-      SOUS_POST_PROD_TEST: "YES"                        #If yes, will eval SOUS_POST_PROD_TEST_COMMAND as a step, default "YES"
-      SOUS_POST_PROD_TEST_COMMAND: make post-prod-test  #Default value is "make post-prod-test", evaluated if SOUS_POST_PROD_TEST == "YES"
-      SOUS_VERSIONING_SCHEME: semver_timestamp          #Possible values: semver, jenkinsbuildnumber, semver_timestamp.  Determines how sous build is tagged and docker image label, Default "semver_timestamp"
-                                                        #semver_timestamp: Version using annotated semver git tags + timestamp
-                                                        #semver: Version using annotated semver git tags
-                                                        #jenkinsbuildnumber: Version using jenkins $BUILD_NUMBER environment variable (auto increasing number)
-      SOUS_JENKINS_GENERATED_DATE:                      #Set by sous jenkins command
-      SOUS_JENKINSPIPELINE_VERSION: 0.0.1               #Allows users to version the generated Jenkinsfile, manually need to change based off of need, default "0.0.1"
+      METADATA_KEY1: Metadata value 1
 
     # Env is a list of environment variables to set for each instance of
     # of this deployment.
