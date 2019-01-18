@@ -39,7 +39,7 @@ func TestSQLMessageWrite(t *testing.T) {
 
 	logging.AssertMessageFieldlist(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
 		"@loglov3-otl":        logging.SousSql,
-		"call-stack-message":  "SQL query",
+		"call-stack-message":  "SQL query: write",
 		"severity":            logging.InformationLevel,
 		"call-stack-function": "github.com/opentable/sous/util/sqlgen.TestSQLMessageWrite",
 		"sous-sql-query":      "insert into test-table (x,y,z) = (1,2,3)",
@@ -60,7 +60,7 @@ func TestSQLMessageRead(t *testing.T) {
 
 	logging.AssertMessageFieldlist(t, message, append(logging.StandardVariableFields, logging.IntervalVariableFields...), map[string]interface{}{
 		"@loglov3-otl":        logging.SousSql,
-		"call-stack-message":  "SQL query",
+		"call-stack-message":  "SQL query: read",
 		"severity":            logging.InformationLevel,
 		"call-stack-function": "github.com/opentable/sous/util/sqlgen.TestSQLMessageRead",
 		"sous-sql-query":      "select * from test-table",
