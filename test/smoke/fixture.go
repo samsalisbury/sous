@@ -63,6 +63,13 @@ func newFixtureConfig(testName string, s scenario) fixtureConfig {
 		ClusterCount:  3,
 		ManifestCount: 3,
 		ClusterSuffix: clusterSuffix,
+		ClusterFunc: func() *sous.Cluster {
+			c := sous.DefaultCluster()
+			c.Startup.ConnectDelay = 1
+			c.Startup.ConnectInterval = 1
+			c.Startup.Timeout = 10
+			return c
+		},
 	})
 	addURLsToState(state, envDesc)
 	return fixtureConfig{
