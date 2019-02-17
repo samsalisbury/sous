@@ -19,7 +19,7 @@ import (
 type fixtureBase struct {
 	TestName string
 	BaseDir  string
-	Finished chan struct{}
+	Finished finishedChans
 
 	knownToFail bool
 }
@@ -48,11 +48,33 @@ type fixture struct {
 
 var sousBin = mustGetSousBin()
 
+type finishedChans struct {
+	Passed, Failed, Finished chan struct{}
+}
+
+func (fc finishedChans) setFailed() {
+	close(fc.Failed)
+	close(fc.Finished)
+}
+
+func (fc finishedChans) setPassed() {
+	close(fc.Passed)
+	close(fc.Finished)
+}
+
+func newFinishedChans() finishedChans {
+	return finishedChans{
+		Finished: make(chan struct{}),
+		Passed:   make(chan struct{}),
+		Failed:   make(chan struct{}),
+	}
+}
+
 func newFixtureConfig(testName string, s scenario) fixtureConfig {
 	base := fixtureBase{
 		TestName: testName,
 		BaseDir:  getDataDir(testName),
-		Finished: make(chan struct{}),
+		Finished: newFinishedChans(),
 	}
 
 	envDesc := getEnvDesc()
@@ -141,7 +163,13 @@ func fixtureFactory(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
 // files, git repos, logs etc.) in the case that the test passed.
 func (f *fixture) Teardown(t *testing.T) {
 	t.Helper()
-	close(f.Finished)
+	if t.Failed() {
+		close(f.Finished.Failed)
+	} else {
+		close(f.Finished.Passed)
+	}
+	close(f.Finished.Finished)
+	time.Sleep(5 * time.Second)
 	if shouldStopServers(t) {
 		time.Sleep(time.Second) // TODO: Fix synchronisation.
 		if err := f.Cluster.Stop(); err != nil {

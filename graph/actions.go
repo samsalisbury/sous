@@ -338,7 +338,7 @@ func (di *SousGraph) GetServer(
 	gdmRepo string,
 	profiling bool,
 	enableAutoResolver bool,
-) (actions.Action, error) {
+) (*actions.Server, error) {
 	dff.Offset = "*"
 	dff.Flavor = "*"
 	profiling = profiling || os.Getenv("SOUS_PROFILING") == "enable"

@@ -1,11 +1,9 @@
 package server
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"os"
-	"time"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/storage"
@@ -61,16 +59,13 @@ func (userExtractor) GetUser(req *http.Request) ClientUser {
 }
 
 // Run starts a server up.
-func Run(laddr string, handler http.Handler) error {
+func Run(laddr string, handler http.Handler) (*http.Server, <-chan error) {
 	s := &http.Server{Addr: laddr, Handler: handler}
-	err := s.ListenAndServe()
-	if err == nil {
-		return nil
-	}
-	pause := 5 * time.Second
-	fmt.Fprintf(os.Stderr, "Error listening: %s; Trying again in %s", err, pause)
-	time.Sleep(pause)
-	return s.ListenAndServe()
+	errs := make(chan error, 1)
+	go func() {
+		errs <- s.ListenAndServe()
+	}()
+	return s, errs
 }
 
 // Handler builds the http.Handler for the Sous server httprouter.

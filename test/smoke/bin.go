@@ -40,8 +40,8 @@ type Bin struct {
 	Env map[string]string
 	// MassageArgs is called on the total set of args passed to the command,
 	// prior to execution; the args it returns are what is finally used.
-	MassageArgs  func([]string) []string
-	TestFinished <-chan struct{}
+	MassageArgs func([]string) []string
+	Finished    finishedChans
 
 	// ShouldStillBeRunningAfterTest should is set to true for servers etc, it
 	// enables crash detection.
@@ -50,7 +50,7 @@ type Bin struct {
 
 // NewBin returns a new minimal Bin, all files will be created in subdirectories
 // of baseDir.
-func NewBin(t *testing.T, path, name, baseDir, rootDir string, finished <-chan struct{}) Bin {
+func NewBin(t *testing.T, path, name, baseDir, rootDir string, finished finishedChans) Bin {
 	illegalChars := ":/>"
 	if strings.ContainsAny(name, illegalChars) {
 		log.Panicf("name %q contains at least one illegal character from %q", name, illegalChars)
@@ -66,7 +66,7 @@ func NewBin(t *testing.T, path, name, baseDir, rootDir string, finished <-chan s
 		InstanceName: name,
 		RootDir:      rootDir,
 		Env:          map[string]string{},
-		TestFinished: finished,
+		Finished:     finished,
 	}
 }
 
