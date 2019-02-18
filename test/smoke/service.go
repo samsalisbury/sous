@@ -71,9 +71,10 @@ func (s *Service) wait(t *testing.T, count int, looping bool) bool {
 		s.debug("got wait result %s", wr)
 		exitCode, err := wr.exitCode()
 		if err != nil {
-			log.Panicf("[PANIC:%s]: unable to determine exit code: %s", s.ID(), err)
+			rtLog("[ERROR:%s]: unable to determine exit code: %s", s.ID(), err)
+		} else {
+			s.debug("exited with code %d; error: %v; logs follow:", exitCode, err)
 		}
-		s.debug("exited with code %d; error: %v; logs follow:", exitCode, err)
 		s.DumpTail(t, 3)
 		s.debug("end logs")
 		safeClose(s.Stopped)
