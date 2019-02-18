@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
@@ -162,4 +163,5 @@ func (c *bunchOfSousServers) Start(t *testing.T) {
 		// Note: the value of started is only used in the closure above.
 		started = append(started, i)
 	}
+	time.Sleep(5 * time.Second)
 }
