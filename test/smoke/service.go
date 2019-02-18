@@ -148,10 +148,11 @@ func (s *Service) waitChan() <-chan waitResult {
 		go func() {
 			var wr waitResult
 			wr.err = s.Cmd.Wait()
-			if wr.err != nil {
+			exitCode, err := wr.exitCode()
+			if err != nil {
 				rtLog("[ERROR:%s] Ignoring wait error: %s", s.ID(), wr.err)
 			} else if !s.Cmd.ProcessState.Exited() {
-				log.Panicf("[PANIC:%s] process not exited after wait", s.ID())
+				log.Panicf("[PANIC:%s] process not exited after wait, but reports exit code %d", s.ID(), exitCode)
 			}
 			s.waitResult = wr
 			close(s.doneWaiting)
