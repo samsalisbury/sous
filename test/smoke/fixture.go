@@ -158,7 +158,7 @@ func fixtureFactory(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
 }
 
 func (f *fixture) debug(format string, a ...interface{}) {
-	rtLog("[DEBUG:FIXTURE:"+f.TestName+"]"+format, a...)
+	rtLog("[DEBUG:FIXTURE:"+f.TestName+"] "+format, a...)
 }
 
 // Teardown performs conditional cleanup of resources used in the test.
