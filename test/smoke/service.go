@@ -3,7 +3,9 @@ package smoke
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -17,10 +19,11 @@ import (
 // process. It includes things like crash detection.
 type Service struct {
 	Bin
-	Proc            *os.Process
+	Cmd             *exec.Cmd
 	ReadyForCleanup chan struct{}
 	Stopped         chan struct{}
 	waitOnce        sync.Once
+	waitChanMu      sync.Mutex
 	waitResult      waitResult
 	doneWaiting     chan struct{}
 }
@@ -46,16 +49,15 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 
 	prepared.PreRun()
 
-	cmd := prepared.Cmd
-	if err := cmd.Start(); err != nil {
+	s.Cmd = prepared.Cmd
+	if err := s.Cmd.Start(); err != nil {
 		t.Fatalf("error starting %q: %s", s.InstanceName, err)
 	}
 
-	if cmd.Process == nil {
+	if s.Cmd.Process == nil {
 		t.Fatalf("[ERROR:%s] cmd.Process nil after cmd.Start", s.ID())
 	}
-	s.Proc = cmd.Process
-	writePID(t, s.Proc.Pid)
+	writePID(t, s.Cmd.Process.Pid)
 
 	go s.wait(t, 10, false)
 }
@@ -68,19 +70,13 @@ func (s *Service) wait(t *testing.T, count int, looping bool) bool {
 	case wr := <-s.waitChan():
 		s.debug("got wait result %s", wr)
 		exitCode, err := wr.exitCode()
-		if exitCode >= 0 {
-			s.debug("exited with code %d; error: %v; logs follow:", exitCode, err)
-			s.DumpTail(t, 3)
-			s.debug("end logs")
-			safeClose(s.Stopped)
-			return true
+		if err != nil {
+			log.Panicf("[PANIC:%s]: unable to determine exit code: %s", s.ID(), err)
 		}
-		if count > 0 {
-			time.Sleep(time.Second)
-			s.debug("bad exit code %d; trying again", exitCode)
-			return s.wait(t, count-1, true)
-		}
-		s.debug("bad exit code %d; no more retries", exitCode)
+		s.debug("exited with code %d; error: %v; logs follow:", exitCode, err)
+		s.DumpTail(t, 3)
+		s.debug("end logs")
+		safeClose(s.Stopped)
 		return true
 	case <-s.Finished.Failed:
 		s.debug("process still running when test failed")
@@ -115,15 +111,23 @@ func (wr *waitResult) String() string {
 }
 
 func (wr *waitResult) exitCode() (int, error) {
-	err, ps := wr.err, wr.ps
-	exitCode := tryGetExitCode("ps.Sys()", ps.Sys())
-	if !ps.Exited() {
-		return exitCode, fmt.Errorf("not exited; %s", wr)
+	if wr.err == nil {
+		return 0, nil
 	}
-	if err != nil {
-		return exitCode, fmt.Errorf("exited; %s", wr)
+	ee, ok := wr.err.(*exec.ExitError)
+	if !ok {
+		return -2, fmt.Errorf("wait failed, returned a %T: %s", wr.err, wr.err)
 	}
-	return exitCode, nil
+	ws, ok := ee.Sys().(syscall.WaitStatus)
+	if !ok {
+		return -3, fmt.Errorf("expected *exec.ExitError.Sys() to return a syscall.WaitStatus but got a %T", ee.Sys())
+	}
+
+	if ws.ExitStatus() > 0 {
+		return ws.ExitStatus(), nil
+	}
+
+	return ws.ExitStatus(), fmt.Errorf("invalid failure exit status %d", ws.ExitStatus())
 }
 
 func (wr *waitResult) isCrash() bool {
@@ -138,10 +142,15 @@ func (wr *waitResult) isCrash() bool {
 // this process, and then is closed. It is safe to call waitChan concurrently
 // and only one wait will actually be done on the process.
 func (s *Service) waitChan() <-chan waitResult {
+	s.waitChanMu.Lock()
+	defer s.waitChanMu.Unlock()
 	s.waitOnce.Do(func() {
 		go func() {
 			var wr waitResult
-			wr.ps, wr.err = s.Proc.Wait()
+			wr.err = s.Cmd.Wait()
+			if !s.Cmd.ProcessState.Exited() {
+				log.Panicf("[PANIC:%s] process not exited after wait", s.ID())
+			}
 			s.waitResult = wr
 			close(s.doneWaiting)
 		}()
@@ -182,8 +191,8 @@ func closed(c chan struct{}) bool {
 
 func (s *Service) debug(f string, a ...interface{}) {
 	pid := "not-started"
-	if s.Proc != nil {
-		pid = strconv.Itoa(s.Proc.Pid)
+	if s.Cmd != nil && s.Cmd.Process != nil {
+		pid = strconv.Itoa(s.Cmd.Process.Pid)
 	}
 	rtLog("[DEBUG:"+s.ID()+";pid:"+pid+"] "+f, a...)
 }
@@ -195,19 +204,18 @@ func (s *Service) Stop() error {
 		return nil
 	}
 	defer safeClose(s.Stopped)
-	if s.Proc == nil {
+	if s.Cmd == nil || s.Cmd.Process == nil {
 		s.debug("process is nil; cannot stop")
 		return fmt.Errorf("cannot stop %s (not started)", s.InstanceName)
 	}
 	s.debug("got process")
 	waitErr := make(chan error, 1)
-	var ps *os.ProcessState
 	go func() {
 		defer close(waitErr)
 		var err error
 		s.debug("waiting for exit")
 		wr := <-s.waitChan()
-		ps, err = wr.ps, wr.err
+		err = wr.err
 		if err != nil {
 			s.debug("ERROR: wait failed: %s", err)
 			waitErr <- fmt.Errorf("wait failed: %s", err)
@@ -218,7 +226,7 @@ func (s *Service) Stop() error {
 	s.debug("sending SIGTERM in %s", timeout)
 	time.Sleep(timeout)
 	s.debug("sending SIGTERM now!")
-	if err := s.Proc.Signal(syscall.SIGTERM); err != nil {
+	if err := s.Cmd.Process.Signal(syscall.SIGTERM); err != nil {
 		s.debug("error sending SIGTERM: %s", err)
 		return fmt.Errorf("sending SIGTERM: %s", err)
 	}
@@ -226,15 +234,6 @@ func (s *Service) Stop() error {
 	if err := <-waitErr; err != nil {
 		s.debug("waitErr not nil: %s", err)
 		return err
-	}
-	s.debug("waitErr is nil")
-	if !ps.Exited() {
-		s.debug("still not exited, trying kill")
-		if err := s.Proc.Kill(); err != nil {
-			s.debug("kill failed: %s", err)
-			return fmt.Errorf("cannot kill %s: %s", s.InstanceName, err)
-		}
-		s.debug("kill succeeded")
 	}
 	s.debug("exited successfully")
 
