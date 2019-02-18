@@ -18,6 +18,7 @@ type bunchOfSousServers struct {
 	BaseDir      string
 	RemoteGDMDir string
 	Count        int
+	Name         string
 	Instances    []*sousServer
 	Stop         func() error
 }
@@ -51,10 +52,15 @@ func newBunchOfSousServers(t *testing.T, f fixtureConfig) (*bunchOfSousServers, 
 		RemoteGDMDir: gdmDir,
 		Count:        count,
 		Instances:    instances,
+		Name:         t.Name(),
 		Stop: func() error {
 			return fmt.Errorf("cannot stop bunch of sous servers (not started)")
 		},
 	}, nil
+}
+
+func (c *bunchOfSousServers) debug(format string, a ...interface{}) {
+	rtLog("[DEBUG:BOSS:"+c.Name+"]"+format, a...)
 }
 
 func createRemoteGDM(t *testing.T, f fixtureConfig, clientName, gdmDir string, state *sous.State) {
@@ -139,11 +145,14 @@ func (c *bunchOfSousServers) Start(t *testing.T) {
 	c.Stop = func() error {
 		var errs []string
 		for j, i := range started {
+			c.debug("stopping server %s", i.InstanceName)
 			if err := i.Stop(); err != nil {
+				c.debug("error stopping server %s: %s", i.InstanceName, err)
 				errs = append(errs, fmt.Sprintf(`"could not stop instance%d: %s"`, j, err))
 			}
 		}
 		if len(errs) == 0 {
+			c.debug("no errors stopping servers")
 			return nil
 		}
 		return fmt.Errorf("could not stop all instances: %s", strings.Join(errs, ", "))
