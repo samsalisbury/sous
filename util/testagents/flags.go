@@ -1,4 +1,4 @@
-package smoke
+package testagents
 
 // Flags represents a set of flags to be passed to a Binary.
 type Flags interface {

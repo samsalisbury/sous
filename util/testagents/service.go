@@ -1,4 +1,4 @@
-package smoke
+package testagents
 
 import (
 	"fmt"
@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/opentable/sous/util/prefixpipe"
 )
 
 // Service represents a binary that is intended to be run as a long-running
@@ -42,7 +44,7 @@ func NewService(bin Bin) *Service {
 // Start starts this service.
 func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string) {
 	t.Helper()
-	prepared, err := s.Command(subcmd, flags, args...)
+	prepared, err := s.Command(nil, subcmd, flags, args...)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +59,7 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 	if s.Cmd.Process == nil {
 		t.Fatalf("[ERROR:%s] cmd.Process nil after cmd.Start", s.ID())
 	}
-	writePID(t, s.Cmd.Process.Pid)
+	s.ProcMan.WritePID(t, s.Cmd.Process.Pid)
 
 	go s.wait(t, 10, false)
 }
@@ -71,7 +73,7 @@ func (s *Service) wait(t *testing.T, count int, looping bool) bool {
 		s.debug("got wait result %s", wr)
 		exitCode, err := wr.exitCode()
 		if err != nil {
-			rtLog("[ERROR:%s]: unable to determine exit code: %s", s.ID(), err)
+			s.LogFunc("[ERROR:%s]: unable to determine exit code: %s", s.ID(), err)
 		} else {
 			s.debug("exited with code %d; error: %v; logs follow:", exitCode, err)
 		}
@@ -79,11 +81,8 @@ func (s *Service) wait(t *testing.T, count int, looping bool) bool {
 		s.debug("end logs")
 		safeClose(s.Stopped)
 		return true
-	case <-s.Finished.Failed:
-		s.debug("process still running when test failed")
-		return false
-	case <-s.Finished.Passed:
-		s.debug("process still runnung when test passed")
+	case <-s.Finished:
+		s.debug("OK - process still running when test finished")
 		return false
 	}
 }
@@ -151,7 +150,7 @@ func (s *Service) waitChan() <-chan waitResult {
 			wr.err = s.Cmd.Wait()
 			exitCode, err := wr.exitCode()
 			if err != nil {
-				rtLog("[ERROR:%s] Ignoring wait error: %s", s.ID(), wr.err)
+				s.LogFunc("[ERROR:%s] Ignoring wait error: %s", s.ID(), wr.err)
 			} else if !s.Cmd.ProcessState.Exited() {
 				log.Panicf("[PANIC:%s] process not exited after wait, but reports exit code %d", s.ID(), exitCode)
 			}
@@ -164,15 +163,6 @@ func (s *Service) waitChan() <-chan waitResult {
 	defer close(c)
 	c <- s.waitResult
 	return c
-}
-
-func tryGetExitCode(fromDesc string, from interface{}) int {
-	if ws, ok := from.(syscall.WaitStatus); ok {
-		rtLog("GOT EXIT CODE: %s is a syscall.WaitStatus: %d", fromDesc, ws.ExitStatus())
-		return ws.ExitStatus()
-	}
-	rtLog("UNABLE TO GET EXIT CODE: %s was a %T", fromDesc, from)
-	return -3
 }
 
 func safeClose(c chan struct{}) {
@@ -198,7 +188,7 @@ func (s *Service) debug(f string, a ...interface{}) {
 	if s.Cmd != nil && s.Cmd.Process != nil {
 		pid = strconv.Itoa(s.Cmd.Process.Pid)
 	}
-	rtLog("[DEBUG:"+s.ID()+";pid:"+pid+"] "+f, a...)
+	s.LogFunc("[DEBUG:"+s.ID()+";pid:"+pid+"] "+f, a...)
 }
 
 // Stop stops this service.
@@ -250,7 +240,7 @@ func (s *Service) DumpTail(t *testing.T, n int) {
 	path := filepath.Join(s.LogDir, "combined")
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
-		rtLog("ERROR unable to read log file %s: %s", path, err)
+		s.LogFunc("ERROR unable to read log file %s: %s", path, err)
 	}
 	lines := strings.Split(string(b), "\n")
 	if len(lines) < n {
@@ -258,7 +248,7 @@ func (s *Service) DumpTail(t *testing.T, n int) {
 	}
 	out := strings.Join(lines[len(lines)-n:], "\n") + "\n"
 	prefix := fmt.Sprintf("%s:%s:combined> ", t.Name(), s.InstanceName)
-	outPipe, err := prefixedPipe(prefix)
+	outPipe, err := prefixpipe.New(prefix)
 	if err != nil {
 		t.Fatal(err)
 	}

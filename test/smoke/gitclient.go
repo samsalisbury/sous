@@ -2,10 +2,12 @@ package smoke
 
 import (
 	"testing"
+
+	"github.com/opentable/sous/util/testagents"
 )
 
 type gitClient struct {
-	Bin
+	testagents.Bin
 }
 
 func newGitClient(t *testing.T, f fixtureConfig, name string) *gitClient {

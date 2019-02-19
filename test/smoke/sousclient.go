@@ -6,17 +6,17 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/docker"
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/filemap"
+	"github.com/opentable/sous/util/testagents"
 	"github.com/opentable/sous/util/yaml"
 )
 
 type sousClient struct {
-	Bin
+	testagents.Bin
 	// Config is set after calling Configure()
 	Config        config.Config
 	FixtureConfig fixtureConfig
@@ -96,16 +96,10 @@ func (c *sousClient) TransformManifest(t *testing.T, flags *sousFlags, transform
 	if err != nil {
 		t.Fatalf("failed to marshal updated manifest: %s\nInvalid manifest was:\n% #v", err, m)
 	}
-	// TODO SS: remove below invocation, make a top-level RunWithStdin or something.
-	i := c.newInvocation("manifest set", flags.ManifestIDFlags())
-	manifestSetCmd, err := c.configureCommand(i)
+	stdin := ioutil.NopCloser(bytes.NewReader(manifestBytes))
+	result, err := c.RunWithStdin(t, stdin, "manifest set", flags.ManifestIDFlags())
 	if err != nil {
-		t.Fatal(err)
-	}
-	defer manifestSetCmd.Cancel()
-	manifestSetCmd.Cmd.Stdin = ioutil.NopCloser(bytes.NewReader(manifestBytes))
-	if err := manifestSetCmd.runWithTimeout(3 * time.Minute); err != nil {
-		t.Fatalf("manifest set failed: %s; output:\n%s", err, manifestSetCmd.executed.Combined)
+		t.Fatalf("manifest set failed: %s; output:\n%s", err, result.Combined)
 	}
 }
 

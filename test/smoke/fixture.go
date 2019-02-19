@@ -10,6 +10,7 @@ import (
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/testagents"
 	"github.com/opentable/sous/util/testmatrix"
 	"github.com/samsalisbury/semv"
 )
@@ -111,9 +112,9 @@ func (f *fixtureBase) newEmptyDir(path string) string {
 	return path
 }
 
-func (f *fixtureBase) newBin(t *testing.T, path, instanceName string) Bin {
+func (f *fixtureBase) newBin(t *testing.T, path, instanceName string) testagents.Bin {
 	binBaseDir := f.absPath(filepath.Join("actors", instanceName))
-	return NewBin(t, path, instanceName, binBaseDir, f.BaseDir, f.Finished)
+	return testagents.NewBin(t, procMan, path, instanceName, binBaseDir, f.BaseDir, f.Finished.Finished)
 }
 
 func newConfiguredFixture(t *testing.T, s scenario, mod ...func(*fixtureConfig)) *fixture {

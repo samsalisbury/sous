@@ -12,12 +12,13 @@ import (
 	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/filemap"
 	"github.com/opentable/sous/util/logging"
+	"github.com/opentable/sous/util/testagents"
 	"github.com/opentable/sous/util/yaml"
 	"github.com/pkg/errors"
 )
 
 type sousServer struct {
-	*Service
+	*testagents.Service
 	Addr                string
 	StateDir, ConfigDir string
 	ClusterName         string
@@ -40,7 +41,7 @@ func makeInstance(t *testing.T, f fixtureConfig, binPath string, i int, clusterN
 	bin.Env["SOUS_BUILD_NOPULL"] = "YES"
 	addGitEnvVars(bin.Env)
 
-	service := NewService(bin)
+	service := testagents.NewService(bin)
 
 	stateDir := path.Join(bin.BaseDir, "state")
 
@@ -105,5 +106,3 @@ func (i *sousServer) Start(t *testing.T) {
 	i.Service.Start(t, "server", nil, "-listen", i.Addr, "-cluster", i.ClusterName, "-autoresolver=false", fmt.Sprintf("-d=%t", serverDebug))
 
 }
-
-const pidFile = "test-server-pids"

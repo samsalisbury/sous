@@ -1,13 +1,15 @@
-package smoke
+package testagents
 
 import (
 	"bytes"
 	"context"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -15,7 +17,10 @@ import (
 	"time"
 
 	"github.com/opentable/sous/util/filemap"
+	"github.com/opentable/sous/util/prefixpipe"
 )
+
+var perCommandTimeout = 5 * time.Minute
 
 // Bin represents a binary under test.
 type Bin struct {
@@ -41,16 +46,27 @@ type Bin struct {
 	// MassageArgs is called on the total set of args passed to the command,
 	// prior to execution; the args it returns are what is finally used.
 	MassageArgs func([]string) []string
-	Finished    *finishedChans
+	Finished    chan struct{}
 
 	// ShouldStillBeRunningAfterTest should is set to true for servers etc, it
 	// enables crash detection.
 	ShouldStillBeRunningAfterTest bool
+
+	// Verbose if set to true, print all stdout and stderr output inline.
+	// Note this output is printed to log files regardless.
+	Verbose bool
+
+	// LogFunc is called with realtime logs of command invocations and output
+	// etc. Defaults to log.Printf from stdlib.
+	LogFunc func(string, ...interface{})
+
+	// ProcMan keeps track of PIDs created so you can clean them up later.
+	ProcMan ProcMan
 }
 
 // NewBin returns a new minimal Bin, all files will be created in subdirectories
 // of baseDir.
-func NewBin(t *testing.T, path, name, baseDir, rootDir string, finished *finishedChans) Bin {
+func NewBin(t *testing.T, pm ProcMan, path, name, baseDir, rootDir string, finished chan struct{}) Bin {
 	illegalChars := ":/>"
 	if strings.ContainsAny(name, illegalChars) {
 		log.Panicf("name %q contains at least one illegal character from %q", name, illegalChars)
@@ -67,6 +83,8 @@ func NewBin(t *testing.T, path, name, baseDir, rootDir string, finished *finishe
 		RootDir:      rootDir,
 		Env:          map[string]string{},
 		Finished:     finished,
+
+		ProcMan: pm,
 	}
 }
 
@@ -142,6 +160,13 @@ func (c *Bin) cmd(finalArgs []string) (*exec.Cmd, context.CancelFunc) {
 	return cmd, cancel
 }
 
+func mkCMD(dir, name string, args ...string) (*exec.Cmd, context.CancelFunc) {
+	ctx, cancel := context.WithTimeout(context.Background(), perCommandTimeout)
+	c := exec.CommandContext(ctx, name, args...)
+	c.Dir = dir
+	return c, cancel
+}
+
 // Cmd generates an *exec.Cmd and cancellation func from an invocation.
 func (c *Bin) Cmd(t *testing.T, i invocation) (*exec.Cmd, context.CancelFunc) {
 	t.Helper()
@@ -181,19 +206,22 @@ func newExecutedCMD(i invocation) *ExecutedCMD {
 	}
 }
 
-// PreparedCmd is a command ready to run.
-type PreparedCmd struct {
-	invocation
-	Cmd      *exec.Cmd
-	Cancel   func()
-	PreRun   func() error
-	PostRun  func() error
-	executed *ExecutedCMD
-}
-
 // Run runs the command.
 func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*ExecutedCMD, error) {
-	cmd, err := c.Command(subcmd, f, args...)
+	cmd, err := c.Command(nil, subcmd, f, args...)
+	if err != nil {
+		return nil, fmt.Errorf("setting up command failed: %s", err)
+	}
+	err = cmd.runWithTimeout(3 * time.Minute)
+	if err != nil {
+		log.Printf("Command failed: %s: %s", cmd.invocation, err)
+	}
+	return cmd.executed, err
+}
+
+// RunWithStdin runs the command, attaching stdin.
+func (c *Bin) RunWithStdin(t *testing.T, stdin io.ReadCloser, subcmd string, f Flags, args ...string) (*ExecutedCMD, error) {
+	cmd, err := c.Command(stdin, subcmd, f, args...)
 	if err != nil {
 		return nil, fmt.Errorf("setting up command failed: %s", err)
 	}
@@ -205,18 +233,9 @@ func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*Execut
 }
 
 // Command returns the prepared command.
-func (c *Bin) Command(subcmd string, f Flags, args ...string) (*PreparedCmd, error) {
+func (c *Bin) Command(stdin io.ReadCloser, subcmd string, f Flags, args ...string) (*PreparedCmd, error) {
 	i := c.newInvocation(subcmd, f, args...)
-	return c.configureCommand(i)
-}
-
-// invocation is the invocation directly from the test, without any formatting
-// or manipulation.
-type invocation struct {
-	name, subcmd string
-	flags        Flags
-	args         []string
-	finalArgs    []string
+	return c.configureCommand(i, stdin)
 }
 
 func (c *Bin) newInvocation(subcmd string, f Flags, args ...string) invocation {
@@ -228,16 +247,20 @@ func (c *Bin) newInvocation(subcmd string, f Flags, args ...string) invocation {
 	return i
 }
 
-// String returns this invocation roughly as a copy-pastable shell command.
-// Note: if args contain quotes some manual editing may be required.
-func (i invocation) String() string {
-	return fmt.Sprintf("%s %s", i.name, quotedArgsString(i.finalArgs))
+func (c *Bin) printStdout() bool {
+	return c.Verbose
 }
 
-func (c *Bin) configureCommand(i invocation) (*PreparedCmd, error) {
+func (c *Bin) printStderr() bool {
+	return c.Verbose
+}
+
+func (c *Bin) configureCommand(i invocation, stdin io.ReadCloser) (*PreparedCmd, error) {
 	executed := newExecutedCMD(i)
 
 	cmd, cancel := c.cmd(i.finalArgs)
+
+	cmd.Stdin = stdin
 
 	outFile, errFile, combinedFile :=
 		mustOpenFileAppendOnly(c.LogDir, "stdout"),
@@ -249,16 +272,18 @@ func (c *Bin) configureCommand(i invocation) (*PreparedCmd, error) {
 	stdoutWriters := []io.Writer{outFile, combinedFile, executed.Stdout, executed.Combined}
 	stderrWriters := []io.Writer{errFile, combinedFile, executed.Stderr, executed.Combined}
 
-	if !quiet() {
-		stdout, err := prefixedPipe("%s:%s:stdout> ", c.TestName, c.InstanceName)
-		if err != nil {
-			return nil, err
-		}
-		stderr, err := prefixedPipe("%s:%s:stderr> ", c.TestName, c.InstanceName)
+	if c.printStdout() {
+		stdout, err := prefixpipe.New("%s:%s:stdout> ", c.TestName, c.InstanceName)
 		if err != nil {
 			return nil, err
 		}
 		stdoutWriters = append(stdoutWriters, stdout)
+	}
+	if c.printStderr() {
+		stderr, err := prefixpipe.New("%s:%s:stderr> ", c.TestName, c.InstanceName)
+		if err != nil {
+			return nil, err
+		}
 		stderrWriters = append(stderrWriters, stderr)
 	}
 
@@ -271,10 +296,12 @@ func (c *Bin) configureCommand(i invocation) (*PreparedCmd, error) {
 			relPath += mustGetRelPath(c.RootDir, cmd.Dir)
 		}
 		cmdStr := fmt.Sprintf("%s$> %s", relPath, i)
-		rtLog("%s:%s", c.ID(), cmdStr)
+		c.LogFunc("%s:%s", c.ID(), cmdStr)
 		fmt.Fprintf(allFiles, cmdStr+"\n")
 		return nil
 	}
+
+	var pc *PreparedCmd
 
 	postRun := func() error {
 		defer func() {
@@ -286,13 +313,17 @@ func (c *Bin) configureCommand(i invocation) (*PreparedCmd, error) {
 		if !c.ShouldStillBeRunningAfterTest || !cmd.ProcessState.Exited() {
 			return nil
 		}
-		exitCode := tryGetExitCode("cmd.ProcessState.Sys()", cmd.ProcessState.Sys())
-		rtLog("%s:error:early-exit> exit code %d; combined log tail follows", c.ID(), exitCode)
-		prefixedOut, err := prefixedPipe("%s:combined> ", c.ID())
+		exitCode, err := pc.tryGetExitCode()
+		if err != nil {
+			c.LogFunc("%s:error:early-exit> unable to determine exit code: %s", c.ID(), err)
+		} else {
+			c.LogFunc("%s:error:early-exit> exit code %d; combined log tail follows", c.ID(), exitCode)
+		}
+		prefixedOut, err := prefixpipe.New("%s:combined> ", c.ID())
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(prefixedOut, executed.Combined.String())
+		fmt.Fprint(prefixedOut, executed.Combined.String())
 		return fmt.Errorf("process exited early: %s: exit code %d", c.ID(), exitCode)
 	}
 
@@ -304,21 +335,6 @@ func (c *Bin) configureCommand(i invocation) (*PreparedCmd, error) {
 		executed:   executed,
 		invocation: i,
 	}, nil
-}
-
-func (c *PreparedCmd) runWithTimeout(timeout time.Duration) error {
-	defer c.PostRun()
-	c.PreRun()
-	errCh := make(chan error, 1)
-	go func() {
-		select {
-		case errCh <- c.Cmd.Run():
-		case <-time.After(timeout):
-			errCh <- fmt.Errorf("command timed out after %s: %s", timeout, c)
-			c.Cancel()
-		}
-	}()
-	return <-errCh
 }
 
 func mustGetRelPath(base, target string) string {
@@ -354,4 +370,92 @@ func (c *Bin) MustFail(t *testing.T, subcmd string, f Flags, args ...string) str
 		t.Fatalf("Want non-zero exit code (exec.ExecError); was a %T: %s", err, err)
 	}
 	return executed.Stderr.String()
+}
+
+func fileExists(filePath string) bool {
+	s, err := os.Stat(filePath)
+	if err == nil {
+		return s.Mode().IsRegular()
+	}
+	if isNotExist(err) {
+		return false
+	}
+	panic(fmt.Errorf("checking if file exists: %s", err))
+}
+
+func isNotExist(err error) bool {
+	if err == nil {
+		panic("cannot check nil error")
+	}
+	return err == os.ErrNotExist ||
+		strings.Contains(err.Error(), "no such file or directory")
+}
+
+func mustOpenFileAppendOnly(baseDir, fileName string) *os.File {
+	filePath := path.Join(baseDir, fileName)
+	assertDirNotExists(filePath)
+	if !fileExists(filePath) {
+		makeFile(baseDir, fileName, nil)
+	}
+	file, err := os.OpenFile(filePath,
+		os.O_APPEND|os.O_WRONLY|os.O_SYNC, 0x777)
+	if err != nil {
+		panic(fmt.Errorf("opening file for append: %s", err))
+	}
+	return file
+}
+
+func closeFiles(fs ...*os.File) error {
+	var failures []string
+	for _, f := range fs {
+		if err := f.Close(); err != nil {
+			failures = append(failures, fmt.Sprintf("%s: %s", f.Name(), err))
+		}
+	}
+	if len(failures) == 0 {
+		return nil
+	}
+	return fmt.Errorf("failed to close files: %s", strings.Join(failures, "; "))
+}
+
+func assertDirNotExists(filePath string) {
+	if dirExists(filePath) {
+		panic(fmt.Errorf("%s exists and is a directory", filePath))
+	}
+}
+
+// makeFile attempts to write bytes to baseDir/fileName and returns the full
+// path to the file. It assumes the directory baseDir already exists and
+// contains no file named fileName, and will fail otherwise.
+func makeFile(baseDir, fileName string, bytes []byte) string {
+	filePath := path.Join(baseDir, fileName)
+	if _, err := os.Open(filePath); err != nil {
+		if !isNotExist(err) {
+			panic(fmt.Errorf("unable to check if file %q exists: %s", filePath, err))
+		}
+	} else {
+		panic(fmt.Errorf("file %q already exists", filePath))
+	}
+
+	if err := ioutil.WriteFile(filePath, bytes, 0777); err != nil {
+		panic(fmt.Errorf("unable to write file %q: %s", filePath, err))
+	}
+	return filePath
+}
+
+// makeFileString is a convenience wrapper around makeFile, using string s
+// as the bytes to be written.
+func makeFileString(baseDir, fileName string, s string) string {
+	return makeFile(baseDir, fileName, []byte(s))
+}
+
+func dirExists(filePath string) bool {
+	s, err := os.Stat(filePath)
+	if err == nil {
+		return s.IsDir()
+	}
+	if isNotExist(err) {
+		return false
+	}
+	panic(fmt.Errorf("checking if dir exists: %s", err))
 }
