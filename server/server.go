@@ -44,6 +44,7 @@ func (ctx ComponentLocator) liveState() *sous.State {
 		return sous.NewState()
 	}
 	if err != nil {
+		messages.ReportLogFieldsMessage("error reading state: %s", logging.WarningLevel, ctx.LogSink, err)
 		return nil
 	}
 	return state
