@@ -259,7 +259,7 @@ func (c *Bin) prefixWriter(label string) *prefixpipe.PrefixPipe {
 	prefix := fmt.Sprintf("%s:%s> ", c.ID(), label)
 	w, err := prefixpipe.New(os.Stdout, prefix)
 	if err != nil {
-		log.Panicf("unable to create prefix writer %q: %s", err)
+		log.Panicf("unable to create prefix writer %q: %s", prefix, err)
 	}
 	return w
 }
