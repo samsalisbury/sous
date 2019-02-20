@@ -17,6 +17,7 @@ var/
 .cleanprotect
 *.test
 .smoketest/
+.procman-pids
 
 
 ## Github/Gitignore: JetBrains
