@@ -83,8 +83,8 @@ func NewBin(t *testing.T, pm ProcMan, path, name, baseDir, rootDir string, finis
 		RootDir:      rootDir,
 		Env:          map[string]string{},
 		Finished:     finished,
-
-		ProcMan: pm,
+		LogFunc:      log.Printf,
+		ProcMan:      pm,
 	}
 }
 

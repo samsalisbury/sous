@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
@@ -26,7 +25,7 @@ type Service struct {
 	Stopped         chan struct{}
 	waitOnce        sync.Once
 	waitChanMu      sync.Mutex
-	waitResult      waitResult
+	waitResult      error
 	doneWaiting     chan struct{}
 }
 
@@ -64,32 +63,33 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 	go s.wait(t, 10, false)
 }
 
+// wait waits for either test to finish, service to exit, or service to be
+// stopped on purpose by the test. It's a race, we hope that the test finishes
+// or the service was stopped on purpose. If not, we dump logs, exit code and
+// some other info to help determine the cause of the early exit.
 func (s *Service) wait(t *testing.T, count int, looping bool) bool {
 	defer close(s.ReadyForCleanup)
 	s.debug("waiting for test to finish or process to exit early")
 	select {
 	// In this case the process ended before the test finished.
-	case wr := <-s.waitChan():
-		s.debug("got wait result %s", wr)
-		exitCode, err := wr.exitCode()
-		if err != nil {
-			s.LogFunc("[ERROR:%s]: unable to determine exit code: %s", s.ID(), err)
+	case waitErr := <-s.waitChan():
+		safeClose(s.Stopped) // Avoid trying to clean up later.
+		s.debug("got wait error: %v", waitErr)
+		exitCode, exitCodeErr := exitCode(waitErr)
+		if exitCodeErr != nil {
+			s.LogFunc("[ERROR:%s]: unable to determine exit code: %s", s.ID(), exitCodeErr)
 		} else {
-			s.debug("exited with code %d; error: %v; logs follow:", exitCode, err)
+			s.debug("exited with code %d; error: %v; logs follow:", exitCode, exitCodeErr)
 		}
 		s.DumpTail(t, 3)
-		s.debug("end logs")
-		safeClose(s.Stopped)
 		return true
 	case <-s.Finished:
 		s.debug("OK - process still running when test finished")
 		return false
+	case <-s.Stopped:
+		s.debug("OK - already killed by test")
+		return false
 	}
-}
-
-type waitResult struct {
-	err error
-	ps  *os.ProcessState
 }
 
 func fmtWaitStatus(ws syscall.WaitStatus) string {
@@ -106,21 +106,19 @@ func fmtWaitStatus(ws syscall.WaitStatus) string {
 	)
 }
 
-func (wr *waitResult) String() string {
-	return fmt.Sprintf("error: %v; WaitStatus: %s", wr.err, fmtWaitStatus(wr.ps.Sys().(syscall.WaitStatus)))
-}
-
-func (wr *waitResult) exitCode() (int, error) {
-	if wr.err == nil {
+func exitCode(waitErr error) (int, error) {
+	if waitErr == nil {
 		return 0, nil
 	}
-	ee, ok := wr.err.(*exec.ExitError)
+	ee, ok := waitErr.(*exec.ExitError)
 	if !ok {
-		return -2, fmt.Errorf("wait failed, returned a %T: %s", wr.err, wr.err)
+		return -2, fmt.Errorf("wait failed, returned a %T: %s", waitErr, waitErr)
 	}
-	ws, ok := ee.Sys().(syscall.WaitStatus)
+	ws, ok := ee.Sys().(interface {
+		ExitStatus() int
+	})
 	if !ok {
-		return -3, fmt.Errorf("expected *exec.ExitError.Sys() to return a syscall.WaitStatus but got a %T", ee.Sys())
+		return -3, fmt.Errorf("expected *exec.ExitError.Sys() to return a type with method ExitStatus() int, but got a %T; maybe there is a breaking change in stdlib? Please report this to the maintainer", ee.Sys())
 	}
 
 	if ws.ExitStatus() > 0 {
@@ -130,38 +128,33 @@ func (wr *waitResult) exitCode() (int, error) {
 	return ws.ExitStatus(), fmt.Errorf("invalid failure exit status %d", ws.ExitStatus())
 }
 
-func (wr *waitResult) isCrash() bool {
-	err, ps := wr.err, wr.ps
-	if err != nil {
-		return true
-	}
-	return err != nil || (ps.Exited() && !ps.Success())
-}
-
 // waitChan returns a channel that sends one copy of the result of waiting on
 // this process, and then is closed. It is safe to call waitChan concurrently
 // and only one wait will actually be done on the process.
-func (s *Service) waitChan() <-chan waitResult {
+func (s *Service) waitChan() <-chan error {
 	s.waitChanMu.Lock()
 	defer s.waitChanMu.Unlock()
 	s.waitOnce.Do(func() {
 		go func() {
-			var wr waitResult
-			wr.err = s.Cmd.Wait()
-			exitCode, err := wr.exitCode()
-			if err != nil {
-				s.LogFunc("[ERROR:%s] Ignoring wait error: %s", s.ID(), wr.err)
+			waitErr := s.Cmd.Wait()
+			exitCode, exitCodeErr := exitCode(waitErr)
+			if exitCodeErr != nil {
+				s.LogFunc("[ERROR:%s] Ignoring wait error: %s; unable to determine exit code: %s",
+					s.ID(), waitErr, exitCodeErr)
 			} else if !s.Cmd.ProcessState.Exited() {
-				log.Panicf("[PANIC:%s] process not exited after wait, but reports exit code %d", s.ID(), exitCode)
+				log.Panicf("[PANIC:%s] process not exited after wait, but reports exit code %d",
+					s.ID(), exitCode)
 			}
-			s.waitResult = wr
+			s.waitResult = waitErr
 			close(s.doneWaiting)
 		}()
 	})
-	<-s.doneWaiting
-	c := make(chan waitResult, 1)
-	defer close(c)
-	c <- s.waitResult
+	c := make(chan error, 1)
+	go func() {
+		defer close(c)
+		<-s.doneWaiting
+		c <- s.waitResult
+	}()
 	return c
 }
 
@@ -197,24 +190,12 @@ func (s *Service) Stop() error {
 		s.debug("not stopping as already stopped")
 		return nil
 	}
-	defer safeClose(s.Stopped)
+	safeClose(s.Stopped)
 	if s.Cmd == nil || s.Cmd.Process == nil {
 		s.debug("process is nil; cannot stop")
 		return fmt.Errorf("cannot stop %s (not started)", s.InstanceName)
 	}
-	s.debug("got process")
-	waitErr := make(chan error, 1)
-	go func() {
-		defer close(waitErr)
-		var err error
-		s.debug("waiting for exit")
-		wr := <-s.waitChan()
-		err = wr.err
-		if err != nil {
-			s.debug("ERROR: wait failed: %s", err)
-			waitErr <- fmt.Errorf("wait failed: %s", err)
-		}
-	}()
+	s.debug("process exists; waiting for exit")
 	// TODO: make timeout configurable
 	timeout := time.Second
 	s.debug("sending SIGTERM in %s", timeout)
@@ -225,12 +206,11 @@ func (s *Service) Stop() error {
 		return fmt.Errorf("sending SIGTERM: %s", err)
 	}
 	s.debug("SIGTERM sent successfully; waiting for waitErr")
-	if err := <-waitErr; err != nil {
-		s.debug("waitErr not nil: %s", err)
-		return err
+	if waitErr := <-s.waitChan(); waitErr != nil {
+		s.debug("waitErr not nil: %s", waitErr)
+		return waitErr
 	}
 	s.debug("exited successfully")
-
 	return nil
 }
 
@@ -247,10 +227,14 @@ func (s *Service) DumpTail(t *testing.T, n int) {
 		n = len(lines)
 	}
 	out := strings.Join(lines[len(lines)-n:], "\n") + "\n"
+
 	prefix := fmt.Sprintf("%s:%s:combined> ", t.Name(), s.InstanceName)
 	outPipe, err := prefixpipe.New(prefix)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Fprint(outPipe, out)
+
+	blockStart := fmt.Sprintf("BEGIN LOG DUMP (%d LINES)\n", n)
+	blockEnd := "END LOG DUMP\n"
+	fmt.Fprint(outPipe, blockStart+out+blockEnd)
 }
