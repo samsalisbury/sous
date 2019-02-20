@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 )
 
 // PrefixPipe is an io.Writer with some extra settings.
@@ -13,8 +12,11 @@ type PrefixPipe struct {
 	Opts
 	// Dest is the destination writer.
 	Dest io.Writer
-	// Writer is the receiving Writer which is prefixed and written to Dest.
-	io.Writer
+	// WriterCloser is the receiving Writer which is prefixed and written to
+	// Dest. Remember to call Close() when you're done, or you will leak a
+	// goroutine.
+	io.WriteCloser
+	errs chan error
 }
 
 // Opts configures your PrefixPipe.
@@ -41,17 +43,16 @@ func New(dest io.Writer, prefix string, config ...func(*Opts)) (*PrefixPipe, err
 	for _, cfg := range config {
 		cfg(&opts)
 	}
-	r, w, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
+	r, w := io.Pipe()
 	pp := &PrefixPipe{
-		Opts:   opts,
-		Dest:   dest,
-		Writer: w,
+		Opts:        opts,
+		Dest:        dest,
+		WriteCloser: w,
+		errs:        make(chan error),
 	}
 	go func() {
 		defer func() {
+			defer close(pp.errs)
 			if err := r.Close(); err != nil {
 				pp.LogFunc("Failed to close reader: %s", err)
 			}
@@ -63,9 +64,26 @@ func New(dest io.Writer, prefix string, config ...func(*Opts)) (*PrefixPipe, err
 		for scanner.Scan() {
 			if err := scanner.Err(); err != nil {
 				pp.LogFunc("Error prefixing: %s", err)
+				break
 			}
 			fmt.Fprintf(pp.Dest, "%s%s\n", prefix, scanner.Text())
 		}
 	}()
+
 	return pp, nil
+}
+
+// Wait waits for the pipe to be closed and to flush all its contents.
+func (pp *PrefixPipe) Wait() error {
+	var errs []error
+	for err := range pp.errs {
+		errs = append(errs, err)
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	if len(errs) == 1 {
+		return errs[0]
+	}
+	return fmt.Errorf("multiple errors encountered: % #v", errs)
 }
