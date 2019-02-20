@@ -18,23 +18,21 @@ import (
 // process. It includes things like crash detection.
 type Service struct {
 	Bin
-	Cmd             *exec.Cmd
-	ReadyForCleanup chan struct{}
-	Stopped         chan struct{}
-	waitOnce        sync.Once
-	waitChanMu      sync.Mutex
-	waitResult      error
-	doneWaiting     chan struct{}
+	Cmd         *exec.Cmd
+	Stopped     chan struct{}
+	waitOnce    sync.Once
+	waitChanMu  sync.Mutex
+	waitResult  error
+	doneWaiting chan struct{}
 }
 
 // NewService returns a new service bound to the provided binary.
 func NewService(bin Bin) *Service {
 	bin.ShouldStillBeRunningAfterTest = true
 	return &Service{
-		Bin:             bin,
-		ReadyForCleanup: make(chan struct{}),
-		Stopped:         make(chan struct{}),
-		doneWaiting:     make(chan struct{}),
+		Bin:         bin,
+		Stopped:     make(chan struct{}),
+		doneWaiting: make(chan struct{}),
 	}
 }
 
@@ -65,8 +63,7 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 // It's a race, we hope that the test finishes first.
 // If not, we dump logs, exit code and  some other info to help determine the
 // cause of the early exit.
-func (s *Service) wait(t *testing.T) bool {
-	defer close(s.ReadyForCleanup)
+func (s *Service) wait(t *testing.T) {
 	s.debug("[detect early exit] waiting for test to finish or process to exit early")
 	select {
 	// In this case the process ended before the test finished.
@@ -75,15 +72,13 @@ func (s *Service) wait(t *testing.T) bool {
 		s.debug("[detect early exit] got wait error: %v", waitErr)
 		exitCode, exitCodeErr := exitCode(waitErr)
 		if exitCodeErr != nil {
-			s.LogFunc("[ERROR:%s]: [detect early exit] unable to determine exit code: %s", s.ID(), exitCodeErr)
+			s.prefixPrintf("ERROR", "exited prematurely; unable to determine exit code: %s", exitCodeErr)
 		} else {
-			s.debug("[detect early exit] exited with code %d; error: %v; logs follow:", exitCode, exitCodeErr)
+			s.prefixPrintf("ERROR", "exited prematurely; exit code %d", exitCode)
 		}
 		s.DumpTail(3)
-		return true
 	case <-s.Stopped:
 		s.debug("[detect early exit] ok - did not exit prematurely")
-		return false
 	}
 }
 
