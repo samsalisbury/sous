@@ -47,6 +47,7 @@ func New(dest io.Writer, prefix string, config ...func(*Opts)) (*PrefixPipe, err
 	}
 	pp := &PrefixPipe{
 		Opts:   opts,
+		Dest:   dest,
 		Writer: w,
 	}
 	go func() {
