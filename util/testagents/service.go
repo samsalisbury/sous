@@ -179,7 +179,7 @@ func (s *Service) debug(f string, a ...interface{}) {
 	s.LogFunc("[DEBUG:"+s.ID()+";pid:"+pid+"] "+f, a...)
 }
 
-// Stop stops this service.
+// Stop stops this service and waits for it to exit.
 func (s *Service) Stop() error {
 	if closed(s.Stopped) {
 		s.debug("not stopping as already stopped")

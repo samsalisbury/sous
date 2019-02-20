@@ -62,6 +62,8 @@ type Bin struct {
 
 	// ProcMan keeps track of PIDs created so you can clean them up later.
 	ProcMan ProcMan
+
+	longLivedPipes []*prefixpipe.PrefixPipe
 }
 
 // NewBin returns a new minimal Bin, all files will be created in subdirectories
@@ -216,7 +218,24 @@ func (c *Bin) Run(t *testing.T, subcmd string, f Flags, args ...string) (*Execut
 	if err != nil {
 		log.Printf("Command failed: %s: %s", cmd.invocation, err)
 	}
+	c.waitPipes()
 	return cmd.executed, err
+}
+
+func (c *Bin) waitPipes() error {
+	var errs []error
+	for _, p := range c.longLivedPipes {
+		if err := p.Wait(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if len(errs) == 0 {
+		return nil
+	}
+	if len(errs) == 1 {
+		return errs[0]
+	}
+	return fmt.Errorf("multiple errors: % #v", errs)
 }
 
 // RunWithStdin runs the command, attaching stdin.
@@ -255,18 +274,24 @@ func (c *Bin) printStderr() bool {
 	return c.Verbose
 }
 
+func (c *Bin) prefix(label string) string {
+	return fmt.Sprintf("%s:%s> ", c.ID(), label)
+}
+
 func (c *Bin) prefixWriter(label string) *prefixpipe.PrefixPipe {
-	prefix := fmt.Sprintf("%s:%s> ", c.ID(), label)
-	w, err := prefixpipe.New(os.Stdout, prefix)
-	if err != nil {
-		log.Panicf("unable to create prefix writer %q: %s", prefix, err)
-	}
+	w := prefixpipe.New(os.Stdout, c.prefix(label))
+	c.longLivedPipes = append(c.longLivedPipes, w)
 	return w
 }
 
 func (c *Bin) prefixPrintf(label, format string, a ...interface{}) {
-	pw := c.prefixWriter(label)
-	_, err := fmt.Fprintf(pw, format, a...)
+	w := prefixpipe.New(os.Stdout, c.prefix(label))
+	defer func() {
+		if err := w.Close(); err != nil {
+			log.Panicf("unable to close prefix pipe: %s", err)
+		}
+	}()
+	_, err := fmt.Fprintf(w, format, a...)
 	if err != nil {
 		log.Panicf("unable to write prefixed log string")
 	}

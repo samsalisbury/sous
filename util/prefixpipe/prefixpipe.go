@@ -7,7 +7,7 @@ import (
 	"log"
 )
 
-// PrefixPipe is an io.Writer with some extra settings.
+// PrefixPipe prefixes all lines written to it, and writes them to Dest.
 type PrefixPipe struct {
 	Opts
 	// Dest is the destination writer.
@@ -38,7 +38,11 @@ func DefaultOpts() Opts {
 // Optionally pass one or more config funcs to tweak the options for this
 // PrefixPipe, options start as DefaultOpts() and each config func is run
 // in the order specified from left to right.
-func New(dest io.Writer, prefix string, config ...func(*Opts)) (*PrefixPipe, error) {
+//
+// To ensure you don't leak goroutines, you must call Close() on the returned
+// *PrefixPipe. To ensure every line gets written to Dest, you must call Wait()
+// after Close().
+func New(dest io.Writer, prefix string, config ...func(*Opts)) *PrefixPipe {
 	opts := DefaultOpts()
 	for _, cfg := range config {
 		cfg(&opts)
@@ -70,7 +74,7 @@ func New(dest io.Writer, prefix string, config ...func(*Opts)) (*PrefixPipe, err
 		}
 	}()
 
-	return pp, nil
+	return pp
 }
 
 // Wait waits for the pipe to be closed and to flush all its contents.
