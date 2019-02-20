@@ -46,7 +46,6 @@ type Bin struct {
 	// MassageArgs is called on the total set of args passed to the command,
 	// prior to execution; the args it returns are what is finally used.
 	MassageArgs func([]string) []string
-	Finished    chan struct{}
 
 	// ShouldStillBeRunningAfterTest should is set to true for servers etc, it
 	// enables crash detection.
@@ -84,7 +83,6 @@ func NewBin(t *testing.T, pm ProcMan, path, name, baseDir, rootDir string, finis
 		InstanceName: name,
 		RootDir:      rootDir,
 		Env:          map[string]string{},
-		Finished:     finished,
 		LogFunc:      log.Printf,
 		ProcMan:      pm,
 	}
