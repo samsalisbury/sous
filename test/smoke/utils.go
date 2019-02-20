@@ -17,7 +17,6 @@ import (
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
-	"github.com/opentable/sous/util/prefixpipe"
 )
 
 // timeGoTestInvoked is used to group test data for tests run
@@ -248,21 +247,4 @@ func oneFreePort(ip string, start, min, max int) (int, string, net.Listener, err
 		return port, addr, listener, nil
 	}
 	return 0, "", nil, fmt.Errorf("unable to find a free port in range %d-%d", min, max)
-}
-
-func prefixWithTestName(t *testing.T, label string) (prefixedOut, prefixedErr io.Writer) {
-	t.Helper()
-
-	outPrefix := fmt.Sprintf("%s:%s:stdout> ", t.Name(), label)
-	errPrefix := fmt.Sprintf("%s:%s:stderr> ", t.Name(), label)
-
-	stdout, err := prefixpipe.New(outPrefix)
-	if err != nil {
-		t.Fatalf("Setting up output prefix: %s", err)
-	}
-	stderr, err := prefixpipe.New(errPrefix)
-	if err != nil {
-		t.Fatalf("Setting up output prefix: %s", err)
-	}
-	return stdout, stderr
 }

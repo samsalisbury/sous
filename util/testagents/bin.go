@@ -255,6 +255,23 @@ func (c *Bin) printStderr() bool {
 	return c.Verbose
 }
 
+func (c *Bin) prefixWriter(label string) *prefixpipe.PrefixPipe {
+	prefix := fmt.Sprintf("%s:%s> ", c.ID(), label)
+	w, err := prefixpipe.New(os.Stdout, prefix)
+	if err != nil {
+		log.Panicf("unable to create prefix writer %q: %s", err)
+	}
+	return w
+}
+
+func (c *Bin) prefixPrintf(label, format string, a ...interface{}) {
+	pw := c.prefixWriter(label)
+	_, err := fmt.Fprintf(pw, format, a...)
+	if err != nil {
+		log.Panicf("unable to write prefixed log string")
+	}
+}
+
 func (c *Bin) configureCommand(i invocation, stdin io.ReadCloser) (*PreparedCmd, error) {
 	executed := newExecutedCMD(i)
 
@@ -273,18 +290,10 @@ func (c *Bin) configureCommand(i invocation, stdin io.ReadCloser) (*PreparedCmd,
 	stderrWriters := []io.Writer{errFile, combinedFile, executed.Stderr, executed.Combined}
 
 	if c.printStdout() {
-		stdout, err := prefixpipe.New("%s:%s:stdout> ", c.TestName, c.InstanceName)
-		if err != nil {
-			return nil, err
-		}
-		stdoutWriters = append(stdoutWriters, stdout)
+		stdoutWriters = append(stdoutWriters, c.prefixWriter("stdout"))
 	}
 	if c.printStderr() {
-		stderr, err := prefixpipe.New("%s:%s:stderr> ", c.TestName, c.InstanceName)
-		if err != nil {
-			return nil, err
-		}
-		stderrWriters = append(stderrWriters, stderr)
+		stderrWriters = append(stderrWriters, c.prefixWriter("stderr"))
 	}
 
 	cmd.Stdout = io.MultiWriter(stdoutWriters...)
@@ -314,16 +323,14 @@ func (c *Bin) configureCommand(i invocation, stdin io.ReadCloser) (*PreparedCmd,
 			return nil
 		}
 		exitCode, err := pc.tryGetExitCode()
+		// TODO SS: print just tail of logs, with configurable nu lines.
+		suffix := "; combined log output follows"
 		if err != nil {
-			c.LogFunc("%s:error:early-exit> unable to determine exit code: %s", c.ID(), err)
+			c.prefixPrintf("error:early-exit", "unable to determine exit code: %s"+suffix, err)
 		} else {
-			c.LogFunc("%s:error:early-exit> exit code %d; combined log tail follows", c.ID(), exitCode)
+			c.prefixPrintf("error:early-exit", "exit code: %s"+suffix, exitCode)
 		}
-		prefixedOut, err := prefixpipe.New("%s:combined> ", c.ID())
-		if err != nil {
-			return err
-		}
-		fmt.Fprint(prefixedOut, executed.Combined.String())
+		c.prefixPrintf("logs/combined", executed.Combined.String())
 		return fmt.Errorf("process exited early: %s: exit code %d", c.ID(), exitCode)
 	}
 

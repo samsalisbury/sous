@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"testing"
 	"time"
-
-	"github.com/opentable/sous/util/prefixpipe"
 )
 
 // Service represents a binary that is intended to be run as a long-running
@@ -60,34 +58,31 @@ func (s *Service) Start(t *testing.T, subcmd string, flags Flags, args ...string
 	}
 	s.ProcMan.WritePID(t, s.Cmd.Process.Pid)
 
-	go s.wait(t, 10, false)
+	go s.wait(t)
 }
 
-// wait waits for either test to finish, service to exit, or service to be
-// stopped on purpose by the test. It's a race, we hope that the test finishes
-// or the service was stopped on purpose. If not, we dump logs, exit code and
-// some other info to help determine the cause of the early exit.
-func (s *Service) wait(t *testing.T, count int, looping bool) bool {
+// wait waits for either test to finish or the service to exit.
+// It's a race, we hope that the test finishes first.
+// If not, we dump logs, exit code and  some other info to help determine the
+// cause of the early exit.
+func (s *Service) wait(t *testing.T) bool {
 	defer close(s.ReadyForCleanup)
-	s.debug("waiting for test to finish or process to exit early")
+	s.debug("[detect early exit] waiting for test to finish or process to exit early")
 	select {
 	// In this case the process ended before the test finished.
 	case waitErr := <-s.waitChan():
 		safeClose(s.Stopped) // Avoid trying to clean up later.
-		s.debug("got wait error: %v", waitErr)
+		s.debug("[detect early exit] got wait error: %v", waitErr)
 		exitCode, exitCodeErr := exitCode(waitErr)
 		if exitCodeErr != nil {
-			s.LogFunc("[ERROR:%s]: unable to determine exit code: %s", s.ID(), exitCodeErr)
+			s.LogFunc("[ERROR:%s]: [detect early exit] unable to determine exit code: %s", s.ID(), exitCodeErr)
 		} else {
-			s.debug("exited with code %d; error: %v; logs follow:", exitCode, exitCodeErr)
+			s.debug("[detect early exit] exited with code %d; error: %v; logs follow:", exitCode, exitCodeErr)
 		}
-		s.DumpTail(t, 3)
+		s.DumpTail(3)
 		return true
-	case <-s.Finished:
-		s.debug("OK - process still running when test finished")
-		return false
 	case <-s.Stopped:
-		s.debug("OK - already killed by test")
+		s.debug("[detect early exit] ok - did not exit prematurely")
 		return false
 	}
 }
@@ -216,7 +211,7 @@ func (s *Service) Stop() error {
 
 // DumpTail prints out the last n lines of combined (stdout + stderr) output
 // from this service.
-func (s *Service) DumpTail(t *testing.T, n int) {
+func (s *Service) DumpTail(n int) {
 	path := filepath.Join(s.LogDir, "combined")
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -228,13 +223,7 @@ func (s *Service) DumpTail(t *testing.T, n int) {
 	}
 	out := strings.Join(lines[len(lines)-n:], "\n") + "\n"
 
-	prefix := fmt.Sprintf("%s:%s:combined> ", t.Name(), s.InstanceName)
-	outPipe, err := prefixpipe.New(prefix)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	blockStart := fmt.Sprintf("BEGIN LOG DUMP (%d LINES)\n", n)
 	blockEnd := "END LOG DUMP\n"
-	fmt.Fprint(outPipe, blockStart+out+blockEnd)
+	s.prefixPrintf("logs/combined", blockStart+out+blockEnd)
 }
