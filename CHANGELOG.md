@@ -11,6 +11,7 @@ with respect to its command line interface and HTTP interface
 ### Fixed
 
 ### Changed
+- Server: now gracefully drains connections on SIGTERM or SIGINT and writes an exit log.
 - Logging: SQL log messages now include "read" or "write" in their message text.
 - Logging: messages from deployment mapping now only show up in extreme logging level (not debug).
 - Logging: messages from GDM handler now much smaller unless extreme level logging on.
