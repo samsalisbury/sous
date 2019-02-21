@@ -237,6 +237,9 @@ stop-qa-env: ## Stops and removes all docker-compose containers.
 .PHONY: start-qa-env
 start-qa-env: setup-containers
 
+.PHONY: watch-containers
+watch-containers:
+	cd integration/test-registry && docker-compose down && docker-compose up -d && watch docker-compose ps
 
 gitlog:
 	git log `git describe --abbrev=0`..HEAD

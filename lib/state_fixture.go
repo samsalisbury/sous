@@ -19,6 +19,7 @@ type StateFixtureOpts struct {
 	ClusterSuffix string
 
 	ManifestIDOpts *ManifestIDOpts
+	ClusterFunc    func() *Cluster
 }
 
 // DefaultStateFixture provides a dummy state for tests by calling
@@ -193,9 +194,12 @@ func GenerateManifests(count int, gen func(idx int) *Manifest) Manifests {
 func StateFixture(o StateFixtureOpts) *State {
 
 	s := NewState()
+	if o.ClusterFunc == nil {
+		o.ClusterFunc = DefaultCluster
+	}
 
 	c := GenerateClusters(o.ClusterCount, func(idx int) *Cluster {
-		c := DefaultCluster()
+		c := o.ClusterFunc()
 		c.Name = fmt.Sprintf("cluster%d%s", idx+1, o.ClusterSuffix)
 		c.Env["CLUSTER_NAME"] = Var(c.Name)
 		return c
