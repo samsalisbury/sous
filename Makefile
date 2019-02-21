@@ -353,6 +353,28 @@ test-metalinter: install-linters
 test-gofmt:
 	bin/check-gofmt
 
+TEST_BINARIES := $(shell go list -f $$'{{.Dir}}/.compiled.test' ./... | sed -E "s|$$PWD/(.*)$$|./\1|")
+
+.PHONY: clean-compiled-tests
+clean-compiled-tests:
+	@for F in $(TEST_BINARIES); do if [ -f "$F" ]; then rm $F; fi; done
+
+.PHONY: compile-tests
+compile-tests:
+	@$(MAKE) -j8 --keep-going _compile-tests
+
+.PHONY: _compile-tests
+_compile-tests: $(TEST_BINARIES)
+	@echo "All tests compiled successfully."
+
+$(TEST_BINARIES):
+	@OUT=$@.testout; \
+		go test -c '$(patsubst %.compiled.test,./%,$@)' -o /dev/null > $$OUT 2>&1; \
+		EXIT_CODE=$$?; \
+		if [ "$$EXIT_CODE" != "0" ]; then cat $$OUT; fi; rm $$OUT; exit $$EXIT_CODE
+
+.PHONY: $(TEST_BINARIES)
+
 .PHONY: test-unit-base
 test-unit-base: $(COVER_DIR) $(GO_FILES)
 	go test $(EXTRA_GO_TEST_FLAGS) $(EXTRA_GO_FLAGS) $(TEST_VERBOSE) \
