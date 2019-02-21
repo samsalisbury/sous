@@ -10,10 +10,7 @@ func TestPrefixPipe_ok_noconfig(t *testing.T) {
 
 	dest := &bytes.Buffer{}
 
-	pipe, err := New(dest, "prefix1: ")
-	if err != nil {
-		t.Fatal(err)
-	}
+	pipe := New(dest, "prefix1: ")
 
 	if _, err := fmt.Fprintln(pipe, "line one"); err != nil {
 		t.Fatal(err)
