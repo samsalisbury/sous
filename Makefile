@@ -64,9 +64,14 @@ else
 GIT_TAG := $(shell $(TAG_TEST))
 endif
 
+TIMESTAMP ?= $(DATE)
+export TIMESTAMP
+
 REPO_ROOT := $(shell git rev-parse --show-toplevel)
-SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/.smoketest
-SMOKE_TEST_DATA_DIR ?= $(SMOKE_TEST_BASEDIR)/$(DATE)
+SMOKE_TEST_BASEDIR_REL ?= .smoketest
+SMOKE_TEST_BASEDIR ?= $(REPO_ROOT)/$(SMOKE_TEST_BASEDIR_REL)
+SMOKE_TEST_DATA_DIR_REL ?= $(SMOKE_TEST_BASEDIR_REL)/$(TIMESTAMP)
+SMOKE_TEST_DATA_DIR ?= $(REPO_ROOT)/$(SMOKE_TEST_DATA_DIR_REL)
 SMOKE_TEST_LATEST_LINK ?= $(SMOKE_TEST_BASEDIR)/latest
 SMOKE_TEST_BINARY ?= $(SMOKE_TEST_DATA_DIR)/sous
 SMOKE_TEST_TIMEOUT ?= 30m
@@ -129,7 +134,7 @@ COVER_DIR := /tmp/sous-cover
 TEST_VERBOSE := $(if $(VERBOSE),-v,)
 TEST_TEAMCITY := $(if $(TEAMCITY),| ./dev_support/gotest-to-teamcity)
 SOUS_PACKAGES:= $(shell go list -f '{{.ImportPath}}' ./... | grep -v 'vendor')
-INTEGRATION_TEST_PATHS ?= ./integration ./ext/storage ./ext/docker ./test
+INTEGRATION_TEST_PATHS ?= ./integration ./ext/storage ./ext/docker ./test ./graph
 
 ifneq ($(GO_TEST_PATH),)
 GO_TEST_PATHS ?= $(GO_TEST_PATH)
@@ -439,9 +444,16 @@ test-smoke-all: start-qa-env test-smoke-compiles $(SMOKE_TEST_BINARY) $(SMOKE_TE
 test-smoke-ls: ## List top-level smoke tests and matrix dimensions.
 	@go test -v -tags smoke ./test/smoke -ls -dimensions | grep -E '(^Dimension |^Matrix dimensions|^Test[A-Za-z0-9_]+/)'
 
-.PHONY: test-smoke
-test-smoke: ## Run smoke tests (showing client commands run only).
-	SMOKE_TEST_QUIET=YES EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all
+TEST_LOG_REL=$(SMOKE_TEST_DATA_DIR_REL)/test.log
+
+$(TEST_LOG_REL): $(SMOKE_TEST_DATA_DIR)
+	touch $@
+
+.PHONY: test-smoke 
+test-smoke: $(TEST_LOG_REL) ## Run smoke tests (showing client commands run only).
+	time SMOKE_TEST_QUIET=YES EXCLUDE_KNOWN_FAILING_TESTS=YES $(MAKE) test-smoke-all 2>&1 | tee $(TEST_LOG_REL); \
+	EXITCODE="$${PIPESTATUS[0]}"; echo "Test finished at $$(date); log written to $(TEST_LOG_REL)"; exit $$EXITCODE
+
 
 .PHONY: test-smoke-v
 test-smoke-v: ## Verbose smoke tests (print results of client commands).
