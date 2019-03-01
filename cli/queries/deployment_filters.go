@@ -49,7 +49,7 @@ func (f *DeploymentAttributeFilters) UnpackFlags(q *Deployment) error {
 		v, err := strconv.ParseBool(*val)
 		if err != nil {
 			return fmt.Errorf("value %q for flag %s not valid (want true or false)",
-				val, name)
+				*val, name)
 		}
 		f, err := q.getFilter(name)
 		if err != nil {
