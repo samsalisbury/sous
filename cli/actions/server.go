@@ -1,10 +1,14 @@
 package actions
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/opentable/sous/config"
 	"github.com/opentable/sous/ext/git"
@@ -47,7 +51,26 @@ func (ss *Server) Do() error {
 
 	fmt.Printf("Listening on http://%s", ss.ListenAddr)
 
-	return server.Run(ss.ListenAddr, ss.ServerHandler)
+	s, listenAndServeErrs := server.Run(ss.ListenAddr, ss.ServerHandler)
+
+	sigs := make(chan os.Signal)
+	signal.Notify(sigs, syscall.SIGTERM, os.Interrupt)
+	shutdownErr := make(chan error, 1)
+	go func() {
+		sig := <-sigs
+		fmt.Printf("Caught signal %s! Shutting down server...", sig)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		go func() {
+			defer cancel()
+			shutdownErr <- s.Shutdown(ctx)
+		}()
+	}()
+
+	err := <-listenAndServeErrs
+	if err == http.ErrServerClosed {
+		return <-shutdownErr
+	}
+	return err
 }
 
 func ensureGDMExists(repo, localPath string, filterFlags config.DeployFilterFlags, listenAddress string, log logging.LogSink) error {

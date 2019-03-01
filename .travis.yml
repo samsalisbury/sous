@@ -35,7 +35,7 @@ env:
   matrix:
     - TEST_COMMAND="bundle && bundle exec danger"
     - TEST_COMMAND="make test-integration"
-    - TEST_COMMAND="make test-unit"
+    - TEST_COMMAND="make compile-tests && make test-unit"
     - TEST_COMMAND="GO_TEST_RUN=TestOTPL/db/simple make test-smoke"
     - TEST_COMMAND="GO_TEST_RUN=TestOTPL/git/simple make test-smoke" 
     - TEST_COMMAND="GO_TEST_RUN=TestSmoke/db/simple make test-smoke"

@@ -1,12 +1,10 @@
 package smoke
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -24,6 +22,8 @@ import (
 // timeGoTestInvoked is used to group test data for tests run
 // via the same go test invocation.
 var timeGoTestInvoked = time.Now().Format(time.RFC3339)
+
+var perCommandTimeout = 5 * time.Minute
 
 func quiet() bool {
 	return os.Getenv("SMOKE_TEST_QUIET") == "YES"
@@ -100,73 +100,6 @@ func makeEmptyDirAbs(dir string) {
 	}
 }
 
-// makeFile attempts to write bytes to baseDir/fileName and returns the full
-// path to the file. It assumes the directory baseDir already exists and
-// contains no file named fileName, and will fail otherwise.
-func makeFile(baseDir, fileName string, bytes []byte) string {
-	filePath := path.Join(baseDir, fileName)
-	if _, err := os.Open(filePath); err != nil {
-		if !isNotExist(err) {
-			panic(fmt.Errorf("unable to check if file %q exists: %s", filePath, err))
-		}
-	} else {
-		panic(fmt.Errorf("file %q already exists", filePath))
-	}
-
-	if err := ioutil.WriteFile(filePath, bytes, 0777); err != nil {
-		panic(fmt.Errorf("unable to write file %q: %s", filePath, err))
-	}
-	return filePath
-}
-
-func mustOpenFileAppendOnly(baseDir, fileName string) *os.File {
-	filePath := path.Join(baseDir, fileName)
-	assertDirNotExists(filePath)
-	if !fileExists(filePath) {
-		makeFile(baseDir, fileName, nil)
-	}
-	file, err := os.OpenFile(filePath,
-		os.O_APPEND|os.O_WRONLY|os.O_SYNC, 0x777)
-	if err != nil {
-		panic(fmt.Errorf("opening file for append: %s", err))
-	}
-	return file
-}
-
-// makeFileString is a convenience wrapper around makeFile, using string s
-// as the bytes to be written.
-func makeFileString(baseDir, fileName string, s string) string {
-	return makeFile(baseDir, fileName, []byte(s))
-}
-
-func fileExists(filePath string) bool {
-	s, err := os.Stat(filePath)
-	if err == nil {
-		return s.Mode().IsRegular()
-	}
-	if isNotExist(err) {
-		return false
-	}
-	panic(fmt.Errorf("checking if file exists: %s", err))
-}
-
-func assertDirNotExists(filePath string) {
-	if dirExists(filePath) {
-		panic(fmt.Errorf("%s exists and is a directory", filePath))
-	}
-}
-
-func dirExists(filePath string) bool {
-	s, err := os.Stat(filePath)
-	if err == nil {
-		return s.IsDir()
-	}
-	if isNotExist(err) {
-		return false
-	}
-	panic(fmt.Errorf("checking if dir exists: %s", err))
-}
-
 func dirExistsAndIsNotEmpty(dir string) bool {
 	f, err := os.Open(dir)
 	if err != nil {
@@ -239,8 +172,6 @@ func doCMD(dir, name string, args ...string) error {
 	return err
 }
 
-var perCommandTimeout = 5 * time.Minute
-
 func mkCMD(dir, name string, args ...string) (*exec.Cmd, context.CancelFunc) {
 	ctx, cancel := context.WithTimeout(context.Background(), perCommandTimeout)
 	c := exec.CommandContext(ctx, name, args...)
@@ -248,28 +179,12 @@ func mkCMD(dir, name string, args ...string) (*exec.Cmd, context.CancelFunc) {
 	return c, cancel
 }
 
-// testing os.ErrNotExist seems to not work in the majority of cases,
-// at least on Darwin.
-// TODO SS: Find out why...
 func isNotExist(err error) bool {
 	if err == nil {
 		panic("cannot check nil error")
 	}
 	return err == os.ErrNotExist ||
 		strings.Contains(err.Error(), "no such file or directory")
-}
-
-func closeFiles(fs ...*os.File) error {
-	var failures []string
-	for _, f := range fs {
-		if err := f.Close(); err != nil {
-			failures = append(failures, fmt.Sprintf("%s: %s", f.Name(), err))
-		}
-	}
-	if len(failures) == 0 {
-		return nil
-	}
-	return fmt.Errorf("failed to close files: %s", strings.Join(failures, "; "))
 }
 
 var lastPort int
@@ -332,47 +247,4 @@ func oneFreePort(ip string, start, min, max int) (int, string, net.Listener, err
 		return port, addr, listener, nil
 	}
 	return 0, "", nil, fmt.Errorf("unable to find a free port in range %d-%d", min, max)
-}
-
-func prefixedPipe(prefixFormat string, a ...interface{}) (io.Writer, error) {
-	prefix := fmt.Sprintf(prefixFormat, a...)
-	r, w, err := os.Pipe()
-	if err != nil {
-		return nil, err
-	}
-	go func() {
-		defer func() {
-			if err := r.Close(); err != nil {
-				rtLog("Failed to close reader: %s", err)
-			}
-			if err := w.Close(); err != nil {
-				rtLog("Failed to close writer: %s", err)
-			}
-		}()
-		scanner := bufio.NewScanner(r)
-		for scanner.Scan() {
-			if err := scanner.Err(); err != nil {
-				rtLog("Error prefixing: %s", err)
-			}
-			fmt.Fprintf(os.Stdout, "%s%s\n", prefix, scanner.Text())
-		}
-	}()
-	return w, nil
-}
-
-func prefixWithTestName(t *testing.T, label string) (prefixedOut, prefixedErr io.Writer) {
-	t.Helper()
-
-	outPrefix := fmt.Sprintf("%s:%s:stdout> ", t.Name(), label)
-	errPrefix := fmt.Sprintf("%s:%s:stderr> ", t.Name(), label)
-
-	stdout, err := prefixedPipe(outPrefix)
-	if err != nil {
-		t.Fatalf("Setting up output prefix: %s", err)
-	}
-	stderr, err := prefixedPipe(errPrefix)
-	if err != nil {
-		t.Fatalf("Setting up output prefix: %s", err)
-	}
-	return stdout, stderr
 }

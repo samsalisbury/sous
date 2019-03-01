@@ -75,6 +75,53 @@ func TestActionPlumbingNormilizeGDM(t *testing.T) {
 
 }
 
+func TestGetManifestGet(t *testing.T) {
+	fg := fixtureGraph(t)
+	_, err := fg.GetManifestGet(config.DeployFilterFlags{}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetManifestSet(t *testing.T) {
+	fg := fixtureGraph(t)
+	_, err := fg.GetManifestSet(config.DeployFilterFlags{}, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetGetArtifact(t *testing.T) {
+	fg := fixtureGraph(t)
+	_, err := fg.GetGetArtifact(ArtifactOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetBuild(t *testing.T) {
+	fg := fixtureGraph(t)
+	fg.Add(&config.DeployFilterFlags{}, &config.PolicyFlags{})
+	_, err := fg.GetBuild(BuildActionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestGetServer(t *testing.T) {
+	fg := fixtureGraph(t)
+	dff := config.DeployFilterFlags{}
+	dryrun := ""
+	laddr := "127.0.0.1:12345"
+	gdmRepo := "somerepo"
+	profiling := false
+	enableAutoResolver := true
+	_, err := fg.GetServer(dff, dryrun, laddr, gdmRepo, profiling, enableAutoResolver)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestGetUpdate(t *testing.T) {
 	fg := fixtureGraph(t)
 	flags := fixtureDeployFilterFlags()

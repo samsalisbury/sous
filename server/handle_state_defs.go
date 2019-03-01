@@ -54,6 +54,10 @@ func (sdr *StateDefResource) Put(_ *restful.RouteMap, _ logging.LogSink, _ http.
 
 // Exchange implements restful.Exchanger on StateDefGetHandler.
 func (sdg *StateDefGetHandler) Exchange() (interface{}, int) {
+	if sdg.State == nil {
+		// State can be nil in the case of  errors reading it.
+		return "Unable to read state, please see logs.", 500
+	}
 	return sdg.State.Defs, 200
 }
 

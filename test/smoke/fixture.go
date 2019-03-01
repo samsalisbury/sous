@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/opentable/sous/dev_support/sous_qa_setup/desc"
 	sous "github.com/opentable/sous/lib"
+	"github.com/opentable/sous/util/testagents"
 	"github.com/opentable/sous/util/testmatrix"
 	"github.com/samsalisbury/semv"
 )
@@ -19,7 +19,7 @@ import (
 type fixtureBase struct {
 	TestName string
 	BaseDir  string
-	Finished chan struct{}
+	Finished *finishedChans
 
 	knownToFail bool
 }
@@ -48,11 +48,33 @@ type fixture struct {
 
 var sousBin = mustGetSousBin()
 
+type finishedChans struct {
+	Passed, Failed, Finished chan struct{}
+}
+
+func (fc finishedChans) setFailed() {
+	close(fc.Failed)
+	close(fc.Finished)
+}
+
+func (fc finishedChans) setPassed() {
+	close(fc.Passed)
+	close(fc.Finished)
+}
+
+func newFinishedChans() *finishedChans {
+	return &finishedChans{
+		Finished: make(chan struct{}),
+		Passed:   make(chan struct{}),
+		Failed:   make(chan struct{}),
+	}
+}
+
 func newFixtureConfig(testName string, s scenario) fixtureConfig {
 	base := fixtureBase{
 		TestName: testName,
 		BaseDir:  getDataDir(testName),
-		Finished: make(chan struct{}),
+		Finished: newFinishedChans(),
 	}
 
 	envDesc := getEnvDesc()
@@ -97,9 +119,9 @@ func (f *fixtureBase) newEmptyDir(path string) string {
 	return path
 }
 
-func (f *fixtureBase) newBin(t *testing.T, path, instanceName string) Bin {
+func (f *fixtureBase) newBin(t *testing.T, path, instanceName string) testagents.Bin {
 	binBaseDir := f.absPath(filepath.Join("actors", instanceName))
-	return NewBin(t, path, instanceName, binBaseDir, f.BaseDir, f.Finished)
+	return testagents.NewBin(t, procMan, path, instanceName, binBaseDir, f.BaseDir, f.Finished.Finished)
 }
 
 func newConfiguredFixture(t *testing.T, s scenario, mod ...func(*fixtureConfig)) *fixture {
@@ -143,21 +165,43 @@ func fixtureFactory(t *testing.T, s testmatrix.Scenario) testmatrix.Fixture {
 	return newFixture(t, unwrapScenario(s))
 }
 
+func (f *fixture) debug(format string, a ...interface{}) {
+	rtLog("[DEBUG:FIXTURE:"+f.TestName+"] "+format, a...)
+}
+
 // Teardown performs conditional cleanup of resources used in the test.
 // This includes stopping servers and deleting intermediate test data (config
 // files, git repos, logs etc.) in the case that the test passed.
-func (f *fixture) Teardown(t *testing.T) {
+func (f *fixture) Teardown(t *testing.T) <-chan error {
 	t.Helper()
-	close(f.Finished)
+	f.debug("starting teardown")
+	if t.Failed() {
+		f.debug("marking as failed")
+		close(f.Finished.Failed)
+	} else {
+		f.debug("marking as passed")
+		close(f.Finished.Passed)
+	}
+	f.debug("marking as finished")
+	close(f.Finished.Finished)
+	errs := make(chan error, 1)
+	defer close(errs)
 	if shouldStopServers(t) {
-		time.Sleep(time.Second) // TODO: Fix synchronisation.
+		f.debug("stopping servers")
 		if err := f.Cluster.Stop(); err != nil {
-			t.Errorf("failed to stop cluster: %s", err)
+			f.debug("failed to stop cluster: %s", err)
+			errs <- fmt.Errorf("failed to stop cluster: %s", err)
 		}
+	} else {
+		f.debug("not stopping servers")
 	}
 	if shouldCleanFiles(t) {
+		f.debug("cleaning files")
 		f.Clean(t)
+	} else {
+		f.debug("not cleaning files")
 	}
+	return errs
 }
 
 func shouldStopServers(t *testing.T) bool {

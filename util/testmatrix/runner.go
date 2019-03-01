@@ -45,7 +45,7 @@ type FixtureFactory func(*testing.T, Scenario) Fixture
 
 // Fixture Teardown func is called after each test has finished.
 type Fixture interface {
-	Teardown(*testing.T)
+	Teardown(*testing.T) <-chan error
 }
 
 // Context is passed to each test case.
@@ -84,23 +84,29 @@ func (pf *Runner) Run(name string, test Test) {
 			t.Parallel()
 			f := new(Fixture)
 			defer func() {
+				// TODO: Make timeout configurable.
 				timeout := 10 * time.Second
 				defer pf.parent.wg.Done()
-				pf.recordTestStatus(t)
+				var teardownErr error
 				select {
-				case <-time.After(10 * time.Second):
-					rtLog("ERROR: Teardown took longer than %s", timeout)
+				case <-time.After(timeout):
+					rtLog("[ERROR:%s] Teardown took longer than %s", t.Name(), timeout)
+					teardownErr = fmt.Errorf("teardown timed out after %s", timeout)
 				case <-func() <-chan struct{} {
 					c := make(chan struct{})
 					go func() {
 						if *f != nil {
-							(*f).Teardown(t)
+							teardownErr = <-(*f).Teardown(t)
 						}
 						close(c)
 					}()
 					return c
 				}():
 				}
+				if teardownErr != nil {
+					t.Errorf("[TEARDOWN FAILED]: %s", teardownErr)
+				}
+				pf.recordTestStatus(t)
 			}()
 			*f = pf.parent.fixtureFactory(t, c)
 			test(t, Context{Scenario: c, F: *f})

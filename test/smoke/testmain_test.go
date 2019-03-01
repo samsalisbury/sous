@@ -20,7 +20,7 @@ func TestMain(m *testing.M) {
 	sup = testmatrix.Init(matrix, fixtureFactory, func() error {
 		return firsterr.Parallel().Set(
 			func(e *error) { *e = resetSingularity() },
-			func(e *error) { *e = stopPIDs() },
+			func(e *error) { *e = procMan.StopPIDs() },
 			func(e *error) { *e = nukeDockerRegistry() },
 		)
 	})
