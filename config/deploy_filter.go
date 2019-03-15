@@ -3,7 +3,7 @@ package config
 import (
 	"fmt"
 
-	"github.com/opentable/sous/lib"
+	sous "github.com/opentable/sous/lib"
 	"github.com/opentable/sous/util/logging"
 	"github.com/pkg/errors"
 	"github.com/samsalisbury/semv"
@@ -90,10 +90,30 @@ type DeploymentIDFlags struct {
 	Cluster string
 }
 
+// DeploymentID returns the sous.DeploymentID that these flags represent.
+// If there is missing data from these flags, it returns a non-nil error.
+func (f DeploymentIDFlags) DeploymentID() (sous.DeploymentID, error) {
+	if f.Cluster == "" {
+		return sous.DeploymentID{}, fmt.Errorf("no cluster set")
+	}
+	return sous.DeploymentID{
+		ManifestID: f.ManifestIDFlags.ManifestID(),
+		Cluster:    f.Cluster,
+	}, nil
+}
+
 // ManifestIDFlags identify a manifest.
 type ManifestIDFlags struct {
 	SourceLocationFlags
 	Flavor string
+}
+
+// ManifestID returns the sous.ManifestID that these flags represent.
+func (f ManifestIDFlags) ManifestID() sous.ManifestID {
+	return sous.ManifestID{
+		Source: f.SourceLocationFlags.SourceLocation(),
+		Flavor: f.Flavor,
+	}
 }
 
 // SourceLocationFlags identify a SourceLocation.
