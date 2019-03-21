@@ -32,7 +32,7 @@ func (sb *Build) Do() error {
 
 	registered, err := sb.GetArtifact.ArtifactExists()
 	if err != nil {
-		return fmt.Errorf("unable to verify artifact existence: %s", err)
+		fmt.Printf("unable to verify artifact existence: %s", err)
 	}
 	if registered {
 		return fmt.Errorf("artifact already registered")
