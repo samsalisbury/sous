@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
 
-YES="$1"
-if [ "$YES" = "-y" ]; then
-	YES=1
-else
-	YES=0
-fi
-
 if type versiontool > /dev/null; then
   echo -n
 else
